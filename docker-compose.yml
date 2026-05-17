@@ -3,13 +3,15 @@ services:
     image: postgres:18-alpine
     container_name: atrilha-postgres
     environment:
-      POSTGRES_DB: atrilha
-      POSTGRES_USER: atrilha
-      POSTGRES_PASSWORD: atrilha
+      - POSTGRES_DB=atrilha
+      - POSTGRES_USER=atrilha
+      - POSTGRES_PASSWORD=atrilha
+      - TZ=America/Sao_Paulo
     ports:
       - "5432:5432"
     volumes:
       - atrilha-pg-data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U atrilha -d atrilha"]
       interval: 5s
