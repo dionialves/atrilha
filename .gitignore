@@ -24,8 +24,18 @@ hs_err_pid*
 replay_pid*
 
 
-# Custo ignore
+# Maven
+target/
+HELP.md
 
+# Maven Wrapper — manter o jar do wrapper versionado
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
 .idea
+*.iml
+.vscode/
+
+# OS
 .DS_Store
 .worktrees/
