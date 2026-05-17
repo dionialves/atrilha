@@ -44,4 +44,4 @@ HELP.md
 data/
 
 # Infra — credenciais de producao (nunca commitar)
-infra/compose/.env
+doc/infra/compose/.env
