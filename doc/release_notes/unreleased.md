@@ -1,5 +1,38 @@
 # Release Notes — Unreleased
 
+## chore(chore-008): pipeline CI/CD GitHub Actions — build linux/amd64 + SSH deploy para VPS
+
+**Issue:** [#8](https://github.com/dionialves/atrilha/issues/8)
+**Branch:** chore/8-pipeline-cicd-github-actions
+**Data:** 2026-05-17
+
+### O que foi feito
+
+Dois workflows GitHub Actions criados para fechar o ciclo de deploy automatico do M0:
+
+- `.github/workflows/ci.yml` — dispara em `pull_request` e `push main`; configura Java 21 (Temurin) com cache Maven e executa `./mvnw -B -ntp verify`. Serve como gating de CI para branch protection.
+- `.github/workflows/deploy.yml` — dispara em `push main`; bloco `concurrency: deploy-prod` impede dois deploys simultaneos. Job `build-and-push` (permissions: `packages: write`) autentica no GHCR via `GITHUB_TOKEN`, constroi imagem `linux/amd64` com cache BuildKit GHA e publica com tags `latest` e `sha-<short>`. Job `deploy` (needs: build-and-push) conecta via SSH usando `appleboy/ssh-action@v1.2.0` com secrets `SSH_HOST`/`SSH_USER`/`SSH_PORT`/`SSH_PRIVATE_KEY`; na VPS: atualiza `APP_TAG` no `.env`, executa `docker compose pull app && up -d app && image prune -f`. Smoke test pos-deploy: curl com retry 10x/6s em `https://atrilha.app/health` aguardando `{"status":"UP"}`.
+- `doc/infra/RUNBOOK.md` — secao `chore-008` adicionada com: tabela de secrets necessarios, geracao do par ed25519 dedicado ao GitHub Actions, instalacao da chave publica na VPS, explicacao do `GITHUB_TOKEN` para GHCR, instrucoes de branch protection (Require status checks: job `verify`).
+- `README.md` — badges CI e Deploy adicionados.
+
+### Desvios documentados
+
+- Nomes dos secrets SSH alterados de `VPS_*` (plano) para `SSH_*` conforme contexto do orquestrador; RUNBOOK atualizado com os nomes corretos.
+- RUNBOOK em `doc/infra/RUNBOOK.md` (path real do repositorio, em vez de `infra/RUNBOOK.md` citado no plano).
+
+### Resultado de build
+
+`mvn test` — BUILD SUCCESS, 3 testes passados, 0 warnings.
+
+### Como testar
+
+1. Abrir PR contra `main` — workflow `CI` deve disparar e passar (job `verify`).
+2. Configurar secrets no GitHub (SSH_HOST, SSH_USER, SSH_PORT, SSH_PRIVATE_KEY) seguindo o RUNBOOK.
+3. Fazer merge em `main` — workflow `Deploy` deve: buildar imagem, publicar em `ghcr.io/dionialves/atrilha`, fazer SSH na VPS, atualizar APP_TAG, recriar container `app`, e o smoke test deve retornar `Healthy`.
+4. Verificar badge "Deploy" no README aponta para ultima execucao verde.
+
+---
+
 ## chore(chore-006): provisionar-vps-nginx-letsencrypt-docker
 
 **Issue:** [#6](https://github.com/dionialves/atrilha/issues/6)

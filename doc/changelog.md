@@ -12,3 +12,4 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - chore(chore-003): Thymeleaf + HTMX + Tailwind + Alpine.js + Lottie no layout base ([#3](https://github.com/dionialves/atrilha/issues/3))
 - chore(chore-005): Dockerfile multi-stage + imagem buildada localmente ([#5](https://github.com/dionialves/atrilha/issues/5))
 - chore(chore-006): provisionar-vps-nginx-letsencrypt-docker ([#6](https://github.com/dionialves/atrilha/issues/6))
+- chore(chore-008): pipeline CI/CD GitHub Actions — build linux/amd64 + SSH deploy para VPS ([#8](https://github.com/dionialves/atrilha/issues/8))

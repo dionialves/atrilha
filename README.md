@@ -1,5 +1,8 @@
 # atrilha
 
+[![CI](https://github.com/dionialves/atrilha/actions/workflows/ci.yml/badge.svg)](https://github.com/dionialves/atrilha/actions/workflows/ci.yml)
+[![Deploy](https://github.com/dionialves/atrilha/actions/workflows/deploy.yml/badge.svg)](https://github.com/dionialves/atrilha/actions/workflows/deploy.yml)
+
 ## Dev local
 
 ### Subir banco PostgreSQL
