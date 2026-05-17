@@ -728,7 +728,7 @@ Mantém o cronograma do contexto (seção 7.3). Detalhamento de sprints será fe
 ### 9.1 Stack confirmada
 
 **Backend**
-- Java 21 + Spring Boot 3
+- Java 21 (LTS) + Spring Boot 4.0.6 (Spring Framework 7.0, Hibernate 7.1, Flyway 11.11)
 - Spring Security (OAuth Google + login email/senha com BCrypt)
 - PostgreSQL 16
 - Flyway (migrations)
@@ -1211,8 +1211,8 @@ Antes de marcar `aprovado`, cada semana **MUST** passar pelo checklist:
 **Por quê:** zero custo adicional, simplifica deploy. Migrar para R2/S3 quando volume justificar (> 50GB ou > 100k req/dia).
 **Alternativa rejeitada:** R2 desde o MVP → conta extra para configurar sem necessidade.
 
-### ADR-011 — Stack: Java 21 + Spring Boot + Thymeleaf + HTMX
-**Decisão:** stack tradicional server-side com HTMX para interações; sem framework JS pesado.
+### ADR-011 — Stack: Java 21 + Spring Boot 4 + Thymeleaf + HTMX
+**Decisão:** stack tradicional server-side com HTMX para interações; sem framework JS pesado. Versão fixada: **Spring Boot 4.0.6** (Spring Framework 7, Hibernate 7.1, Flyway 11.11) sobre **Java 21 LTS** (Spring Boot 4 exige Java 17+; escolhemos 21 LTS para suporte longo).
 **Por quê:** founder tem domínio da stack; deploy simples em VPS; HTMX cobre 95% das necessidades de interatividade; bundle inicial pequeno; SEO bom.
 **Alternativa rejeitada:** SPA (React/Next) → bundle maior, hosting mais complexo, ganho marginal para o que o app precisa.
 

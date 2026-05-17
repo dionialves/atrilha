@@ -16,7 +16,7 @@ Criação do esqueleto Maven/Spring Boot que serve de fundação técnica para t
 - `mvnw`, `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties` — Maven Wrapper 3.9.9 reproduzível.
 - `src/main/java/dev/zayt/atrilha/AtrilhaApplication.java` — entry-point da aplicação.
 - `src/main/java/dev/zayt/atrilha/{auth,accounts,content,progress,notifications,admin}/package-info.java` — 6 módulos vazios com Javadoc de fronteira conforme PRD §9.3.
-- `src/main/resources/application.properties` — configuração mínima (nome da app + porta 8080).
+- `src/main/resources/application.properties` — configuração mínima (nome da app + porta 8084).
 - `src/test/java/dev/zayt/atrilha/AtrilhaApplicationTests.java` — teste `contextLoads`.
 - `.tool-versions` — versão Java fixada para asdf (`openjdk-21`).
 
