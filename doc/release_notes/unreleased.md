@@ -1,6 +1,6 @@
 # Release Notes — Unreleased
 
-## chore(chore-002): Baseline Flyway + PostgreSQL 16 local via Docker Compose
+## chore(chore-002): Baseline Flyway + PostgreSQL 18 local via Docker Compose
 
 **Issue:** [#2](https://github.com/dionialves/atrilha/issues/2)
 **Branch:** chore/2-baseline-flyway-postgresql
@@ -12,7 +12,7 @@ Adicionada a infraestrutura de persistência que serve de fundação para todas 
 
 ### Arquivos introduzidos
 
-- `docker-compose.yml` — serviço `postgres:16-alpine` com volume nomeado, porta 5432 e healthcheck via `pg_isready`.
+- `docker-compose.yml` — serviço `postgres:18-alpine` com volume nomeado, porta 5432 e healthcheck via `pg_isready`.
 - `src/main/resources/application-dev.properties` — datasource apontando para PostgreSQL local, `ddl-auto=validate`, Flyway habilitado.
 - `src/main/resources/db/migration/V1__baseline.sql` — migration sentinela que cria `schema_baseline` e insere 1 linha para validar o pipeline Flyway de ponta a ponta.
 - `src/test/resources/application-test.properties` — exclui autoconfig de DataSource, JPA e Flyway no perfil test (pacotes Spring Boot 4).

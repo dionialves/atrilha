@@ -23,7 +23,7 @@ class FlywayMigrationIT {
     @Container
     @SuppressWarnings("resource")
     static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:16-alpine")
+            new PostgreSQLContainer<>("postgres:18-alpine")
                     .withDatabaseName("atrilha")
                     .withUsername("atrilha")
                     .withPassword("atrilha");
