@@ -47,7 +47,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -euo pipefail
-            cd /opt/atrilha
+            cd /opt/zayt/atrilha
             sed -i "s|^APP_TAG=.*|APP_TAG=sha-${{ needs.build-and-push.outputs.image_tag }}|" .env
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose pull app
