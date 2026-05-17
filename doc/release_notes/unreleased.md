@@ -1,5 +1,37 @@
 # Release Notes — Unreleased
 
+## chore(chore-006): provisionar-vps-nginx-letsencrypt-docker
+
+**Issue:** [#6](https://github.com/dionialves/atrilha/issues/6)
+**Branch:** chore/6-provisionar-vps-nginx-letsencrypt-docker
+**Data:** 2026-05-17
+
+### O que foi feito
+
+Provisionamento da VPS Zayt documentado e versionado como infraestrutura reproduzivel. Entregues quatro artefatos:
+
+- `infra/RUNBOOK.md` — 12 passos manuais auditaveis para provisionar do zero uma VPS Ubuntu 24.04 com usuario `deploy` nao-root, UFW (22/80/443), Docker CE, Nginx, Let's Encrypt via certbot e diretorio de deploy `/opt/atrilha/`. Inclui secao **Cloudflare pre-requisitos** (DNS-only antes do certbot, proxy ligado apos emissao do certificado, Full strict, sem HSTS duplicado).
+- `infra/nginx/atrilha.app.conf` — configuracao Nginx com redirect 80→443, bloco ACME challenge, HSTS (`max-age=31536000; includeSubDomains`), headers de segurança (X-Content-Type-Options, X-Frame-Options, Referrer-Policy), proxy para `127.0.0.1:8084`, e `/health` com `access_log off`.
+- `infra/compose/docker-compose.prod.yml` — stack de producao com `postgres:18-alpine` (porta 5432 nao publicada, rede interna `backend`), servico `app` vinculado a `127.0.0.1:8084:8084`, healthcheck de postgres, dependencia condicional `service_healthy`, `TZ: America/Sao_Paulo`.
+- `infra/compose/.env.example` — template de variaveis (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `APP_TAG`) sem valores reais.
+
+`.gitignore` atualizado para ignorar `infra/compose/.env` (credenciais de producao ficam apenas na VPS).
+
+### Impacto
+
+- Novo diretorio `infra/` na raiz do repositorio.
+- Sem alteracao de codigo Java, migrations, templates ou `pom.xml`.
+- Criterios operacionais (VPS ativa, certificado emitido, UFW configurado) validaveis apenas manualmente pelo operador seguindo o RUNBOOK.
+
+### Como testar
+
+1. Seguir `infra/RUNBOOK.md` passo a passo em VPS Ubuntu 24.04 LTS.
+2. Apos Passo 8: `certbot certificates` deve listar certificado valido para `atrilha.app` e `www.atrilha.app`.
+3. Apos Passo 9: `certbot renew --dry-run` deve concluir com sucesso.
+4. Apos `chore-008` (primeiro deploy): `curl -s https://atrilha.app/health` deve retornar HTTP 200; header `strict-transport-security` deve estar presente.
+
+---
+
 ## chore(chore-005): Dockerfile multi-stage + imagem buildada localmente
 
 **Issue:** [#5](https://github.com/dionialves/atrilha/issues/5)
