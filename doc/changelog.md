@@ -10,3 +10,4 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - chore(chore-002): baseline Flyway + PostgreSQL 18 local via Docker Compose ([#2](https://github.com/dionialves/atrilha/issues/2))
 - chore(chore-004): endpoint /health publico e paginas de erro 404/5xx ([#4](https://github.com/dionialves/atrilha/issues/4))
 - chore(chore-003): Thymeleaf + HTMX + Tailwind + Alpine.js + Lottie no layout base ([#3](https://github.com/dionialves/atrilha/issues/3))
+- chore(chore-005): Dockerfile multi-stage + imagem buildada localmente ([#5](https://github.com/dionialves/atrilha/issues/5))

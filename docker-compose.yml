@@ -18,5 +18,20 @@ services:
       timeout: 3s
       retries: 10
 
+  app:
+    build: .
+    image: atrilha:dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://postgres:5432/atrilha
+      DATABASE_USERNAME: atrilha
+      DATABASE_PASSWORD: atrilha
+    ports:
+      - "8084:8084"
+    profiles: ["full"]
+
 volumes:
   atrilha-pg-data:
