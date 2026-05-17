@@ -11,7 +11,7 @@
 Provisionamento da VPS Zayt documentado e versionado como infraestrutura reproduzivel. Entregues quatro artefatos:
 
 - `infra/RUNBOOK.md` — 12 passos manuais auditaveis para provisionar do zero uma VPS Ubuntu 24.04 com usuario `deploy` nao-root, UFW (22/80/443), Docker CE, Nginx, Let's Encrypt via certbot e diretorio de deploy `/opt/atrilha/`. Inclui secao **Cloudflare pre-requisitos** (DNS-only antes do certbot, proxy ligado apos emissao do certificado, Full strict, sem HSTS duplicado).
-- `infra/nginx/atrilha.app.conf` — configuracao Nginx com redirect 80→443, bloco ACME challenge, HSTS (`max-age=31536000; includeSubDomains`), headers de segurança (X-Content-Type-Options, X-Frame-Options, Referrer-Policy), proxy para `127.0.0.1:8084`, e `/health` com `access_log off`.
+- `infra/nginx/atrilha.app.conf` — configuracao Nginx com redirect 80->443, bloco ACME challenge, HSTS (`max-age=31536000; includeSubDomains`), headers de seguranca (X-Content-Type-Options, X-Frame-Options, Referrer-Policy), proxy para `127.0.0.1:8084`, e `/health` com `access_log off`.
 - `infra/compose/docker-compose.prod.yml` — stack de producao com `postgres:18-alpine` (porta 5432 nao publicada, rede interna `backend`), servico `app` vinculado a `127.0.0.1:8084:8084`, healthcheck de postgres, dependencia condicional `service_healthy`, `TZ: America/Sao_Paulo`.
 - `infra/compose/.env.example` — template de variaveis (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `APP_TAG`) sem valores reais.
 
