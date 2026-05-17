@@ -1,5 +1,49 @@
 # Release Notes — Unreleased
 
+## chore(chore-005): Dockerfile multi-stage + imagem buildada localmente
+
+**Issue:** [#5](https://github.com/dionialves/atrilha/issues/5)
+**Branch:** chore/5-dockerfile-imagem-local
+**Data:** 2026-05-17
+
+### O que foi feito
+
+Adicionado `Dockerfile` multi-stage com stage `build` usando `eclipse-temurin:21-jdk` + Maven Wrapper para empacotar o jar, e stage `runtime` usando `eclipse-temurin:21-jre-alpine` copiando apenas o artefato final. A imagem roda com usuario nao-root `app` (uid=100), expoe a porta 8084, configura healthcheck via `wget` apontando para `/health` e honra `JAVA_TOOL_OPTIONS` via ENTRYPOINT em shell form.
+
+Criado `.dockerignore` excluindo `target/`, `.git/`, `doc/`, `.idea/`, `.vscode/`, `*.iml`, `.DS_Store`, `README.md` e `docker-compose.yml` do contexto de build.
+
+Adicionado `application-prod.properties` com datasource via variaveis de ambiente (`DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`), `ddl-auto=validate`, cache Thymeleaf e `forward-headers-strategy=framework`.
+
+Atualizado `docker-compose.yml` com servico `app` no profile `full` (porta 8084:8084, depends_on postgres healthy, variaveis de ambiente injetadas). Uso: `docker compose --profile full up --build`.
+
+Atualizado `README.md` com secao "Build da imagem" cobrindo `docker build`, `docker run` e `docker compose --profile full up --build`.
+
+### Desvios documentados
+
+- Porta alterada de 8080 para 8084: ajuste justificado por mudanca realizada em task anterior (chore-001), aprovada pelo usuario. Todas as referencias (EXPOSE, healthcheck, ports, README, docker-compose) foram atualizadas para 8084.
+
+### Validacao Docker (executada pelo Revisor)
+
+- `docker build -t atrilha:dev .` — BUILD SUCCESS.
+- Content size da imagem: 203 MB (dentro do limite de 250 MB). Virtual size reportado por `docker images`: 561 MB (soma de camadas compartilhadas com base; nao representa tamanho real em disco ou banda de download).
+- Container sobe com usuario nao-root: `uid=100(app) gid=101(app) groups=101(app)`.
+- `docker inspect --format='{{.State.Health.Status}}'` retorna `healthy` apos start-period.
+- `curl http://localhost:8084/health` retorna `{"groups":["liveness","readiness"],"status":"UP"}`.
+
+### Resultado de build
+
+`mvn test` — BUILD SUCCESS, 3 testes passados, 0 warnings do compilador.
+
+### Como testar
+
+1. `docker build -t atrilha:dev .` — deve completar sem erro.
+2. `docker compose --profile full up --build` — sobe postgres + app; app conecta e `/health` retorna UP.
+3. `curl http://localhost:8084/health` — deve retornar `{"status":"UP"}`.
+4. `docker exec <container> id` — deve mostrar `uid=100(app)`.
+5. `docker inspect --format='{{.State.Health.Status}}' <container>` — deve mostrar `healthy`.
+
+---
+
 ## chore(chore-004): endpoint /health publico e paginas de erro 404/5xx
 
 **Issue:** [#4](https://github.com/dionialves/atrilha/issues/4)
