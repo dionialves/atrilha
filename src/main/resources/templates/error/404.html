@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}">
+<head><title>Página não encontrada</title></head>
+<body>
+<section layout:fragment="content" class="text-center py-16">
+    <p class="text-6xl font-semibold text-slate-300">404</p>
+    <h1 class="mt-4 text-2xl font-semibold">Página não encontrada</h1>
+    <p class="mt-2 text-slate-600">O endereço acessado não existe ou foi movido.</p>
+    <a th:href="@{/}" class="mt-6 inline-block underline">Voltar para o início</a>
+</section>
+</body>
+</html>
