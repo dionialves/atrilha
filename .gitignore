@@ -39,3 +39,6 @@ HELP.md
 # OS
 .DS_Store
 .worktrees/
+
+# Docker volumes (local data)
+data/
