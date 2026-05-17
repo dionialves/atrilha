@@ -63,7 +63,7 @@
 
 | Task | Descrição                                                                                                                           | Estimativa |
 |---|-------------------------------------------------------------------------------------------------------------------------------------|---|
-| chore-001 | Esqueleto Spring Boot 3 + Java 21 + Maven, pacotes `auth`/`accounts`/`content`/`progress`/`notifications`/`admin` vazios (PRD §9.3) | 3h |
+| chore-001 | Esqueleto Spring Boot 4.0.6 + Java 21 + Maven, pacotes `auth`/`accounts`/`content`/`progress`/`notifications`/`admin` vazios (PRD §9.3) | 3h |
 | chore-002 | Baseline Flyway + PostgreSQL 18 local via Docker Compose                                                                            | 3h |
 | chore-003 | Thymeleaf + HTMX + Tailwind + Alpine.js + Lottie wired no layout base                                                               | 3h |
 | chore-004 | Endpoint `/health` público + 404 elegante                                                                                           | 1h |
