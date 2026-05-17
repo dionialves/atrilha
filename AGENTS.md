@@ -40,7 +40,7 @@ Testes em `src/test/**`.
 
 ## Stack (ADR-011 — locked)
 
-Java 21 (LTS) + Spring Boot 4.0.6 (Spring Framework 7.0, Hibernate 7.1, Flyway 11.11), Maven, Spring Security (OAuth Google + email/senha BCrypt), PostgreSQL 16, Spring Data JPA, Spring Mail. View: Thymeleaf + HTMX + Tailwind + Alpine.js + Lottie + PWA. **Não introduzir** React/Next, Redis, RabbitMQ, microservices ou CDNs pagos — rejeitados em PRD §9.4.
+Java 21 (LTS) + Spring Boot 4.0.6 (Spring Framework 7.0, Hibernate 7.1, Flyway 11.11), Maven, Spring Security (OAuth Google + email/senha BCrypt), PostgreSQL 18, Spring Data JPA, Spring Mail. View: Thymeleaf + HTMX + Tailwind + Alpine.js + Lottie + PWA. **Não introduzir** React/Next, Redis, RabbitMQ, microservices ou CDNs pagos — rejeitados em PRD §9.4.
 
 ## Build, Test, and Development Commands
 

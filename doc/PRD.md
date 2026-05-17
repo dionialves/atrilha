@@ -730,7 +730,7 @@ Mantém o cronograma do contexto (seção 7.3). Detalhamento de sprints será fe
 **Backend**
 - Java 21 (LTS) + Spring Boot 4.0.6 (Spring Framework 7.0, Hibernate 7.1, Flyway 11.11)
 - Spring Security (OAuth Google + login email/senha com BCrypt)
-- PostgreSQL 16
+- PostgreSQL 18
 - Flyway (migrations)
 - Spring Data JPA + Specifications
 - Spring Mail (e-mails transacionais)
