@@ -1,5 +1,46 @@
 # Release Notes — Unreleased
 
+## chore(chore-004): endpoint /health publico e paginas de erro 404/5xx
+
+**Issue:** [#4](https://github.com/dionialves/atrilha/issues/4)
+**Branch:** chore/4-endpoint-health-pagina-404
+**Data:** 2026-05-17
+
+### O que foi feito
+
+Adicionado `spring-boot-starter-actuator` com exposicao exclusiva do endpoint `/health` (sem detalhes, sem auth). Sete propriedades de management garantem que apenas `/health` responde — todos os outros endpoints Actuator ficam desabilitados. Criadas paginas de erro `templates/error/404.html` e `templates/error/5xx.html` estendendo o layout base do chore-003, entregando experiencia visual consistente em rotas inexistentes e erros internos.
+
+### Arquivos introduzidos
+
+- `src/main/resources/templates/error/404.html` — pagina 404 elegante estendendo `layout/base` com link de retorno ao inicio.
+- `src/main/resources/templates/error/5xx.html` — pagina de erro 500 com mesma estrutura visual.
+- `src/test/java/dev/zayt/atrilha/HealthEndpointIT.java` — IT com `RANDOM_PORT` que verifica `GET /health` retorna HTTP 200 e corpo `{"status":"UP"}`.
+- `src/test/java/dev/zayt/atrilha/NotFoundPageTest.java` — IT com `RANDOM_PORT` e `Accept: text/html` que verifica `GET /rota-inexistente` retorna 404 com o texto "Pagina nao encontrada".
+
+### Arquivos modificados
+
+- `pom.xml` — dependencia `spring-boot-starter-actuator`.
+- `src/main/resources/application.properties` — 7 propriedades de management: endpoints desabilitados por padrao, health habilitado, exposto em `/health`, `show-details=never`, probes habilitados.
+
+### Desvios documentados
+
+- `TestRestTemplate` foi removido no Spring Boot 4 — substituido por `RestTemplate` + `@LocalServerPort`. Comportamento equivalente.
+- `@WebMvcTest` / MockMvc nao dispara `BasicErrorController` para paginas de erro — substituido por `RANDOM_PORT` com `Accept: text/html`. Desvio necessario e justificado.
+
+### Resultado de build
+
+`mvn verify` — BUILD SUCCESS, 5 testes passados (3 unit + 2 IT), 0 warnings do compilador.
+
+### Como testar
+
+1. `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`
+2. `curl -sS http://localhost:8084/health` — deve retornar `{"status":"UP"}` com HTTP 200.
+3. `curl -sS http://localhost:8084/actuator/beans` — deve retornar 404 (endpoint nao exposto).
+4. Abrir `http://localhost:8084/rota-inexistente` — deve exibir a pagina 404 com header/footer do layout base.
+5. `./mvnw clean verify` — BUILD SUCCESS.
+
+---
+
 ## chore(chore-003): Thymeleaf + HTMX + Tailwind + Alpine.js + Lottie no layout base
 
 **Issue:** [#3](https://github.com/dionialves/atrilha/issues/3)
