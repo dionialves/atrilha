@@ -42,3 +42,6 @@ HELP.md
 
 # Docker volumes (local data)
 data/
+
+# Infra — credenciais de producao (nunca commitar)
+infra/compose/.env

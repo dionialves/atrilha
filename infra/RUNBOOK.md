@@ -1,0 +1,298 @@
+# RUNBOOK — Provisionar VPS Zayt
+
+**Versao:** chore-006  
+**Dominio alvo:** atrilha.app  
+**SO alvo:** Ubuntu 24.04 LTS  
+**Autor:** chore-006 (Arquiteto/Codificador)
+
+---
+
+## Pre-requisitos
+
+- VPS HostGator com Ubuntu 24.04 LTS, minimo 1 vCPU / 1 GB RAM.
+- IPv4 publico da VPS ja conhecido.
+- Acesso root inicial via SSH (temporario).
+- Registro DNS A apontando `atrilha.app` para o IPv4 da VPS (ver secao **Cloudflare — pre-requisitos** abaixo).
+- `chore-007` (DNS Cloudflare) deve ser concluido **antes** do Passo 8 (certbot).
+
+---
+
+## Cloudflare — pre-requisitos
+
+> Execute esta configuracao no painel da Cloudflare **antes** de rodar o certbot.
+
+1. **Registro A — DNS-only (nuvem cinza) ANTES do certbot.**  
+   Crie (ou edite) o registro `A atrilha.app -> <IP da VPS>` com o proxy **desligado** (icone de nuvem cinza, modo "DNS only"). Isso e obrigatorio para que o certbot valide o dominio via HTTP-01. Com o proxy da Cloudflare ativo, o certbot nao consegue ver o servidor real.
+
+2. **Tambem crie `A www.atrilha.app -> <IP da VPS>`** em DNS-only pela mesma razao.
+
+3. **Apos o certificado ser emitido com sucesso** (Passo 8 concluido), volte ao painel da Cloudflare e:
+   - Ligue o **Proxy** nos dois registros A (icone de nuvem laranja).
+   - Em **SSL/TLS > Overview**, selecione **Full (strict)**.
+   - Em **SSL/TLS > Edge Certificates**, ative **Always Use HTTPS**.
+   - Em **SSL/TLS > Edge Certificates**, defina **Minimum TLS Version** para **TLS 1.2**.
+   - **Nao** ative HSTS pelo painel da Cloudflare — o HSTS ja esta declarado no Nginx (`Strict-Transport-Security`). Duplicar causa conflito de headers.
+
+4. **Rocket Loader: OFF** (em **Speed > Optimization**) — evita quebra de HTMX e Alpine.js.
+
+5. **Auto Minify JavaScript: OFF** (em **Speed > Optimization**) — evita quebra de HTMX e Alpine.js.
+
+---
+
+## Passo 1 — Usuario `deploy`
+
+Execute como `root`:
+
+```bash
+adduser deploy
+usermod -aG sudo deploy
+mkdir -p /home/deploy/.ssh
+# Cole aqui a chave publica SSH do operador:
+echo "<SUA_CHAVE_PUBLICA_SSH>" > /home/deploy/.ssh/authorized_keys
+chmod 700 /home/deploy/.ssh
+chmod 600 /home/deploy/.ssh/authorized_keys
+chown -R deploy:deploy /home/deploy/.ssh
+```
+
+**Teste antes de fechar a sessao root:**
+
+```bash
+ssh deploy@<IP_DA_VPS>
+```
+
+Confirme que o login funciona sem senha antes de continuar.
+
+---
+
+## Passo 2 — Endurecer SSH
+
+Edite `/etc/ssh/sshd_config` e garanta:
+
+```
+PermitRootLogin no
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+```
+
+Reinicie o servico:
+
+```bash
+systemctl restart sshd
+```
+
+> Mantenha uma sessao SSH aberta enquanto faz isso — se fechar tudo e a config estiver errada, voce perde o acesso.
+
+---
+
+## Passo 3 — Firewall UFW
+
+```bash
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
+ufw status verbose
+```
+
+Resultado esperado: regras para 22 (OpenSSH), 80/tcp, 443/tcp. Tudo mais bloqueado.
+
+---
+
+## Passo 4 — Docker
+
+```bash
+curl -fsSL https://get.docker.com | sh
+usermod -aG docker deploy
+```
+
+Faca logout e login novamente com o usuario `deploy` para o grupo `docker` entrar em vigor:
+
+```bash
+# Em nova sessao como deploy:
+docker run --rm hello-world
+```
+
+Resultado esperado: mensagem "Hello from Docker!".
+
+---
+
+## Passo 5 — Nginx
+
+```bash
+apt update && apt install -y nginx
+systemctl enable nginx
+systemctl start nginx
+```
+
+---
+
+## Passo 6 — Configurar Nginx (atrilha.app)
+
+```bash
+# Copie o arquivo de configuracao do repositorio para o servidor
+scp infra/nginx/atrilha.app.conf deploy@<IP_DA_VPS>:/tmp/
+
+# Na VPS:
+sudo cp /tmp/atrilha.app.conf /etc/nginx/sites-available/atrilha.app
+sudo ln -s /etc/nginx/sites-available/atrilha.app /etc/nginx/sites-enabled/atrilha.app
+
+# Remova o site padrao
+sudo rm -f /etc/nginx/sites-enabled/default
+
+# Valide e recarregue
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Resultado esperado: `nginx -t` retorna `syntax is ok` e `test is successful`.
+
+---
+
+## Passo 7 — Confirmar DNS
+
+Antes de prosseguir para o certbot, confirme que o registro DNS ja propagou:
+
+```bash
+dig +short atrilha.app
+dig +short www.atrilha.app
+```
+
+Ambos devem retornar o IPv4 da VPS. Se retornar outro IP (ex: IP da Cloudflare com proxy ligado), aguarde a propagacao ou ajuste conforme secao **Cloudflare — pre-requisitos**.
+
+```bash
+# Teste HTTP basico (deve retornar redirect 301 para HTTPS):
+curl -I http://atrilha.app
+```
+
+---
+
+## Passo 8 — Let's Encrypt (certbot)
+
+> Execute somente apos o Passo 7 confirmar propagacao DNS e registro A em DNS-only.
+
+```bash
+apt install -y certbot python3-certbot-nginx
+
+certbot --nginx \
+  -d atrilha.app \
+  -d www.atrilha.app \
+  -m <SEU_EMAIL> \
+  --agree-tos \
+  --no-eff-email \
+  -n
+```
+
+O certbot modifica automaticamente `/etc/nginx/sites-available/atrilha.app` para adicionar as diretivas `ssl_certificate` e `ssl_certificate_key`.
+
+---
+
+## Passo 9 — Testar Renovacao Automatica
+
+```bash
+certbot renew --dry-run
+```
+
+Resultado esperado: `Congratulations, all simulated renewals succeeded.`
+
+O timer systemd `snap.certbot.renew.timer` (ou `certbot.timer`) ja agenda renovacao automatica — verifique:
+
+```bash
+systemctl list-timers | grep certbot
+```
+
+---
+
+## Passo 10 — Diretorio de Deploy
+
+```bash
+sudo mkdir -p /opt/atrilha
+sudo chown deploy:deploy /opt/atrilha
+```
+
+---
+
+## Passo 11 — Arquivos de Deploy na VPS
+
+```bash
+# Na sua maquina local:
+scp infra/compose/docker-compose.prod.yml deploy@<IP_DA_VPS>:/opt/atrilha/docker-compose.yml
+scp infra/compose/.env.example            deploy@<IP_DA_VPS>:/opt/atrilha/.env.example
+```
+
+Na VPS, crie o `.env` real com as credenciais de producao:
+
+```bash
+# Na VPS como deploy:
+cp /opt/atrilha/.env.example /opt/atrilha/.env
+nano /opt/atrilha/.env   # preencha POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, APP_TAG
+```
+
+> O arquivo `/opt/atrilha/.env` **nunca** deve ser commitado no repositorio. Ele contem credenciais de producao.
+
+Verifique permissoes:
+
+```bash
+chmod 600 /opt/atrilha/.env
+ls -la /opt/atrilha/
+```
+
+Resultado esperado: `docker-compose.yml`, `.env.example` e `.env`, todos de propriedade de `deploy:deploy`.
+
+---
+
+## Passo 12 — Smoke Test
+
+> Execute apos `chore-008` fazer o primeiro deploy real da imagem.
+
+```bash
+cd /opt/atrilha
+docker compose pull
+docker compose up -d
+
+# Aguarde ~15s para o healthcheck do postgres e a inicializacao do Spring Boot
+docker compose ps
+
+# Teste o health endpoint:
+curl -s https://atrilha.app/health
+```
+
+Resultados esperados:
+- `docker compose ps` mostra ambos os servicos (`postgres` e `app`) com status `running`.
+- `curl https://atrilha.app/health` retorna HTTP 200 com corpo JSON de status.
+- `curl -I https://atrilha.app` mostra cabecalho `strict-transport-security` na resposta.
+
+> **Nota:** Antes do primeiro deploy real (`chore-008`), `curl https://atrilha.app` pode retornar 502 — isso e esperado. O importante e que o TLS esteja funcionando (certificado valido, sem aviso de segurança no browser).
+
+---
+
+## Verificacoes de Estado da VPS
+
+```bash
+# Docker daemon ativo?
+systemctl is-active docker
+
+# Nginx ativo?
+systemctl is-active nginx
+
+# UFW habilitado com regras corretas?
+ufw status verbose
+
+# Certificado valido?
+certbot certificates
+
+# Login root bloqueado (deve falhar):
+ssh root@<IP_DA_VPS>
+
+# Renovacao automatica funcionando?
+certbot renew --dry-run
+```
+
+---
+
+## Notas de Seguranca
+
+- **HSTS** esta declarado no Nginx com `max-age=31536000` (1 ano). Em emergencia de rollback de HTTPS, lembre que browsers com cache do HSTS continuarao forçando HTTPS por ate 1 ano.
+- **Credenciais** de banco ficam exclusivamente em `/opt/atrilha/.env` na VPS. O `.env.example` no repositorio contem apenas chaves vazias.
+- **Porta 5432** do PostgreSQL nao esta exposta no host — o container so e acessivel pela rede Docker interna `backend`.
+- **Porta 8084** esta vinculada apenas ao loopback (`127.0.0.1:8084`) — inacessivel diretamente da internet; todo acesso externo passa pelo Nginx.
