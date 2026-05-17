@@ -296,3 +296,88 @@ certbot renew --dry-run
 - **Credenciais** de banco ficam exclusivamente em `/opt/atrilha/.env` na VPS. O `.env.example` no repositorio contem apenas chaves vazias.
 - **Porta 5432** do PostgreSQL nao esta exposta no host — o container so e acessivel pela rede Docker interna `backend`.
 - **Porta 8084** esta vinculada apenas ao loopback (`127.0.0.1:8084`) — inacessivel diretamente da internet; todo acesso externo passa pelo Nginx.
+
+---
+
+## chore-008 — CI/CD GitHub Actions: Secrets e Configuracao
+
+Esta secao documenta os segredos e passos manuais necessarios para o pipeline de deploy automatico
+(`.github/workflows/ci.yml` e `.github/workflows/deploy.yml`).
+
+### Secrets necessarios no GitHub
+
+Acesse **GitHub → repositorio `dionialves/atrilha` → Settings → Secrets and variables → Actions**
+e crie os seguintes secrets:
+
+| Secret | Valor | Descricao |
+|--------|-------|-----------|
+| `SSH_HOST` | IP ou hostname da VPS | Endereco da VPS de producao |
+| `SSH_USER` | `deploy` | Usuario SSH na VPS (criado no Passo 1 deste RUNBOOK) |
+| `SSH_PORT` | `22` | Porta SSH (altere se customizou) |
+| `SSH_PRIVATE_KEY` | Conteudo da chave privada ed25519 | Chave privada dedicada ao GitHub Actions (ver abaixo) |
+
+> `GITHUB_TOKEN` e injetado automaticamente pelo GitHub Actions — **nao e necessario criar** este secret manualmente.
+> Ele e usado para autenticar o push de imagens no GHCR (`ghcr.io/dionialves/atrilha`) e para o `docker login` efemero na VPS durante o deploy.
+
+### Gerar o par de chaves SSH dedicado para o GitHub Actions
+
+Execute na sua maquina local (nao na VPS):
+
+```bash
+ssh-keygen -t ed25519 -C "gh-actions-atrilha" -f ~/.ssh/gh_actions_atrilha -N ""
+```
+
+Isso gera dois arquivos:
+- `~/.ssh/gh_actions_atrilha` — **chave privada** → valor do secret `SSH_PRIVATE_KEY`
+- `~/.ssh/gh_actions_atrilha.pub` — **chave publica** → vai para `authorized_keys` na VPS
+
+### Instalar a chave publica na VPS
+
+```bash
+# Na VPS, como deploy:
+cat ~/.ssh/gh_actions_atrilha.pub >> /home/deploy/.ssh/authorized_keys
+chmod 600 /home/deploy/.ssh/authorized_keys
+```
+
+Ou via `ssh-copy-id`:
+
+```bash
+ssh-copy-id -i ~/.ssh/gh_actions_atrilha.pub deploy@<IP_DA_VPS>
+```
+
+### Registrar a chave privada como secret no GitHub
+
+1. Copie o conteudo completo da chave privada:
+   ```bash
+   cat ~/.ssh/gh_actions_atrilha
+   ```
+2. No GitHub: **Settings → Secrets and variables → Actions → New repository secret**
+3. Nome: `SSH_PRIVATE_KEY`
+4. Valor: cole o conteudo inteiro (incluindo as linhas `-----BEGIN ...-----` e `-----END ...-----`)
+
+### Autenticacao no GHCR via GITHUB_TOKEN
+
+O workflow usa `GITHUB_TOKEN` para:
+1. **Push da imagem** no job `build-and-push` (via `docker/login-action` com `packages: write`).
+2. **Pull da imagem** na VPS durante o deploy (`docker login ghcr.io ... --password-stdin`).
+
+O `GITHUB_TOKEN` tem escopo e TTL limitados ao job — o `docker login` na VPS e feito a cada deploy
+e o token nao e armazenado permanentemente. O `.docker/config.json` pode ser sobrescrito a cada execucao.
+
+> Se o repositorio for privado e o `GITHUB_TOKEN` nao tiver permissao de leitura no GHCR para a VPS,
+> crie um **Personal Access Token (classic)** com escopo `read:packages` e registre como secret `GHCR_PAT`,
+> substituindo `${{ secrets.GITHUB_TOKEN }}` pelo `${{ secrets.GHCR_PAT }}` no script de deploy.
+> Para repositorios publicos (caso atual), `GITHUB_TOKEN` basta.
+
+### Protecao de branch (`main`) — Require Status Checks
+
+Para garantir que o deploy so ocorra apos CI verde:
+
+1. **GitHub → Settings → Branches → Add branch protection rule**
+2. Branch name pattern: `main`
+3. Marque: **Require status checks to pass before merging**
+4. Em "Status checks that are required", adicione: `verify` (nome exato do job em `ci.yml`)
+5. Marque: **Require branches to be up to date before merging**
+
+> O nome do job deve coincidir exatamente com o definido em `.github/workflows/ci.yml` (`jobs.verify`).
+> Se alterado, atualize tambem a regra de protecao.
