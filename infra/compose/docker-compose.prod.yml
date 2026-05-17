@@ -10,6 +10,7 @@
 services:
   postgres:
     image: postgres:18-alpine
+    container_name: atrilha-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB:       ${POSTGRES_DB}
@@ -29,6 +30,7 @@ services:
 
   app:
     image: ghcr.io/dionialves/atrilha:${APP_TAG:-latest}
+    container_name: atrilha-backend
     restart: unless-stopped
     depends_on:
       postgres:
