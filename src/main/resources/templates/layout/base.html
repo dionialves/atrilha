@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="csrf-token" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <title layout:title-pattern="$CONTENT_TITLE - atrilha">atrilha</title>
+    <!-- Tailwind Play CDN (temporário; build dedicado entra na Sprint 2 — ux-002) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
+    <!-- Alpine.js -->
+    <script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
+    <!-- Lottie -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.8/dist/lottie-player.js" defer></script>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="min-h-screen flex flex-col bg-white text-slate-900 antialiased">
+    <header th:replace="~{layout/fragments/header :: header}"></header>
+    <main class="flex-1 container mx-auto px-4 py-6">
+        <th:block layout:fragment="content"></th:block>
+    </main>
+    <footer th:replace="~{layout/fragments/footer :: footer}"></footer>
+</body>
+</html>

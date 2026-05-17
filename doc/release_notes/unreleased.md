@@ -1,5 +1,49 @@
 # Release Notes — Unreleased
 
+## chore(chore-003): Thymeleaf + HTMX + Tailwind + Alpine.js + Lottie no layout base
+
+**Issue:** [#3](https://github.com/dionialves/atrilha/issues/3)
+**Branch:** chore/3-thymeleaf-htmx-tailwind-alpine-lottie
+**Data:** 2026-05-17
+
+### O que foi feito
+
+Adicionada a camada de apresentacao SSR (Server-Side Rendering) com Thymeleaf e layout reutilizavel via `thymeleaf-layout-dialect`. O layout base centraliza os scripts CDN (HTMX, Alpine.js, Lottie) e o Play CDN do Tailwind (temporario para Sprint 1), de forma que todas as views futuras herdem header, footer e libs automaticamente.
+
+### Arquivos introduzidos
+
+- `src/main/resources/templates/layout/base.html` — layout base com placeholders para header, footer e conteudo; meta CSRF null-safe; CDNs Tailwind/HTMX/Alpine/Lottie.
+- `src/main/resources/templates/layout/fragments/header.html` — fragment de header reutilizavel.
+- `src/main/resources/templates/layout/fragments/footer.html` — fragment de footer com ano dinamico.
+- `src/main/resources/templates/home.html` — view minimal que estende o layout base via `layout:decorate`.
+- `src/main/resources/static/css/app.css` — placeholder; tokens e estilos entram na Sprint 2 (ux-002).
+- `src/main/java/dev/zayt/atrilha/web/HomeController.java` — controller que serve `GET /` retornando a view `home`.
+- `src/main/java/dev/zayt/atrilha/web/package-info.java` — Javadoc documentando o package transversal.
+- `src/test/java/dev/zayt/atrilha/web/HomeControllerTest.java` — teste de integracao com SpringBootTest(MOCK) + MockMvcBuilders.webAppContextSetup.
+
+### Arquivos modificados
+
+- `pom.xml` — dependencias `spring-boot-starter-thymeleaf` e `nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect`.
+- `src/main/resources/application-dev.properties` — `spring.thymeleaf.cache=false` e `spring.web.resources.cache.period=0`.
+- `README.md` — nota sobre uso temporario do Tailwind Play CDN e plano de migracao para Sprint 2.
+
+### Desvios documentados
+
+- `@WebMvcTest` foi removido no Spring Boot 4.0.6. O codificador usou `@SpringBootTest(MOCK) + MockMvcBuilders.webAppContextSetup`, mantendo asercoes equivalentes (status 200, view name, conteudo HTML). Desvio justificado e documentado.
+
+### Resultado de build
+
+`mvn test` — BUILD SUCCESS, 2 testes passados (HomeControllerTest + AtrilhaApplicationTests), 0 warnings do compilador.
+
+### Como testar
+
+1. `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`
+2. Abrir `http://localhost:8084/` — deve exibir header, "Bem-vindo a atrilha", footer.
+3. Inspecionar o HTML fonte — deve conter CDNs Tailwind, HTMX, Alpine.js e Lottie.
+4. Alterar o `<title>Inicio</title>` em `home.html` — apos salvar, o browser reflete sem reiniciar (cache desabilitado em dev).
+
+---
+
 ## chore(chore-002): Baseline Flyway + PostgreSQL 18 local via Docker Compose
 
 **Issue:** [#2](https://github.com/dionialves/atrilha/issues/2)
