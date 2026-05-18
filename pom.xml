@@ -13,7 +13,7 @@
 
     <groupId>dev.zayt</groupId>
     <artifactId>atrilha</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <packaging>jar</packaging>
     <name>atrilha</name>
     <description>Plataforma de estudos Atrilha</description>
