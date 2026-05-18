@@ -22,13 +22,13 @@ check "/ 200 + html" bash -c \
   "curl -fsS '$BASE_URL/' | grep -qi '<html'"
 
 check "/rota-inexistente-xyz 404 + pagina customizada" bash -c \
-  "curl -sS -o /tmp/atrilha-404.html -w '%{http_code}' '$BASE_URL/rota-inexistente-xyz' | grep -q '^404$' && grep -q 'Página não encontrada' /tmp/atrilha-404.html"
+  "curl -sS -H 'Accept: text/html' -o /tmp/atrilha-404.html -w '%{http_code}' '$BASE_URL/rota-inexistente-xyz' | grep -q '^404$' && grep -q 'Página não encontrada' /tmp/atrilha-404.html"
 
 check "HSTS header presente" bash -c \
   "curl -sSI '$BASE_URL/' | grep -qi '^strict-transport-security:'"
 
 check "TLS valido por >30 dias" bash -c \
-  "exp_epoch=\$(echo | openssl s_client -servername $HOST -connect $HOST:443 2>/dev/null | openssl x509 -noout -enddate | sed 's/notAfter=//' | xargs -I{} date -d {} +%s); now=\$(date +%s); (( (exp_epoch - now) / 86400 > 30 ))"
+  "echo | openssl s_client -servername $HOST -connect $HOST:443 2>/dev/null | openssl x509 -noout -checkend 2592000 >/dev/null"
 
 if [ "$FAIL" -ne 0 ]; then
   echo "Smoke FAILED"; exit 1
