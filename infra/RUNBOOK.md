@@ -381,3 +381,57 @@ Para garantir que o deploy so ocorra apos CI verde:
 
 > O nome do job deve coincidir exatamente com o definido em `.github/workflows/ci.yml` (`jobs.verify`).
 > Se alterado, atualize tambem a regra de protecao.
+
+---
+
+## chore-009 — Smoke Test Manual
+
+Esta secao descreve como executar o smoke test completo de producao fora do pipeline de CI/CD.
+
+### Comando
+
+```bash
+./infra/scripts/smoke.sh https://atrilha.app
+```
+
+### Pre-requisito
+
+Bash com `curl` e `openssl` instalados. Em macOS, o check de TLS usa `date -d` (GNU coreutils), que nao esta disponivel nativamente. Use container:
+
+```bash
+docker run --rm -v "$PWD:/w" --workdir /w alpine sh -c \
+  "apk add --quiet bash curl openssl && bash infra/scripts/smoke.sh https://atrilha.app"
+```
+
+### Criterios esperados (todos devem reportar PASS)
+
+| Check | O que valida |
+|-------|-------------|
+| `/health 200 + status UP` | Endpoint responde 200 com `{"status":"UP"}` no corpo |
+| `/ 200 + html` | Pagina inicial responde 200 com HTML valido |
+| `/rota-inexistente-xyz 404 + pagina customizada` | Retorna 404 e renderiza a pagina de erro customizada ("Pagina nao encontrada") |
+| `HSTS header presente` | Cabecalho `Strict-Transport-Security` presente na resposta |
+| `TLS valido por >30 dias` | Certificado TLS com mais de 30 dias de validade restantes |
+
+### O que fazer em caso de falha por item
+
+| Check com FAIL | Acao |
+|----------------|------|
+| `/health 200 + status UP` | Verificar `docker compose ps` na VPS; consultar logs: `docker compose logs app --tail 50` |
+| `/ 200 + html` | Verificar Nginx: `systemctl status nginx`; checar config em `/etc/nginx/sites-enabled/` |
+| `/rota-inexistente-xyz 404 + pagina customizada` | Verificar se o template `templates/error/404.html` esta no JAR e se o Spring esta configurado para erro customizado |
+| `HSTS header presente` | Verificar bloco `server` HTTPS no Nginx; reiniciar Nginx apos correcao |
+| `TLS valido por >30 dias` | Verificar certbot: `certbot certificates`; renovar manualmente: `certbot renew` |
+
+### Saida esperada (sucesso)
+
+```
+PASS  /health 200 + status UP
+PASS  / 200 + html
+PASS  /rota-inexistente-xyz 404 + pagina customizada
+PASS  HSTS header presente
+PASS  TLS valido por >30 dias
+Smoke OK
+```
+
+O script termina com exit code `0` em sucesso e `1` em falha (qualquer FAIL).
