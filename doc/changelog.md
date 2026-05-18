@@ -14,3 +14,4 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - chore(chore-006): provisionar-vps-nginx-letsencrypt-docker ([#6](https://github.com/dionialves/atrilha/issues/6))
 - chore(chore-008): pipeline CI/CD GitHub Actions — build linux/amd64 + SSH deploy para VPS ([#8](https://github.com/dionialves/atrilha/issues/8))
 - chore(chore-ux-001): identidade visual — paleta, tipografia e princípios de hierarquia ([#20](https://github.com/dionialves/atrilha/issues/20))
+- chore(chore-ux-002): design tokens Tailwind — cores, espaçamento, raios, sombras, tipografia ([#21](https://github.com/dionialves/atrilha/issues/21))
