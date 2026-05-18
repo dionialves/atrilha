@@ -53,12 +53,6 @@ jobs:
             docker compose pull app
             docker compose up -d app
             docker image prune -f
-      - name: Smoke /health
-        run: |
-          for i in 1 2 3 4 5 6 7 8 9 10; do
-            if curl -fsS https://atrilha.app/health | grep -q '"status":"UP"'; then
-              echo "Healthy"; exit 0
-            fi
-            echo "Waiting ($i)..."; sleep 6
-          done
-          echo "Health check failed"; exit 1
+      - uses: actions/checkout@v4
+      - name: Smoke producao
+        run: ./infra/scripts/smoke.sh https://atrilha.app
