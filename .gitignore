@@ -45,3 +45,6 @@ data/
 
 # Infra — credenciais de producao (nunca commitar)
 infra/compose/.env
+
+# Git Worktree
+.claude/worktrees
