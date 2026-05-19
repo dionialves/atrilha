@@ -16,3 +16,4 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - chore(chore-ux-001): identidade visual — paleta, tipografia e princípios de hierarquia ([#20](https://github.com/dionialves/atrilha/issues/20))
 - chore(chore-ux-002): design tokens Tailwind — cores, espaçamento, raios, sombras, tipografia ([#21](https://github.com/dionialves/atrilha/issues/21))
 - chore(chore-ux-003): componentes base — botão, input, card, modal, header, navegação, badge, toast ([#22](https://github.com/dionialves/atrilha/issues/22))
+- chore(chore-ux-004): protótipo da trilha — spec UX + HTML estático da trilha vazia ([#23](https://github.com/dionialves/atrilha/issues/23))

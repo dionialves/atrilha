@@ -148,3 +148,69 @@
 - **Componentes adicionais que vão emergir**: progress bar (US-023), heatmap cell (US-041), chip removível (filtros), avatar com fallback iniciais, tooltip — nascem com cada US que precisar.
 - **Microcopy final** dos componentes (labels, mensagens) — definida em cada US específica.
 - **Internacionalização** — copy em pt-BR direto nos templates por enquanto; i18n fica para v2.
+
+---
+
+## CHORE-UX-004 · Protótipo da trilha — spec UX + HTML estático da trilha vazia (#23)
+
+**Tipo:** Chore (UX, Sprint 2, marco M3 — protótipo da trilha validado)
+**Issue:** [#23](https://github.com/dionialves/atrilha/issues/23)
+**Branch:** chore/23-prototipo-trilha
+**Data de conclusão:** 2026-05-18
+
+### O que foi feito
+
+- Criado `doc/UX/03-prototipo-trilha.md` (≈451 linhas, 9 seções obrigatórias + §10 Pendências + §11 Histórico) com a especificação textual da tela inicial da adolescente (US-018) — estrutura, hierarquia, comportamentos e microcopy ancorados em US-018/019/020/021. Spec deliberadamente descreve a tela **em prosa** e amarra cada slot a tokens da chore-ux-002 e componentes da chore-ux-003 — nenhum hex novo, nenhum componente novo.
+- **§1 Objetivo:** tela inicial pós-login, ponto de chegada do "voltar para o começo", quatro funções simultâneas (contexto temporal + caminho da semana + destaque do hoje + status de cada dia).
+- **§2 Wireframe textual em 320px:** header compact → cabeçalho da semana (overline `SEMANA 3` + h1 + subtítulo + link "Trimestre") → lista vertical de 7 nós com linha conectora vertical entre eles (sólida nos concluídos, gradiente no "em progresso → hoje", tracejada no futuro, respiro extra antes do sábado) → bottom-nav com "Hoje" ativo. Decisão registrada de **lista vertical** em vez de mapa SVG sinuoso (custo de largura útil em 320px).
+- **§3 Estados visuais dos 4 status de nó (US-019):** tabela contrato com variante de card, borda, ícone (SVG stroke 20×20), cor de ícone, badge, microcopy auxiliar e comportamento ao toque para `Concluído`/`Em progresso`/`Disponível (hoje)`/`Bloqueado`. Caso especial **sábado** (US-020) com badge `info` + badge `neutral` empilhados e microcopy "Termine mais N sessões para abrir o sábado". Hook documentado para microanimação Lottie de desbloqueio (ADR-011) — **não implementada nesta task**, apenas o lugar.
+- **§4 Ancoragem ao hoje (US-018 critério 3):** decisão pelo Alpine `x-init` + `scrollIntoView({block:'center', behavior:'instant'})` — comparada com CSS-only (não posiciona inicialmente) e scroll-snap (não posiciona inicialmente). `behavior: 'instant'` evita duplicar caminho de código para `prefers-reduced-motion` e respeita adolescente que abre o app sabendo o que quer.
+- **§5 Componentes consumidos:** Header `compact` + Card `interactive`/`flat` + Card "hoje" com modificador local (borda 2px coral + `shadow-md`) + Badge 4 variantes (`primary`/`success`/`neutral`/`info`) + Button `primary lg full-width` (CTA "Começar agora") + Button `ghost md` (link "Trimestre") + Bottom-nav. **Sem componente novo.** Modal/Sheet, Input e Toast explicitamente fora do escopo desta tela vazia.
+- **§6 Tokens consumidos:** 4 tabelas amarrando cada token da chore-ux-002 a uma posição visual concreta — cores (`--color-primary`, `--color-secondary-300`, `--color-divider`, `--color-success-100/700`, `--color-info-100/700`, `--color-focus-ring`), tipografia (`--font-display`, `--font-sans`, pesos, `--text-xs/sm/base/2xl`, `--tracking-overline`), espaçamento (com `--space-11`=44px marcado como touch target RNF-A11Y-05 e `--space-6` como gap entre nós) e raio/sombra/motion/z-index.
+- **§7 Estados e microcopy:** microcopy exata em pt-BR para cada slot, **explicitamente sem cobrança/FOMO** (P11) — §7.4 lista o que foi vetado ("Não perca o streak", "Você ficou para trás", emojis funcionais de pressão) vs. o que está aceito ("Você parou em 3 de 5.", "Liberada em quinta, 21/05.", "Termine mais 3 sessões para abrir o sábado."). Inclui estados de borda (semana sem dados, erro de carregamento, toque em nó bloqueado).
+- **§8 Acessibilidade:** `<ol>` semântico (ordem é significativa); cada nó é `<a>` (estado ≠ bloqueado) ou `<button aria-disabled="true">` (bloqueado), nunca `<div onclick>`; padrão de `aria-label` por estado; ordem natural de Tab sem `tabindex` positivo; nó "hoje" com `tabindex="-1"` para foco programático futuro; tabela de contraste WCAG ancorada na chore-ux-001 §2; `prefers-reduced-motion` respeitado (scrollIntoView `instant` + transições zeradas globalmente).
+- **§9 Decisões e alternativas descartadas:** 5 decisões registradas — 9.1 lista vertical vs. mapa sinuoso SVG, 9.2 badge como reforço vs. cor pura, 9.3 header compact vs. expanded (trilha é raiz, sem botão voltar), 9.4 sem ilustração editorial placeholder, 9.5 `behavior: 'instant'` vs. `'smooth'`. Cada decisão registra também **quando reabriríamos**.
+- **§10 Pendências:** nomes próprios das sessões virão de `doc/conteudo/fluxo-semana.md`, ilustração de cabeçalho depende do estilo editorial (chore-ux-001 §7), microanimação Lottie entra com a US-020, skip-link entra na chore-ux-007, este HTML será consumido pela chore-ux-008 (smoke visual end-to-end).
+- Criado `doc/UX/prototypes/trilha.html` (≈835 linhas, ~32 KB) — **arquivo único autocontido**: CSS inline em `<style>` com subset literal dos tokens da chore-ux-002 (cores, tipografia, espaçamento, raios, sombras, motion, z-index), Alpine.js via CDN apenas para o `x-init` do `scrollIntoView` e para o popover de motivo dos nós bloqueados. Sem fetch, sem service worker, sem manifest. Abre direto no navegador / Live Server. Mock de 7 nós inline: 2 concluídos + 1 em progresso (com barra de progresso 60%) + 1 hoje (com CTA "Começar agora →") + 2 bloqueados por data + 1 sábado bloqueado por critério.
+- **`prefers-reduced-motion` global** no protótipo: bloco `@media` zera animações e transições, ancoragem usa `behavior:'instant'` independentemente — sem dois caminhos de código.
+- **`:has()` é progressive enhancement** — o respiro extra antes do nó de sábado é garantido pelo `.trail-node--saturday::before` (sempre aplicado); o `li:has(.trail-node--saturday){margin-top:--space-2}` apenas reforça em browsers modernos. Função não quebra em browser sem `:has()`.
+- Fontes **não importadas** no protótipo (decisão consciente): mantém o arquivo offline/autocontido e usa o fallback stack `Bricolage Grotesque, Inter, system-ui, …` — fontes reais entram quando o pipeline de produção for ligado em US futura.
+
+### Impacto
+
+- Arquivos novos: `doc/UX/03-prototipo-trilha.md`, `doc/UX/prototypes/trilha.html`.
+- Arquivos editados: `doc/changelog.md`, `doc/release_notes/unreleased.md` (este).
+- Nenhuma alteração em código Java, migrations, templates `src/**`, `static`, `properties` ou `pom.xml`.
+- **Destrava:** chore-ux-008 (smoke visual end-to-end consome este HTML como uma das telas-âncora).
+- **Antecipa:** US-018, US-019, US-020, US-021 (Sprint 7) — quando essas US entrarem, a implementação real consumirá este contrato visual + microcopy.
+
+### Como testar
+
+1. Abrir `doc/UX/03-prototipo-trilha.md` e confirmar presença das 9 seções obrigatórias (§1..§9) + §10 Pendências + §11 Histórico.
+2. Conferir que §5 Componentes e §6 Tokens citam **nominalmente** referências de `doc/UX/02-componentes-base.md` e `doc/UX/01-design-tokens.md` — sem reinventar.
+3. Confirmar que §9 lista **pelo menos 3 decisões** registradas (entregues 5).
+4. Verificar que toda microcopy de §7 é em pt-BR e que §7.4 lista o vetado vs. o aceito (P11).
+5. Confirmar que §3 trata o caso especial sábado (US-020) com microcopy "Termine mais N sessões para abrir o sábado".
+6. Abrir `doc/UX/prototypes/trilha.html` direto no navegador (Live Server, `file://`, ou qualquer servidor estático). Verificar:
+   - Carrega sem erro de console, sem requisição externa além do CDN do Alpine.
+   - Header sticky no topo, bottom-nav sticky no rodapé com "Hoje" destacado.
+   - Cabeçalho da semana com overline `SEMANA 3`, h1 placeholder, subtítulo, link "Trimestre →".
+   - 7 nós renderizados: 2 concluídos (badge "Concluído"), 1 em progresso (badge "Continuar" + barra 60%), 1 hoje (borda 2px coral + badge "HOJE" + CTA "Começar agora →"), 2 bloqueados (badge "Bloqueado", popover ao tocar com "Esta sessão abre em..."), 1 sábado (dois badges empilhados "Sábado" + "Bloqueado", microcopy "Termine mais 3 sessões para abrir o sábado").
+   - Ao carregar, a página rola automaticamente para deixar o nó "hoje" centrado no viewport.
+   - Em DevTools mobile (iPhone SE 375×667 ou viewport forçado 320×568): zero scroll horizontal, nenhum elemento cortado, todos os touch targets ≥ 44×44.
+7. Cruzar tokens consumidos no `<style>` com `doc/UX/01-design-tokens.md` — hex de `--color-primary-500` (#F25C54), `--color-secondary-500` (#7BC42F), `--color-neutral-50` (#F7F4F1) batem com a identidade.
+
+### Gaps visuais e manuais declarados
+
+- **Validação visual em 320px exato** (DevTools forçado): pendente de validação manual do humano. O CSS aplica `max-width: 38rem` no main, padding lateral `--space-4`, `min-height: var(--space-11)` em todos os interativos — estrutura é correta, mas medição pixel-a-pixel cabe ao humano.
+- **Renderização real com fontes Bricolage Grotesque e Inter**: o protótipo usa o fallback stack para manter o arquivo offline. Quando o pipeline de produção carregar as fontes, a hierarquia tipográfica pode ganhar mais personalidade no h1.
+- **Microanimação Lottie de desbloqueio do sábado**: documentada em §3, **não implementada** — entra com a US-020.
+- **Ilustração editorial no cabeçalho**: §9.4 explica por que o slot está reservado mas vazio — depende do estilo de ilustração ainda não fechado (chore-ux-001 §7).
+
+### Decisões registradas
+
+- Lista vertical em vez de mapa sinuoso SVG (custo de largura útil em 320px, custo de acessibilidade do `aria-flowto`, dependência de ilustrações ainda não fechadas).
+- Badge textual como reforço de estado em vez de cor pura (redundância de canal — WCAG / chore-ux-001 §5.3).
+- Header `compact` (não `expanded`) — trilha é raiz, sem botão voltar; o h1 do `<main>` carrega o título da semana.
+- Sem ilustração editorial placeholder — slot marcado em comentário HTML, virá quando o estilo for definido.
+- `scrollIntoView({behavior: 'instant'})` em vez de `'smooth'` — evita duplicar caminho de código para `prefers-reduced-motion` e respeita adolescente que abre o app sabendo o que quer.
