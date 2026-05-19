@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}">
+<head><title>Começar</title></head>
+<body>
+<section layout:fragment="content" class="comecar">
+    <header class="comecar__intro">
+        <p class="overline">Bem-vinda</p>
+        <h1>Qual caminho começa pra você?</h1>
+        <p class="comecar__lead">
+            atrilha é uma trilha diária de 10 minutos pela Lição da Escola
+            Sabatina Juvenil. Antes da gente conhecer você melhor, escolhe o
+            caminho.
+        </p>
+    </header>
+
+    <div class="comecar__paths">
+        <a th:href="@{/cadastro/adolescente}" class="card card--interactive">
+            <h2>Sou adolescente</h2>
+            <p>13 a 17 anos. Você faz a trilha; um responsável seu autoriza a vinculação.</p>
+        </a>
+
+        <a th:href="@{/cadastro/responsavel}" class="card card--interactive">
+            <h2>Sou responsável</h2>
+            <p>Adulto que vai vincular uma adolescente sob sua responsabilidade.</p>
+        </a>
+    </div>
+</section>
+</body>
+</html>

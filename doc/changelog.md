@@ -7,6 +7,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### User Stories
 - US-005 · Bloqueio de cadastro por idade fora da faixa ([#36](https://github.com/dionialves/atrilha/issues/36))
+- US-001 · Cadastro de adolescente por e-mail e senha ([#40](https://github.com/dionialves/atrilha/issues/40))
 
 ## [0.2.0] - 2026-05-19
 

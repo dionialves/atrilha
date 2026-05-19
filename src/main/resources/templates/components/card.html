@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Fragment: card (estrutural simples — slots ficam para US futura).
+  Parâmetros:
+    - variant: 'flat' | 'raised' | 'interactive' (default: 'flat')
+    - href:    String? — quando presente, renderiza como <a> (variant interactive)
+    - dense:   boolean — reduz padding via modificador --dense
+  Para conteúdo, use os elementos filhos do chamador (a US-001 usa o card
+  como wrapper com <h2>/<p>/<button> dentro — não há slot complexo aqui).
+-->
+<a th:fragment="card-link(variant, href, dense)"
+   th:href="${href}"
+   class="card card--interactive"
+   th:classappend="|card--${variant ?: 'interactive'} ${dense ? 'card--dense' : ''}|"
+   th:remove="tag">
+  <th:block th:remove="tag"></th:block>
+</a>
+<div th:fragment="card(variant, dense)"
+     class="card"
+     th:classappend="|card--${variant ?: 'flat'} ${dense ? 'card--dense' : ''}|">
+  <th:block th:remove="tag"></th:block>
+</div>
+</body>
+</html>

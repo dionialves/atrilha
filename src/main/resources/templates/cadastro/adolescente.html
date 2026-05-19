@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}">
+<head><title>Cadastro — adolescente</title></head>
+<body>
+<section layout:fragment="content" class="cadastro-form">
+    <header>
+        <p class="overline">Cadastro · Adolescente</p>
+        <h1>Conta nova</h1>
+        <p class="cadastro-form__lead">
+            Algumas informações básicas pra começar tua trilha. Você pode trocar
+            depois.
+        </p>
+    </header>
+
+    <form th:action="@{/cadastro/adolescente}" method="post"
+          th:object="${form}" enctype="multipart/form-data"
+          class="cadastro-form__form" novalidate>
+
+        <!-- E-mail -->
+        <div class="input-group" th:classappend="${#fields.hasErrors('email')} ? 'input-group--error' : ''">
+            <label for="email" class="input-label">E-mail</label>
+            <input id="email" type="email" name="email" autocomplete="email"
+                   th:field="*{email}"
+                   th:attr="aria-invalid=${#fields.hasErrors('email')}, aria-describedby=${#fields.hasErrors('email')} ? 'email-error' : null"
+                   class="input-field" maxlength="255"/>
+            <span th:if="${#fields.hasErrors('email')}" id="email-error" class="input-error" role="alert"
+                  th:errors="*{email}"></span>
+        </div>
+
+        <!-- Senha -->
+        <div class="input-group" th:classappend="${#fields.hasErrors('password')} ? 'input-group--error' : ''">
+            <label for="password" class="input-label">Senha</label>
+            <input id="password" type="password" name="password" autocomplete="new-password"
+                   th:field="*{password}"
+                   th:attr="aria-invalid=${#fields.hasErrors('password')}, aria-describedby=${#fields.hasErrors('password')} ? 'password-error' : 'password-helper'"
+                   class="input-field" minlength="8" maxlength="72"/>
+            <span th:unless="${#fields.hasErrors('password')}" id="password-helper" class="input-helper">
+                Mínimo 8 caracteres.
+            </span>
+            <span th:if="${#fields.hasErrors('password')}" id="password-error" class="input-error" role="alert"
+                  th:errors="*{password}"></span>
+        </div>
+
+        <!-- Apelido -->
+        <div class="input-group" th:classappend="${#fields.hasErrors('nickname')} ? 'input-group--error' : ''">
+            <label for="nickname" class="input-label">Como a gente te chama</label>
+            <input id="nickname" type="text" name="nickname" autocomplete="nickname"
+                   th:field="*{nickname}"
+                   th:attr="aria-invalid=${#fields.hasErrors('nickname')}, aria-describedby=${#fields.hasErrors('nickname')} ? 'nickname-error' : 'nickname-helper'"
+                   class="input-field" minlength="3" maxlength="20"/>
+            <span th:unless="${#fields.hasErrors('nickname')}" id="nickname-helper" class="input-helper">
+                De 3 a 20 caracteres. Pode ser teu nome, apelido, qualquer coisa.
+            </span>
+            <span th:if="${#fields.hasErrors('nickname')}" id="nickname-error" class="input-error" role="alert"
+                  th:errors="*{nickname}"></span>
+        </div>
+
+        <!-- Data de nascimento -->
+        <div class="input-group" th:classappend="${#fields.hasErrors('birthDate')} ? 'input-group--error' : ''">
+            <label for="birthDate" class="input-label">Data de nascimento</label>
+            <input id="birthDate" type="date" name="birthDate"
+                   th:field="*{birthDate}"
+                   th:attr="aria-invalid=${#fields.hasErrors('birthDate')}, aria-describedby=${#fields.hasErrors('birthDate')} ? 'birthDate-error' : null"
+                   class="input-field"/>
+            <span th:if="${#fields.hasErrors('birthDate')}" id="birthDate-error" class="input-error" role="alert"
+                  th:errors="*{birthDate}"></span>
+        </div>
+
+        <!-- Foto opcional -->
+        <div class="input-group">
+            <label for="photo" class="input-label">Foto (opcional)</label>
+            <input id="photo" type="file" name="photo"
+                   accept="image/jpeg,image/png,image/webp"
+                   class="input-field input-field--file"/>
+            <span class="input-helper">JPG, PNG ou WEBP. Até 5 MB.</span>
+        </div>
+
+        <!-- Preview avatar inicial (se sem foto) -->
+        <p class="avatar-hint">
+            Sem foto, tua inicial vira o avatar.
+        </p>
+
+        <div class="cadastro-form__actions">
+            <button type="submit" class="btn btn-primary btn-lg">Criar conta</button>
+        </div>
+
+        <p class="cadastro-form__legal">
+            Ao continuar, você aceita os
+            <a href="#">Termos</a> e a
+            <a href="#">Política de Privacidade</a>.
+        </p>
+    </form>
+</section>
+</body>
+</html>

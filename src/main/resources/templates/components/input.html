@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Fragment: input
+  Parâmetros:
+    - id:        String — id do campo (também usado em for/aria-describedby)
+    - label:     String — texto da label visível acima do campo
+    - name:      String — name HTTP do campo
+    - type:      'text' | 'email' | 'password' | 'date' | 'file' (default: 'text')
+    - value:     String? — valor pré-preenchido (ex.: após erro de validação)
+    - helper:    String? — texto orientativo, exibido se não houver erro
+    - error:     String? — mensagem de erro inline; aciona estado 'error'
+    - required:  boolean
+    - accept:    String? — accept para type=file
+    - maxLength: Integer? — limite client-side
+  Tokens consumidos: doc/UX/02-componentes-base.md §2.6.
+-->
+<div th:fragment="input(id, label, name, type, value, helper, error, required, accept, maxLength)"
+     class="input-group" th:classappend="${error != null} ? 'input-group--error' : ''">
+  <label th:for="${id}" class="input-label" th:text="${label}"></label>
+  <input th:id="${id}"
+         th:name="${name}"
+         th:type="${type ?: 'text'}"
+         th:value="${value}"
+         th:required="${required}"
+         th:accept="${accept}"
+         th:attr="aria-invalid=${error != null}, aria-describedby=${error != null ? id + '-error' : (helper != null ? id + '-helper' : null)}, maxlength=${maxLength}"
+         class="input-field"/>
+  <span th:if="${helper != null and error == null}"
+        th:id="${id} + '-helper'" class="input-helper" th:text="${helper}"></span>
+  <span th:if="${error != null}"
+        th:id="${id} + '-error'" class="input-error" role="alert" th:text="${error}"></span>
+</div>
+</body>
+</html>
