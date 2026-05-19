@@ -18,3 +18,4 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - chore(chore-ux-003): componentes base — botão, input, card, modal, header, navegação, badge, toast ([#22](https://github.com/dionialves/atrilha/issues/22))
 - chore(chore-ux-004): protótipo da trilha — spec UX + HTML estático da trilha vazia ([#23](https://github.com/dionialves/atrilha/issues/23))
 - chore(chore-ux-005): protótipo da sessão diária — spec UX + HTML estático do bloco núcleo ([#24](https://github.com/dionialves/atrilha/issues/24))
+- chore(chore-ux-006): protótipo do painel dos pais — spec UX + HTML estático do painel em baixa atividade ([#25](https://github.com/dionialves/atrilha/issues/25))
