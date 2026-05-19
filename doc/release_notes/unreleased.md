@@ -214,3 +214,80 @@
 - Header `compact` (não `expanded`) — trilha é raiz, sem botão voltar; o h1 do `<main>` carrega o título da semana.
 - Sem ilustração editorial placeholder — slot marcado em comentário HTML, virá quando o estilo for definido.
 - `scrollIntoView({behavior: 'instant'})` em vez de `'smooth'` — evita duplicar caminho de código para `prefers-reduced-motion` e respeita adolescente que abre o app sabendo o que quer.
+
+---
+
+## CHORE-UX-005 · Protótipo da sessão diária — spec UX + HTML estático do bloco núcleo (#24)
+
+**Tipo:** Chore (UX, Sprint 2, marco M4 — protótipo da sessão diária validado)
+**Issue:** [#24](https://github.com/dionialves/atrilha/issues/24)
+**Branch:** chore/24-prototipo-sessao
+**Data de conclusão:** 2026-05-18
+
+### O que foi feito
+
+- Criado `doc/UX/04-prototipo-sessao.md` (≈998 linhas, 13 seções obrigatórias + §14 Pendências + §15 Histórico) com a especificação textual da sessão diária inteira — os 5 blocos sequenciais (gancho, núcleo, quiz, reflexão, fechamento), o layout estrutural comum, retomada (US-025), tokens, componentes consumidos, microcopy completa, acessibilidade e decisões. Spec antecipa US-023, US-024, US-025, US-026 (sprints 8–9) e ancora cada slot a tokens da chore-ux-002 e componentes da chore-ux-003 — nenhum hex novo, nenhum componente novo.
+- **§1 Visão geral:** 5 blocos com meta ≤ 10 minutos por sessão, indicador "passo X de 5" visível em todos os blocos (US-023 critério 6), botão X de sair sempre presente (US-025), sem bottom-nav durante a sessão (modo imersão).
+- **§2 Layout estrutural comum:** header compact (~56px) + barra de progresso fina 4px + área de conteúdo scrollable (max-width `38rem`) + footer fixed-bottom com CTA primário lg full-width + `env(safe-area-inset-bottom)` para iOS. Touch targets ≥ 44×44 em todos os interativos.
+- **§3 Bloco 1 — Gancho** (US-023 critério 1): tela única, ≤30s de leitura, ilustração editorial (slot reservado), título curto + parágrafo 2–4 linhas, CTA "Continuar". Sem interação obrigatória.
+- **§4 Bloco 2 — Núcleo** (US-023 critério 2): 3 cards swipáveis (Contexto / Texto bíblico ARC / Aplicação — referência mestra do protótipo HTML), tratamento tipográfico distintivo para o card bíblico (`--font-display` semibold `--text-lg` — sem serifa decorativa), navegação por swipe gesto **e** botões prev/next (acessibilidade redundante), dots clicáveis com `aria-label`. CTA "Continuar" travada até último card (trava suave > toast de interrupção).
+- **§5 Bloco 3 — Quiz** (US-023 critério 3): 2 perguntas múltipla escolha sequenciais. Feedback com explicação tanto em acerto (variant `success` + "Isso mesmo!") quanto em erro (variant `info` deliberadamente — **não** `danger`, porque vermelho cobra; P1 + P11). Mecânicas alternativas (V/F, ordenar, drag, caça-palavras) explicitamente fora do escopo — virão em US-027 a US-035 nos sprints 10–12.
+- **§6 Bloco 4 — Reflexão** (US-024): pergunta aberta + textarea (chore-ux-003 §2.3), badge `info` "privado" visível quando campo em foco (US-024 critério 1), contador "restam X" com limite 1000 chars + `maxlength` HTML + `aria-live="polite"` quando `N ≤ 100` + cor `--color-danger-700` quando `N ≤ 50` (US-024 critério 5), CTA "Continuar" **sempre habilitada** mesmo com campo vazio (US-024 critério 2). Helper de privacidade explícito ("Sua reflexão é privada. Você pode compartilhar com seu responsável depois, item por item, se quiser." — P8 + preview de US-047).
+- **§7 Bloco 5 — Fechamento** (US-026): XP grande em `--font-display` `--text-3xl` + `tabular-nums` (anti-pulo), XP total em linha menor, **streak como "Sequência" + ícone pico de montanha** (veto explícito a chama 🔥 — clichê de produtividade adulta + leitura de "queima" moralista — P11 + chore-ux-001 §1), prévia do dia seguinte como Card `flat` sem CTA de lembrete, CTA "Encerrar". Slot Lottie ≤800ms autoplay-once com fallback estático para `prefers-reduced-motion`. Tabela §7.9 lista microcopy vetada vs. aceita.
+- **§8 Retomada (US-025):** contrato HTMX (POST a cada transição de bloco persiste `session_progress`), sinal visual na trilha já coberto em chore-ux-004 §3, retomada exata do bloco + respostas de quiz + texto de reflexão + posição do carrossel, troca de dispositivo via servidor (não localStorage), modo revisão para sessão concluída.
+- **§9 Componentes consumidos:** mapa slot→componente da chore-ux-003 (Header compact, Button primary/ghost/icon-only, Card raised/interactive/flat, Input textarea, Badge info). **2 lacunas catalogadas inline** (não promovidas a patch de chore-ux-003 fechada): ProgressBar (especificação inline com `role="progressbar"` + `aria-valuenow/min/max` + CSS) e DotIndicator (especificação inline com `role="tablist"` + `aria-selected` + área clicável ≥32×32 dentro de wrapper com padding). Promoção a componentes oficiais fica para chore-ux-007 (auditoria final).
+- **§10 Tokens consumidos:** 4 tabelas amarrando cada token da chore-ux-002 a uma posição visual concreta — cores (incluindo `--color-success-100/700`, `--color-info-100/700`, `--color-danger-700`, `--color-focus-ring`), tipografia (com `--font-display` aparecendo no texto bíblico — única superfície de corpo onde aparece, fora de headings), espaçamento (com `--space-11` = 44px marcado como touch target RNF-A11Y-05), raio/sombra/motion/z-index.
+- **§11 Microcopy completa:** **41 linhas** de microcopy exata em pt-BR cobrindo header, progress, gancho, núcleo (com `aria-label` de botões prev/next e dots), quiz (acerto "Isso mesmo!" vs. erro "Quase!"), reflexão (badge "privado", contador "restam X", helper de privacidade), fechamento (XP, sequência, prévia, "Encerrar"). Cada linha justificada contra P1/P8/P11. **§11.1 lista vetados** ("Não perca o streak!", "Você errou.", "🔥 Em chamas!", "Você foi melhor que 73%", "Tá demorando, hein?").
+- **§12 Acessibilidade:** `progressbar` com `aria-valuenow/min/max`, carrossel como `role="region" aria-roledescription="carrossel"` com slides `role="group" aria-roledescription="slide"`, dots `role="tablist"` + `aria-selected`, setas `←`/`→` no teclado, contador com `aria-live="polite"` quando `N ≤ 100`, foco visível com `--shadow-focus`, tabela de Tab por bloco, contrastes WCAG validados (16.4:1 título, 10.8:1 corpo, 7.42:1 feedback erro/info, 4.62:1 CTA), `prefers-reduced-motion` respeitado (transições zeradas + Lottie substituída por SVG estático), redundância de canal em quiz (cor + ícone + texto).
+- **§13 Decisões e alternativas descartadas:** 6 decisões registradas — 13.1 5 URLs distintas vs. SPA-with-Alpine (escolheu URLs distintas para coerência com HTMX + retomada simples), 13.2 carrossel com swipe + botões prev/next vs. scroll horizontal nativo (escolheu redundância acessível), 13.3 feedback de erro como `info` vs. `danger` (escolheu info para P1/P11 + daltonismo), 13.4 streak "Sequência + pico" vs. "Streak + chama" (vetou chama firme), 13.5 CTA travada até último card vs. toast (escolheu trava clara), 13.6 sem bottom-nav durante sessão vs. com bottom-nav (escolheu modo imersão). Cada decisão registra também **quando reabriríamos**.
+- **Declarações de escopo no topo:** nomes próprios das sessões e nomes definitivos dos blocos virão de `doc/conteudo/fluxo-semana.md` (US-023 critério 10) — spec usa placeholders explícitos `<<…>>`; mecânicas alternativas de quiz são spec próprio em US-027 a US-035 (sprints 10–12).
+- Criado `doc/UX/prototypes/sessao-bloco.html` (≈610 linhas, ~22 KB) — **arquivo único autocontido**: CSS inline em `<style>` com subset literal dos tokens da chore-ux-002 (cores, tipografia, espaçamento, raios, sombras, motion, z-index), Alpine.js via CDN apenas para `current` index do carrossel, swipe (touchstart/touchend), botões prev/next, dots clicáveis e setas ← / → no teclado. Header compact sticky + barra de progresso 40% (passo 2 de 5) sticky-abaixo + 3 cards em `<article role="group">` + dot-indicator com `aria-live="polite"` + footer fixed-bottom com CTA "Continuar" travado até `isLast()`. Sem fetch, sem service worker, sem manifest. Abre direto no navegador.
+- **Card 2 (Texto bíblico ARC — ADR-008)** com tratamento tipográfico distintivo (`--font-display` semibold `--text-lg`) e referência "Daniel 1, vv. 8 — ARC".
+- **`prefers-reduced-motion` global** no protótipo: bloco `@media` zera animações e transições. Sem dois caminhos de código.
+- Fontes **não importadas** no protótipo (decisão consciente): mantém o arquivo offline/autocontido e usa o fallback stack `Bricolage Grotesque, Inter, system-ui, …` — fontes reais entram quando o pipeline de produção for ligado em US futura.
+- HTMLs opcionais (`sessao-quiz.html`, `sessao-reflexao.html`, `sessao-fechamento.html`) **não entregues** — a Issue marca esses como opcionais; spec cobre todos os 5 blocos em prosa.
+
+### Impacto
+
+- Arquivos novos: `doc/UX/04-prototipo-sessao.md`, `doc/UX/prototypes/sessao-bloco.html`.
+- Arquivos editados: `doc/changelog.md`, `doc/release_notes/unreleased.md` (este).
+- Nenhuma alteração em código Java, migrations, templates `src/**`, `static`, `properties` ou `pom.xml`.
+- **Destrava:** chore-ux-008 (smoke visual end-to-end consome este HTML como uma das telas-âncora).
+- **Antecipa:** US-023, US-024, US-025, US-026 (sprints 8–9) — quando essas US entrarem, a implementação real consumirá este contrato visual + microcopy.
+
+### Como testar
+
+1. Abrir `doc/UX/04-prototipo-sessao.md` e confirmar presença das 13 seções obrigatórias (§1..§13) + §14 Pendências + §15 Histórico.
+2. Conferir que §9 Componentes e §10 Tokens citam **nominalmente** referências de `doc/UX/02-componentes-base.md` e `doc/UX/01-design-tokens.md` — sem reinventar.
+3. Confirmar que §13 lista **pelo menos 3 decisões** registradas (entregues 6).
+4. Verificar que toda microcopy de §11 é em pt-BR justificada contra P1/P8/P11 e que §11.1 lista o vetado (P11) — checar especialmente bloco do fechamento (§7.9) sem "Não perca o streak" / "Última chance".
+5. Confirmar declarações de escopo no topo: nomes próprios virão de `fluxo-semana.md`; mecânicas alternativas de quiz virão em US-027 a US-035.
+6. Abrir `doc/UX/prototypes/sessao-bloco.html` direto no navegador (Live Server, `file://`, ou qualquer servidor estático). Verificar:
+   - Carrega sem erro de console, sem requisição externa além do CDN do Alpine.
+   - Header sticky no topo com título placeholder + botão X (44×44, `aria-label="Fechar sessão"`).
+   - Barra de progresso sticky abaixo do header, preenchida em 40% (passo 2 de 5).
+   - 3 cards swipáveis: Contexto (sans body) + Texto bíblico (display semibold + referência "Daniel 1, vv. 8 — ARC") + Aplicação (sans semibold pergunta-gancho).
+   - Dots circulares clicáveis com dot ativo destacado em coral; container com `aria-live="polite"` anuncia mudança.
+   - Botões prev/next desabilitam corretamente nos extremos.
+   - CTA "Continuar" no footer fixed-bottom **desabilitada** nos cards 1 e 2; **habilita** no card 3 (`isLast()`).
+   - Em DevTools mobile (iPhone SE 375×667 ou viewport forçado 320×568): zero scroll horizontal, nenhum elemento cortado, todos os touch targets ≥ 44×44 (com exceção declarada dos dots — visual 10×10 em wrapper 32×32 + `padding: var(--space-2)` no `.dot-indicator` somando ≥44 no eixo Y).
+   - Swipe horizontal no viewport do carrossel funciona em mobile real (gesto de touch); setas ← / → também navegam pelo teclado.
+7. Cruzar tokens consumidos no `<style>` com `doc/UX/01-design-tokens.md` — hex de `--color-primary-500` (#F25C54), `--color-neutral-50` (#F7F4F1), `--color-neutral-900` (#1A1614) batem com a identidade.
+
+### Gaps visuais e manuais declarados
+
+- **Validação visual de swipe em DevTools mobile real** (iPhone SE 375×667 + viewport forçado 320×568): pendente de validação manual do humano. O CSS aplica `touch-action: pan-y` no viewport para liberar swipe horizontal sem prender scroll vertical, e Alpine implementa `touchstart`/`touchend` com limiar de 50px — estrutura é correta, mas medição em dispositivo real cabe ao humano.
+- **Dot indicator touch target:** visual 10×10 dentro de wrapper clicável de 32×32 com `padding: var(--space-2)` no container somando ≥44 no eixo Y. Decisão consciente registrada em §9.2 do spec — alternativa mais conservadora (dots de 44×44 visuais) foi avaliada e descartada por peso visual; humano pode validar em campo se necessário.
+- **Lottie de fechamento:** especificada em §7.6 do spec, **não materializada** no HTML — apenas placeholder textual "[Lottie sutil]" com nota de implementação. Entra com a US-026.
+- **Renderização real com fontes Bricolage Grotesque e Inter**: o protótipo usa o fallback stack para manter o arquivo offline. Quando o pipeline de produção carregar as fontes, o card bíblico vai ganhar a personalidade editorial distintiva pretendida.
+- **Ilustração editorial do gancho**: §3.4 do spec explica por que o slot está reservado mas vazio — depende do estilo de ilustração ainda não fechado (chore-ux-001 §7).
+- **Microanimação Lottie de celebração no fechamento**: documentada em §7.6, **não implementada** — entra com a US-026.
+
+### Decisões registradas
+
+- 5 blocos em URLs distintas em vez de SPA-with-Alpine — coerência com HTMX (ADR-011), retomada por URL é mais simples, foco programático no novo `<main>` por bloco.
+- Carrossel com swipe + botões prev/next em vez de scroll horizontal nativo — redundância acessível (chore-ux-003 §0.2) + dots sincronizados precisam de JS de qualquer forma.
+- Feedback de erro do quiz como `info` (azul) em vez de `danger` (vermelho) — P1 não-moralista + P11 sem cobrança + distinção em daltonismo.
+- Streak rebatizado como "Sequência" + ícone pico de montanha (não chama 🔥) — pt-BR + tom da marca (chore-ux-001 §1) + metáfora "trilha".
+- CTA "Continuar" travada até último card do núcleo (trava suave) em vez de toast micro-feedback — menos custo cognitivo, sem interrupção.
+- Sem bottom-nav durante a sessão — modo imersão, saída única e consciente via X explícito no header.
