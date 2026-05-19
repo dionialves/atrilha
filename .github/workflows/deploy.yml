@@ -52,6 +52,19 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose pull app
             docker compose up -d app
+            # Aguarda app responder UP no loopback antes de liberar o smoke externo (ate 90s)
+            for i in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:8084/health | grep -q '"status":"UP"'; then
+                echo "app UP apos ${i} tentativa(s)"
+                break
+              fi
+              if [ "$i" = "30" ]; then
+                echo "app nao subiu em 90s; ultimos logs:"
+                docker compose logs --tail=100 app
+                exit 1
+              fi
+              sleep 3
+            done
             docker image prune -f
       - uses: actions/checkout@v4
       - name: Smoke producao
