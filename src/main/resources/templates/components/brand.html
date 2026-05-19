@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Fragment: brand
+  Renderiza a marca composta (marca gráfica + wordmark "atrilha"), conforme
+  doc/UX/00-identidade-visual.md §3.3. Use como link para a home; passe um
+  href diferente apenas quando o uso for decorativo (raro).
+-->
+<a th:fragment="brand(href)"
+   th:href="${href ?: '/'}"
+   class="brand"
+   aria-label="atrilha — página inicial">
+  <span class="brand-mark" aria-hidden="true">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round">
+      <path d="M3 12 L8 4 L13 12" />
+      <circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/>
+    </svg>
+  </span>
+  <span class="brand-wordmark">atrilha</span>
+</a>
+</body>
+</html>

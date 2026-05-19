@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Fragment: button
+  Parâmetros:
+    - variant: 'primary' | 'secondary' | 'ghost' (default: 'primary')
+    - size:    'md' | 'lg' (default: 'md')
+    - label:   String — texto visível
+    - type:    'button' | 'submit' (default: 'button')
+    - name, value: opcionais para form
+    - ariaLabel: String? — preencha em casos de icon-only (raro nesta US)
+  Tokens consumidos: doc/UX/02-componentes-base.md §1.6.
+-->
+<button th:fragment="button(variant, size, label, type, name, value, ariaLabel)"
+        th:type="${type ?: 'button'}"
+        th:name="${name}"
+        th:value="${value}"
+        th:classappend="|btn btn-${variant ?: 'primary'} btn-${size ?: 'md'}|"
+        th:attr="aria-label=${ariaLabel}"
+        th:text="${label}">
+</button>
+</body>
+</html>

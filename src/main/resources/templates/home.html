@@ -4,9 +4,14 @@
       layout:decorate="~{layout/base}">
 <head><title>Início</title></head>
 <body>
-<section layout:fragment="content">
-    <h1 class="text-2xl font-semibold">Bem-vindo à atrilha</h1>
-    <p class="mt-2 text-slate-600">Em construção.</p>
+<section layout:fragment="content" class="home">
+    <h1>Bem-vindo à atrilha</h1>
+    <p class="home__lead">
+        Trilhe a Lição da Escola Sabatina Juvenil em 10 minutos por dia.
+    </p>
+    <p class="home__cta">
+        <a th:href="@{/comecar}" class="btn btn-primary btn-lg">Começar</a>
+    </p>
 </section>
 </body>
 </html>
