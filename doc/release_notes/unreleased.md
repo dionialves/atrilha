@@ -291,3 +291,83 @@
 - Streak rebatizado como "Sequência" + ícone pico de montanha (não chama 🔥) — pt-BR + tom da marca (chore-ux-001 §1) + metáfora "trilha".
 - CTA "Continuar" travada até último card do núcleo (trava suave) em vez de toast micro-feedback — menos custo cognitivo, sem interrupção.
 - Sem bottom-nav durante a sessão — modo imersão, saída única e consciente via X explícito no header.
+
+---
+
+## CHORE-UX-006 · Protótipo do painel dos pais — spec UX + HTML estático do painel em baixa atividade (#25)
+
+**Tipo:** Chore (UX, Sprint 2, marco M5 — protótipo do painel do responsável validado)
+**Issue:** [#25](https://github.com/dionialves/atrilha/issues/25)
+**Branch:** chore/25-prototipo-painel-pais
+**Data de conclusão:** 2026-05-19
+
+### O que foi feito
+
+- Criado `doc/UX/05-prototipo-painel-pais.md` (≈662 linhas, 10 seções obrigatórias + §11 Pendências + §12 Histórico) com a especificação textual do painel do responsável em estado pós-onboarding. Spec antecipa US-042 a US-046 (sprints 13–14) e amarra cada slot a tokens da chore-ux-002 e componentes da chore-ux-003 — nenhum hex novo, nenhum componente novo, nenhuma alteração em `src/**`.
+- **§1 Objetivo:** declara a tela como **superfície mais politicamente sensível** do produto; jornada J5 ("Carlos sente que o painel é útil sem ser vigilante") como critério único de sucesso; quatro funções simultâneas — mostrar atividade sem precisão clínica, dar gancho de conversa para o sábado, celebrar versículos memorizados duradouros, respeitar opt-in da adolescente.
+- **§2 Wireframe textual em 320px:** lista vertical única (sem abas) — header compact → bloco do tema da semana (overline + h1 + subtítulo, sem card) → card "Esta semana" com heatmap binário 7 dias + microcopy descritiva → card "Sequência atual" → card "Para conversar em família" com pergunta + botão "Conversamos sobre isso" → card "Versículos memorizados deste trimestre" → seção condicional "Compartilhado por [apelido]" (omitida quando vazia) → link `Como funciona` no rodapé → bottom-nav 3 itens (Painel · Perfil · Sair). Inclui justificativa para **rejeitar abas no topo** (induz à busca por dados que deliberadamente não estão lá — P9).
+- **§3 Tom visual e regras de "sinais positivos":** **contrato de tom** que toda implementação de US-042–046 deve respeitar — §3.1 veta `--color-danger-*`/`--color-warning-*`/`--color-success-*` em qualquer dado de atividade da adolescente; §3.2 detalha o heatmap binário com tabela de 2 estados visuais (`--color-primary-300` preenchido vs. `--color-neutral-300` contornado) e justificativa explícita de **por que não 500/700** (acende como CTA), **por que não secondary lime** (gera "OK/dever cumprido"), **por que não 3 tons crescentes** (RF-E6-10 é da adolescente, US-041); §3.3 streak sem ícone/microcopy adicional (zero é apenas um zero); §3.4 princípios de linguagem positiva.
+- **§4 Onboarding obrigatório de 3 telas (US-042) em wireframe textual:** estrutura comum (modal full-screen, focus trap, indicador "TELA X DE 3" + dots), Tela 1 "O que você verá aqui" (lista visual de 5 itens), Tela 2 "O que você não verá" (5 exclusões: reflexões privadas, horário, % acerto, tempo gasto, ausências como alerta — US-043 critério 5 literal), Tela 3 "Como conversar no sábado" (texto calmo + CTA "Entrar no painel" + "Pular tutorial" disponível apenas na tela 3 conforme US-042 critério 1). §4.5 cobre revisitação via link "Como funciona" (US-042 critério 6).
+- **§5 Estados especiais:** semana vazia (tela é **visualmente idêntica** à cheia, só números menores), semana cheia (sem confetes, sem "Parabéns!"), sem pergunta familiar (omissão silenciosa do card), sem versículos no trimestre (estado vazio neutro), aba "Compartilhado por [apelido]" (renderiza só quando há item opt-in, texto integral sem truncamento, revogação silenciosa).
+- **§6 Componentes consumidos:** mapa slot→componente da chore-ux-003 (Header `compact`, Card `flat`, Button `secondary`, Bottom-nav, Modal `critical`). §6.1 lista componentes **não usados** e por quê (Toast só pós-ação, Input ausente, Badge ausente). §6.2 documenta lacuna do heatmap binário como composição local (não promovido a componente novo). §6.3 justifica botão como `secondary` (não `primary`): coral escasso (chore-ux-001 §5.6) + P9 (nenhuma ação no painel é urgente).
+- **§7 Tokens consumidos:** painel usa **deliberadamente menos cores que a trilha** (9 tokens vs. 20+ da trilha — coral suave aparece em uma única posição). Tabela 7.1 lista cada token usado com sua posição visual. **§7.1 documenta vetos explícitos** com justificativa: `--color-danger-*`, `--color-warning-*`, `--color-success-*` (exceto toast de confirmação), `--color-heatmap-1/2/3` (são da US-041), `--color-primary-500` (coral pleno — não há CTA primário no painel).
+- **§8 Microcopy completa em pt-BR** com 9 subseções tabuladas (header, tema da semana, heatmap, streak, pergunta familiar, versículos, aba compartilhada, onboarding, erros operacionais) — cada linha justificada contra P8/P9/P11. **§8.4** lista 4 vetos explícitos para o card de streak ("Não perca a sequência!", "🔥 Em chamas!", "Sua filha está há X dias sem entrar.", "Recorde da Júlia: X dias"). **§8.10** sintetiza tudo o que é vetado em qualquer lugar do painel (8 categorias: urgência manufaturada, cobrança, dados quantitativos íntimos, comparação, moralismo de progresso, emojis de mecânica, comando operacional ao pai, ícones vermelhos/amarelos de alerta).
+- **§9 Acessibilidade:** estrutura semântica (header role banner, main, sections com aria-labelledby, nav aria-label Principal, dialog para onboarding); heatmap como `role="img"` com `aria-label` agregado e células `aria-hidden` (sem duplicar leitura) + redundância de canal (preenchimento vs. contorno); botão "Conversamos sobre isso" com `aria-pressed` + `disabled` pós-clique (US-045 critério 2); foco trap no modal de onboarding via `x-trap.inert.noscroll`; **`Esc` deliberadamente NÃO fecha** o onboarding bloqueante — exceção registrada em §10.7 com referência a US-042 critério 5 e mitigação WCAG 2.1.1 via "Pular tutorial" na tela 3; tabela 9.4 com contrastes WCAG validados; `prefers-reduced-motion` zera transições (incluindo toggle do botão).
+- **§10 — 8 decisões e alternativas descartadas:** §10.1 heatmap binário vs. gradiente/3 tons, §10.2 sem painel de "alerta de baixa atividade" vs. card de alerta de monitoramento parental (rejeitado por 3 razões irreconciliáveis com P9), §10.3 streak sem chama/sem microcopy adicional vs. chama + texto motivacional, §10.4 sem ilustração editorial placeholder, §10.5 cabeçalho do tema como bloco tipográfico vs. envolvido em card, §10.6 painel usa menos cores que a trilha, §10.7 onboarding sem `Esc` para fechar (exceção explícita ao Modal padrão), §10.8 aba opt-in como seção vertical vs. abas reais no topo. Cada decisão registra também **quando reabriríamos**.
+- Criado `doc/UX/prototypes/painel-pais.html` (≈662 linhas, ~26 KB) — **arquivo único autocontido**: CSS inline em `<style>` com subset literal dos tokens (cores, tipografia, espaçamento, raios, sombras, motion, z-index), Alpine.js via CDN apenas para o toggle do botão "Conversamos sobre isso". **Coral aparece em uma única posição** (`--color-primary-300` no heatmap); `--color-primary-500/600/700`, `--color-success-*`, `--color-warning-*`, `--color-danger-*`, `--color-heatmap-*` explicitamente **não importados** (comentário declara o porquê).
+- **Mock deliberado de baixa atividade:** heatmap 2/7 (quarta e quinta preenchidas), streak `0` sem microcopy adicional, 1 versículo memorizado (Salmos 23.1, 12/05), aba "Compartilhado por Júlia" **ausente** (comentário no HTML explicita a regra), botão "Conversamos sobre isso" funcional via Alpine — clique calcula `dd/mm` corrente, troca para "Conversamos em DD/MM", aplica `:disabled` e `:aria-pressed="true"`. O teste de tom é deliberado: se a tela parece amigável quando a filha **não está** fazendo as sessões, o painel resiste.
+- **`prefers-reduced-motion` global** no protótipo: bloco `@media` zera animações e transições. Sem dois caminhos de código.
+- HTML opcional `painel-pais-onboarding.html` **não entregue** — a Issue marca como opcional e o spec cobre o onboarding em wireframe textual completo (§4).
+- Fontes **não importadas** no protótipo (decisão consciente): mantém o arquivo offline/autocontido e usa o fallback stack `Bricolage Grotesque, Inter, system-ui, …`.
+
+### Impacto
+
+- Arquivos novos: `doc/UX/05-prototipo-painel-pais.md`, `doc/UX/prototypes/painel-pais.html`.
+- Arquivos editados: `doc/changelog.md`, `doc/release_notes/unreleased.md` (este).
+- Nenhuma alteração em código Java, migrations, templates `src/**`, `static`, `properties` ou `pom.xml`. Nenhum hex novo, nenhum componente novo, nenhum token novo introduzidos.
+- **Destrava:** chore-ux-008 (smoke visual end-to-end consome este HTML como uma das telas-âncora).
+- **Antecipa:** US-042, US-043, US-044, US-045, US-046 (sprints 13–14) — quando essas US entrarem, a implementação real consumirá este contrato visual + microcopy + contrato de tom P8/P9/P11.
+
+### Como testar
+
+1. Abrir `doc/UX/05-prototipo-painel-pais.md` e confirmar presença das 10 seções obrigatórias (§1..§10) + §11 Pendências + §12 Histórico.
+2. Conferir que §6 Componentes e §7 Tokens citam **nominalmente** referências de `doc/UX/02-componentes-base.md` e `doc/UX/01-design-tokens.md` — sem reinventar.
+3. Confirmar que §10 lista **pelo menos 3 decisões** registradas (entregues 8) e que toda microcopy de §8 é em pt-BR justificada contra P8/P9/P11.
+4. Validar a lista literal de exclusões (§4.3 e §8.10) — 5 itens reflexões privadas/horário/% acerto/tempo gasto/ausências como alerta (US-043 critério 5).
+5. Conferir que o heatmap é binário em §3.2 com tabela de 2 estados visuais; verificar veto explícito a `--color-heatmap-1/2/3` em §7.1.
+6. Abrir `doc/UX/prototypes/painel-pais.html` direto no navegador (Live Server, `file://` ou qualquer servidor estático). Verificar:
+   - Carrega sem erro de console, sem requisição externa além do CDN do Alpine.
+   - Header sticky com "Painel de Júlia" + botão "Ajustes" (44×44, `aria-label`).
+   - Cabeçalho tipográfico do tema (overline + h1 placeholder + subtítulo placeholder) sem card.
+   - Card "Esta semana": heatmap binário 7 dias com quarta e quinta preenchidas em coral suave (`--color-primary-300`); demais contornadas em `--color-neutral-300`; microcopy "Esta semana: 2 de 7 sessões." em tom descritivo.
+   - Card "Sequência atual": `0` em fonte display + label "dias" — sem ícone, sem microcopy adicional, sem cor de alarme.
+   - Card "Para conversar em família": pergunta placeholder + botão `secondary` "Conversamos sobre isso". Ao clicar: vira "Conversamos em DD/MM" (data corrente), `aria-pressed="true"`, `disabled`.
+   - Card "Versículos memorizados deste trimestre": item único "Salmos 23.1 / memorizado em 12/05".
+   - Seção "Compartilhado por Júlia" **ausente** (comentário explícito no HTML).
+   - Link discreto "Como funciona →" no rodapé.
+   - Bottom-nav 3 itens (Painel ativo · Perfil · Sair).
+   - Em DevTools mobile (iPhone SE 375×667 ou viewport forçado 320×568): zero scroll horizontal, nenhum elemento cortado, todos os touch targets ≥ 44×44.
+7. Cruzar tokens consumidos no `<style>` com `doc/UX/01-design-tokens.md` — coral aparece apenas como `--color-primary-300` (`#FF9A92`) no heatmap; `--color-focus-ring` usa `#F25C54` apenas no anel de foco; nenhum `success/warning/danger` em uso visual.
+
+### Gaps visuais e manuais declarados
+
+- **Teste do "olhar de pai ansioso":** §11 do spec recomenda explicitamente que o Revisor e o humano (Dioni) abram o HTML em mock de baixa atividade e perguntem deliberadamente "isso me dá vontade de cobrar?". É o teste subjetivo final desta task — passou na auditoria do Revisor; sugerido revalidar com o humano em campo.
+- **Validação visual em 320px exato** (DevTools forçado): pendente de validação manual do humano. O CSS aplica `max-width: 38rem` no main, padding lateral `--space-4`, `min-height: var(--space-11)` em todos os interativos.
+- **Apelido da adolescente:** mock usa `Júlia` em header e (futuro) na aba "Compartilhado por"; o valor real virá da configuração da Júlia em US-047 e tasks de perfil anteriores. Não bloqueia.
+- **Texto do tema da semana, subtítulo e pergunta de discussão familiar:** placeholders `<<…>>` no HTML — virão de `doc/conteudo/fluxo-semana.md` (refinamento em US-018 / US-044).
+- **Ilustração de cabeçalho do tema:** §10.4 explica por que o slot está reservado mas vazio — depende do estilo de ilustração ainda não fechado (chore-ux-001 §7). Mesma decisão da chore-ux-004 §9.4.
+- **Microanimação Lottie:** sem Lottie no painel — decisão intencional em §9.5 (nada pulsa, nada respira; movimento gratuito em dashboard transmite urgência).
+- **Renderização com fontes reais Bricolage Grotesque e Inter:** o protótipo usa o fallback stack para manter o arquivo offline.
+- **HTML opcional `painel-pais-onboarding.html`:** não entregue — opcional conforme Issue.
+
+### Decisões registradas (síntese)
+
+- **Heatmap binário** (2 estados, coral suave 300 + contorno neutro 300) em vez de gradiente/3 tons — US-043 critério 1 é literal + evita vigilância de qualidade.
+- **Sem painel de "alerta de baixa atividade"** — irreconciliável com P9; US-043 critério 5 veta literalmente.
+- **Streak sem chama, sem ícone, sem microcopy adicional** — zero é apenas um zero; chama é clichê de gamificação adulta competitiva.
+- **Sem ilustração editorial placeholder** — coerência com chore-ux-004 §9.4; depende do estilo editorial ainda não fechado.
+- **Cabeçalho do tema como bloco tipográfico, sem card** — identificação da página, não dado adicional; coerência com a trilha.
+- **Painel usa deliberadamente menos cores que a trilha** (9 vs. 20+ tokens) — resumo calmo, sem variação cromática que introduza ruído semântico.
+- **Botão "Conversamos sobre isso" como `secondary`, não `primary`** — coral escasso (chore-ux-001 §5.6); nenhuma ação no painel é urgente o suficiente para virar coral (P9).
+- **Onboarding sem `Esc` para fechar** — exceção explícita ao Modal padrão (ux-003 §4.7); justificada por US-042 critério 5 (chegar à tela 3) com mitigação WCAG via "Pular tutorial" disponível na tela 3.
+- **Aba "Compartilhado por" como seção vertical condicional, não abas reais no topo** — abas vazias induzem o pai a cobrar a filha por compartilhar; seção condicional simplesmente não existe quando não há item opt-in.

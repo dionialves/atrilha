@@ -1,0 +1,662 @@
+<!-- Protótipo estático — chore-ux-006. Painel do responsável em baixa atividade. Não é código de produção. -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>atrilha — protótipo painel dos pais (baixa atividade)</title>
+
+  <!-- Alpine.js via CDN — usado APENAS para o toggle do botão "Conversamos sobre isso". -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+
+  <style>
+    /* =====================================================================
+       TOKENS (subset literal de doc/UX/01-design-tokens.md — só o usado aqui)
+       Convenção: var(--…) — kebab-case em inglês.
+       NB: nenhum token novo. Coral aparece SÓ em --color-primary-300 (heatmap).
+       --color-primary-500/600/700, --color-success-*, --color-warning-*,
+       --color-danger-*, --color-heatmap-* NÃO são importados aqui.
+       Vide doc/UX/05-prototipo-painel-pais.md §7.1.
+       ===================================================================== */
+    :root {
+      /* Primary (coral suave — único uso é o heatmap binário) */
+      --color-primary-300: #FF9A92;
+
+      /* Neutral (ink — cinza-quente) */
+      --color-neutral-0:    #FFFFFF;
+      --color-neutral-50:   #F7F4F1;
+      --color-neutral-100:  #EDE8E4;
+      --color-neutral-200:  #DCD6D0;
+      --color-neutral-300:  #C9C2BD;
+      --color-neutral-400:  #A39A93;
+      --color-neutral-500:  #7A716B;
+      --color-neutral-700:  #3D3733;
+      --color-neutral-900:  #1A1614;
+
+      /* Semânticos */
+      --color-bg:           var(--color-neutral-50);
+      --color-surface:      var(--color-neutral-0);
+      --color-border:       var(--color-neutral-300);
+      --color-border-strong:var(--color-neutral-400);
+      --color-divider:      var(--color-neutral-200);
+      --color-text-display: var(--color-neutral-900);
+      --color-text-body:    var(--color-neutral-700);
+      --color-text-muted:   var(--color-neutral-500);
+      --color-focus-ring:   #F25C54; /* hex literal de chore-ux-002 — único uso em focus ring */
+
+      /* Tipografia — fallback stack apenas (sem importar Bricolage/Inter neste protótipo) */
+      --font-display: "Bricolage Grotesque", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-sans:    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+      --font-weight-regular:  400;
+      --font-weight-medium:   500;
+      --font-weight-semibold: 600;
+      --font-weight-bold:     700;
+
+      --text-xs:   0.75rem;   /* 12 */
+      --text-sm:   0.875rem;  /* 14 */
+      --text-base: 1rem;      /* 16 */
+      --text-lg:   1.125rem;  /* 18 */
+      --text-xl:   1.25rem;   /* 20 */
+      --text-2xl:  1.5rem;    /* 24 */
+      --text-3xl:  2rem;      /* 32 */
+
+      --tracking-overline: 0.05em;
+
+      /* Espaçamento (4px base) */
+      --space-1:  0.25rem;
+      --space-2:  0.5rem;
+      --space-3:  0.75rem;
+      --space-4:  1rem;
+      --space-5:  1.25rem;
+      --space-6:  1.5rem;
+      --space-8:  2rem;
+      --space-10: 2.5rem;
+      --space-11: 2.75rem;   /* 44 — touch target mínimo */
+      --space-12: 3rem;      /* 48 */
+
+      /* Raios */
+      --radius-sm:   0.25rem;
+      --radius-md:   0.5rem;
+      --radius-lg:   0.75rem;
+      --radius-full: 9999px;
+
+      /* Sombras */
+      --shadow-sm: 0 1px 2px 0 rgba(26, 22, 20, 0.05);
+      --shadow-focus: 0 0 0 3px rgba(242, 92, 84, 0.35);
+
+      /* Motion */
+      --duration-fast: 120ms;
+      --duration-base: 240ms;
+      --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+
+      /* Z-index */
+      --z-sticky: 20;
+    }
+
+    /* =====================================================================
+       RESET mínimo
+       ===================================================================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      color: var(--color-text-body);
+      background: var(--color-bg);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    h1, h2, h3, p { margin: 0; }
+    ul { list-style: none; margin: 0; padding: 0; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    button:disabled { cursor: default; }
+    :focus-visible {
+      outline: 2px solid var(--color-focus-ring);
+      outline-offset: 2px;
+      border-radius: var(--radius-md);
+    }
+
+    /* prefers-reduced-motion — zera transições/animações globais. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* =====================================================================
+       Header compact (ux-003 §5)
+       Saudação "Painel de Júlia" + ícone-botão "Ajustes".
+       ===================================================================== */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-4);
+      min-height: 56px;
+    }
+    .header-title {
+      font-family: var(--font-display);
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--text-base);
+      color: var(--color-text-display);
+      padding: var(--space-2) var(--space-1);
+      min-height: var(--space-11);
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .icon-button {
+      display: inline-grid;
+      place-items: center;
+      min-width: var(--space-11);
+      min-height: var(--space-11);
+      border-radius: var(--radius-md);
+      color: var(--color-text-body);
+      transition: background-color var(--duration-fast) var(--ease-out-soft);
+    }
+    .icon-button:hover { background: var(--color-neutral-100); }
+    .icon-button svg { width: 20px; height: 20px; }
+
+    /* =====================================================================
+       Container principal
+       ===================================================================== */
+    .main {
+      padding: var(--space-6) var(--space-4) var(--space-12);
+      max-width: 38rem;
+      margin: 0 auto;
+    }
+
+    /* =====================================================================
+       Bloco do tema da semana (cabeçalho tipográfico, sem card —
+       decisão chore-ux-006 §10.5)
+       ===================================================================== */
+    .theme-head {
+      margin-bottom: var(--space-10);
+    }
+    .overline {
+      font-size: var(--text-xs);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: var(--tracking-overline);
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-2);
+    }
+    .theme-title {
+      font-family: var(--font-display);
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--text-2xl);
+      line-height: 1.15;
+      color: var(--color-text-display);
+      margin-bottom: var(--space-2);
+    }
+    .theme-subtitle {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+    }
+
+    /* Slot reservado para ilustração de cabeçalho — virá do banco de ilustrações editoriais. */
+    /* Decisão chore-ux-006 §10.4 + chore-ux-004 §9.4: não renderizar placeholder. */
+
+    /* =====================================================================
+       Cards do painel (ux-003 §3 — variante flat)
+       ===================================================================== */
+    .panel-cards {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+    }
+
+    /* =====================================================================
+       Card "Esta semana" — heatmap binário
+       Decisão chore-ux-006 §3.2 + §10.1: 2 estados, sem gradiente.
+       Mock: 2/7 — quarta e quinta preenchidas.
+       ===================================================================== */
+    .heatmap {
+      margin-top: var(--space-3);
+      margin-bottom: var(--space-3);
+    }
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: var(--space-2);
+    }
+    .heatmap-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-1);
+    }
+    .heatmap-square {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-width: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-neutral-300);
+      background: transparent;
+    }
+    .heatmap-square--done {
+      background: var(--color-primary-300);
+      border-color: var(--color-primary-300);
+    }
+    .heatmap-daylabel {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      font-weight: var(--font-weight-medium);
+      line-height: 1;
+    }
+    .heatmap-summary {
+      font-size: var(--text-sm);
+      color: var(--color-text-body);
+      margin-top: var(--space-3);
+    }
+
+    /* =====================================================================
+       Card "Sequência atual"
+       Decisão chore-ux-006 §3.3 + §10.3: número grande, "dias", sem ícone.
+       Zero NÃO é tratado como falha.
+       ===================================================================== */
+    .streak-number {
+      font-family: var(--font-display);
+      font-weight: var(--font-weight-bold);
+      font-size: var(--text-3xl);
+      line-height: 1.1;
+      color: var(--color-text-display);
+      font-variant-numeric: tabular-nums;
+      margin-top: var(--space-3);
+    }
+    .streak-unit {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      margin-top: var(--space-1);
+    }
+
+    /* =====================================================================
+       Card "Para conversar em família" (US-044 + US-045)
+       Botão secondary (decisão chore-ux-006 §6.3) — não compete com heatmap.
+       Estado pós-clique via Alpine: vira "Conversamos em DD/MM" + disabled.
+       ===================================================================== */
+    .family-question {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-display);
+      line-height: 1.4;
+      margin-top: var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+
+    .button-secondary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      width: 100%;
+      min-height: var(--space-11);
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-surface);
+      color: var(--color-text-body);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-full);
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-semibold);
+      transition: background-color var(--duration-fast) var(--ease-out-soft),
+                  color var(--duration-fast) var(--ease-out-soft),
+                  border-color var(--duration-fast) var(--ease-out-soft);
+    }
+    .button-secondary:hover:not(:disabled) {
+      background: var(--color-neutral-100);
+    }
+    .button-secondary:disabled {
+      color: var(--color-text-muted);
+      border-color: var(--color-divider);
+      background: var(--color-neutral-50);
+    }
+
+    /* =====================================================================
+       Card "Versículos memorizados do trimestre" (US-043 critério 4)
+       Mock: 1 item (baixa atividade).
+       ===================================================================== */
+    .verses-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      margin-top: var(--space-3);
+    }
+    .verse-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-surface);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-md);
+    }
+    .verse-reference {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-display);
+    }
+    .verse-meta {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+    }
+
+    /* =====================================================================
+       Link discreto "Como funciona" — não funcional, apenas estático
+       ===================================================================== */
+    .help-link-wrap {
+      margin-top: var(--space-8);
+      display: flex;
+      justify-content: center;
+    }
+    .help-link {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      min-height: var(--space-11);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      transition: color var(--duration-fast) var(--ease-out-soft),
+                  background-color var(--duration-fast) var(--ease-out-soft);
+    }
+    .help-link:hover {
+      color: var(--color-text-body);
+      background: var(--color-neutral-100);
+    }
+    .help-link svg { width: 14px; height: 14px; }
+
+    /* =====================================================================
+       Bottom-nav (ux-003 §6) — 3 itens (Painel, Perfil, Sair)
+       Decisão chore-ux-006 §8.1: itens curtos do responsável.
+       ===================================================================== */
+    .bottom-nav {
+      position: sticky;
+      bottom: 0;
+      z-index: var(--z-sticky);
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-divider);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bottom-nav-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .nav-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-2) var(--space-1);
+      min-height: var(--space-11);
+      min-width: var(--space-11);
+      color: var(--color-text-muted);
+      font-size: var(--text-xs);
+      font-weight: var(--font-weight-medium);
+      text-align: center;
+      transition: color var(--duration-fast) var(--ease-out-soft);
+    }
+    .nav-link svg { width: 22px; height: 22px; }
+    .nav-link:hover { color: var(--color-text-body); }
+    .nav-link[aria-current="page"] {
+      color: var(--color-text-display);
+      font-weight: var(--font-weight-semibold);
+    }
+    /* Decisão chore-ux-006 §3.1 / §10.6: item ativo do bottom-nav do painel
+       NÃO usa coral primário — calmaria visual coerente com o resto da tela. */
+
+    /* =====================================================================
+       Skip-link visual fora-de-tela até foco
+       ===================================================================== */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =================================================================
+       HEADER compact — saudação "Painel de Júlia" + ícone-botão "Ajustes"
+       Decisão chore-ux-006 §6 + §8.1: header compact da chore-ux-003.
+       O texto da saudação usa apelido (US-047), não nome legal completo.
+       ================================================================= -->
+  <header class="header" role="banner">
+    <h1 class="header-title">Painel de Júlia</h1>
+
+    <button type="button" class="icon-button" aria-label="Ajustes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- =================================================================
+       MAIN — painel pós-onboarding em BAIXA ATIVIDADE
+       Mock deliberado: 2/7 sessões, streak 0, 1 versículo, aba opt-in ausente.
+       Decisão chore-ux-006 §1 + §10.2: tela é IDÊNTICA em baixa e alta atividade —
+       só os números mudam. Sem cards extras de "alerta".
+       ================================================================= -->
+  <main class="main">
+
+    <!-- =================================================================
+         Cabeçalho do tema da semana
+         Decisão chore-ux-006 §10.5: bloco tipográfico, sem card.
+         Decisão chore-ux-006 §10.4: ilustração de cabeçalho fica em slot
+         reservado (sem placeholder visual).
+         ================================================================= -->
+    <section class="theme-head" aria-labelledby="theme-title">
+      <p class="overline">Tema da semana</p>
+      <h2 class="theme-title" id="theme-title">&lt;&lt;Tema da semana&gt;&gt;</h2>
+      <p class="theme-subtitle">&lt;&lt;Meta da semana em uma frase curta.&gt;&gt;</p>
+      <!-- Slot reservado para ilustração de cabeçalho — virá do banco editorial. -->
+    </section>
+
+    <div class="panel-cards">
+
+      <!-- =================================================================
+           Card "Esta semana" — heatmap binário (US-043 critério 1)
+           Decisão chore-ux-006 §3.2: 2 estados visuais. Coral suave 300
+           para "feito"; contorno neutro 300 para "não feito". SEM gradiente.
+           Mock: 2/7 — quarta (3) e quinta (4) preenchidas; demais vazias.
+           ================================================================= -->
+      <section class="card" aria-labelledby="week-card-title">
+        <p class="overline" id="week-card-title">Esta semana</p>
+
+        <div class="heatmap"
+             role="img"
+             aria-label="Heatmap binário da semana: 2 de 7 dias com sessão. Dias com sessão: quarta-feira, quinta-feira. Dias sem sessão: domingo, segunda-feira, terça-feira, sexta-feira, sábado.">
+          <div class="heatmap-grid" aria-hidden="true">
+            <div class="heatmap-cell">
+              <div class="heatmap-square"></div>
+              <span class="heatmap-daylabel">D</span>
+            </div>
+            <div class="heatmap-cell">
+              <div class="heatmap-square"></div>
+              <span class="heatmap-daylabel">S</span>
+            </div>
+            <div class="heatmap-cell">
+              <div class="heatmap-square"></div>
+              <span class="heatmap-daylabel">T</span>
+            </div>
+            <div class="heatmap-cell">
+              <div class="heatmap-square heatmap-square--done"></div>
+              <span class="heatmap-daylabel">Q</span>
+            </div>
+            <div class="heatmap-cell">
+              <div class="heatmap-square heatmap-square--done"></div>
+              <span class="heatmap-daylabel">Q</span>
+            </div>
+            <div class="heatmap-cell">
+              <div class="heatmap-square"></div>
+              <span class="heatmap-daylabel">S</span>
+            </div>
+            <div class="heatmap-cell">
+              <div class="heatmap-square"></div>
+              <span class="heatmap-daylabel">S</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="heatmap-summary">Esta semana: 2 de 7 sessões.</p>
+      </section>
+
+      <!-- =================================================================
+           Card "Sequência atual" (US-043 critério 2)
+           Decisão chore-ux-006 §3.3 + §10.3: número grande, "dias", nada mais.
+           Mock: 0 dias. ZERO NÃO É ALERTA. Sem ícone, sem microcopy adicional.
+           ================================================================= -->
+      <section class="card" aria-labelledby="streak-card-title">
+        <p class="overline" id="streak-card-title">Sequência atual</p>
+        <p class="streak-number" aria-label="Sequência atual: 0 dias">0</p>
+        <p class="streak-unit">dias</p>
+      </section>
+
+      <!-- =================================================================
+           Card "Para conversar em família" (US-044 + US-045)
+           Pergunta placeholder + botão "Conversamos sobre isso".
+           Decisão chore-ux-006 §6.3: botão SECONDARY (não primary) — coral
+           escasso, e nenhum CTA do painel deve dominar visualmente.
+           Comportamento Alpine: ao clicar, vira "Conversamos em DD/MM",
+           atualiza aria-pressed, fica disabled.
+           ================================================================= -->
+      <section class="card"
+               aria-labelledby="family-card-title"
+               x-data="{
+                 marked: false,
+                 markedDate: ''
+               }">
+        <p class="overline" id="family-card-title">Para conversar em família</p>
+        <p class="family-question">
+          &lt;&lt;Pergunta de discussão familiar da semana — vem do conteúdo (US-044).&gt;&gt;
+        </p>
+
+        <button type="button"
+                class="button-secondary"
+                :aria-pressed="marked.toString()"
+                :disabled="marked"
+                @click="
+                  if (!marked) {
+                    const now = new Date();
+                    const dd = String(now.getDate()).padStart(2, '0');
+                    const mm = String(now.getMonth() + 1).padStart(2, '0');
+                    markedDate = dd + '/' + mm;
+                    marked = true;
+                  }
+                ">
+          <span x-show="!marked">Conversamos sobre isso</span>
+          <span x-show="marked" x-cloak>
+            Conversamos em <span x-text="markedDate"></span>
+          </span>
+        </button>
+      </section>
+
+      <!-- =================================================================
+           Card "Versículos memorizados deste trimestre" (US-043 critério 4)
+           Mock: 1 item. Estado de baixa atividade.
+           Decisão chore-ux-006 §5.4: se zero, mostraria texto-placeholder calmo.
+           ================================================================= -->
+      <section class="card" aria-labelledby="verses-card-title">
+        <p class="overline" id="verses-card-title">Versículos memorizados deste trimestre</p>
+        <ul class="verses-list" aria-label="Lista de versículos memorizados">
+          <li class="verse-item">
+            <span class="verse-reference">Salmos 23.1</span>
+            <span class="verse-meta">memorizado em 12/05</span>
+          </li>
+        </ul>
+      </section>
+
+    </div>
+
+    <!--
+      Decisão chore-ux-006 §5.5: aba "Compartilhado por Júlia" AUSENTE neste mock.
+      Júlia ainda não compartilhou nenhuma reflexão (US-046 critério 1).
+      Quando houver pelo menos 1 reflexão opt-in (US-047), uma seção própria
+      aparece AQUI (antes do link "Como funciona") com título "Compartilhado por Júlia".
+    -->
+
+    <!-- =================================================================
+         Link "Como funciona" — não funcional neste protótipo.
+         Revisita o onboarding de 3 telas (US-042 critério 6).
+         ================================================================= -->
+    <div class="help-link-wrap">
+      <a href="#" class="help-link" aria-label="Como funciona o painel — revisitar tutorial">
+        Como funciona
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 3l5 5-5 5"/>
+        </svg>
+      </a>
+    </div>
+
+  </main>
+
+  <!-- =================================================================
+       BOTTOM-NAV — 3 itens do responsável: Painel · Perfil · Sair.
+       Decisão chore-ux-006 §8.1: itens curtos, sem usar coral no ativo.
+       ================================================================= -->
+  <nav class="bottom-nav" aria-label="Principal">
+    <ul class="bottom-nav-list">
+      <li>
+        <a href="#" class="nav-link" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2"/>
+            <path d="M3 9h18"/>
+            <path d="M7 13h4M7 17h7"/>
+          </svg>
+          <span>Painel</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>
+          </svg>
+          <span>Perfil</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/>
+            <path d="M10 17l-5-5 5-5"/>
+            <path d="M5 12h11"/>
+          </svg>
+          <span>Sair</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- [x-cloak] precisa de CSS dedicado para esconder antes do Alpine montar -->
+  <style>[x-cloak] { display: none !important; }</style>
+
+</body>
+</html>
