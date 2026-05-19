@@ -5,6 +5,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### User Stories
+- US-005 · Bloqueio de cadastro por idade fora da faixa ([#36](https://github.com/dionialves/atrilha/issues/36))
+
 ## [0.2.0] - 2026-05-19
 
 Marco M1 — Identidade visual definida (Sprint 2). APROVADO pelo humano em Issue [#27](https://github.com/dionialves/atrilha/issues/27).
