@@ -7,3 +7,5 @@ target/
 doc/
 README.md
 docker-compose.yml
+node/
+node_modules/

@@ -1,14 +1,22 @@
 /* =============================================================================
- * atrilha — folha de estilo principal
+ * atrilha — input do Tailwind v4
  *
- * Origens:
+ * Este arquivo é a fonte do CSS de produção. É compilado em build time pelo
+ * `frontend-maven-plugin` (npm run build:css → tailwindcss CLI v4) e
+ * gravado em `target/classes/static/css/app.css`, de onde o Spring Boot
+ * serve em `/css/app.css`.
+ *
+ * Origens dos tokens:
  *   - doc/UX/01-design-tokens.md §10 — bloco @theme literal abaixo
  *   - doc/UX/02-componentes-base.md §9 — tokens de componente (botão, input, card)
  *
- * Tailwind v4 continua via CDN no base.html nesta US (substituição por build
- * standalone fica para chore separada). Os tokens aqui não dependem do
- * preprocessor — são CSS custom properties consumidas diretamente.
+ * Tailwind v4 expande `@theme {}` em build-time, emitindo cada token como
+ * custom property dentro de `:root` no CSS final — o que torna as variáveis
+ * disponíveis para todo o CSS literal abaixo e para qualquer consumidor
+ * externo via `var(--token)`.
  * ============================================================================= */
+
+@import "tailwindcss";
 
 @theme {
   /* ===== CORES — PRIMITIVOS ===== */
@@ -187,12 +195,10 @@
 }
 
 /* =============================================================================
- * Base — variáveis disponíveis fora do Tailwind v4 também
+ * Base
  * ============================================================================= */
 
 :root {
-  /* Espelha tokens no escopo global para que páginas em fallback (sem o
-   * processador do Tailwind v4) ainda consigam consumir as variáveis. */
   color-scheme: light;
 }
 

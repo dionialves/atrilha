@@ -154,3 +154,60 @@
 - **Ilustração editorial** das telas de bloqueio (`adolescente_bloqueado.html` variantes `under-13`/`over-17`) usa placeholder SVG stroke neutro, conforme decisão registrada no spec §7.2 — será substituída quando chore-ux-001 §7 fechar a produção das ilustrações.
 - **Defesa em profundidade no upload de foto:** validação atual confia no header `Content-Type`. O teste `postWithSpoofedPdfDeclaredAsJpgExtensionRejectsUpload` confirma que o `Content-Type` é honrado, mas magic bytes não são verificados. Recomendação para chore futura (sugestão: CHORE-SEC-001).
 - **Acessibilidade**: as marcações `aria-invalid`, `aria-describedby` e foco visível estão presentes no template; validação manual completa via leitor de tela fica como auditoria de acessibilidade pós-MVP (`doc/UX/06-acessibilidade.md`).
+
+## CHORE · Substituir Tailwind Play CDN por build standalone do Tailwind v4 (#43)
+
+**Tipo:** Chore técnica (Sprint 3 — débito acumulado de identidade visual)
+**Issue:** [#43](https://github.com/dionialves/atrilha/issues/43)
+**Branch:** `worktree-agent-a3625b303d18ce1be`
+**Data de conclusão:** 2026-05-19
+
+### O que foi feito
+- Removida a dependência do **Tailwind Play CDN** (`<script src="https://cdn.tailwindcss.com">`) do `layout/base.html`, eliminando o warning `cdn.tailwindcss.com should not be used in production` que era emitido em toda página servida desde a Sprint 1 (chore-003).
+- Substituído por um pipeline de **build standalone do Tailwind v4** integrado ao Maven via `frontend-maven-plugin` (`com.github.eirslett:frontend-maven-plugin:1.15.1`): `./mvnw clean package` agora baixa Node `v20.18.0` + npm `10.8.2` localmente em `node/`, instala dependências em `node_modules/` via `npm ci` determinístico a partir de `package-lock.json` e compila `src/main/frontend/css/app.css` para `target/classes/static/css/app.css` (minificado, ~23 KB) — embarcado no jar e servido em `/css/app.css`.
+- Movido o bloco `@theme {}` com **todos os 86 tokens de design** (cores primárias/secundárias/neutras/semânticas, tipografia, espaçamento, raios, sombras, motion, z-index, tokens de componente) de `src/main/resources/static/css/app.css` (deletado) para `src/main/frontend/css/app.css`, onde o Tailwind v4 expande a at-rule em build time para custom properties em `:root` — resolvendo a regressão visual da US-001 (var(--color-*) que resolviam para `initial` porque o Play CDN v3 não processa `@theme`).
+- CSS literal pós-`@theme` (.btn, .btn-primary, .input-field, .input-group--error, .cadastro-form__*, .card, .brand-*, .avatar-initial, etc.) copiado **verbatim** do antigo `static/css/app.css` — sem alteração de valores, preservando rastreabilidade a `doc/UX/01-design-tokens.md §10` e `doc/UX/02-componentes-base.md §9`.
+- `tailwind.config.js` mínimo (apenas `content: ["./src/main/resources/templates/**/*.html"]`) garante que as utilitárias Tailwind referenciadas inline no markup (`min-h-screen flex flex-col bg-white text-slate-900 antialiased container mx-auto px-4 py-6`) continuam sendo geradas no CSS final.
+- `Dockerfile` ajustado para `COPY package.json package-lock.json tailwind.config.js ./` antes de `COPY src ./src` — o `npm ci` no estágio de build encontra o lockfile sem invalidar a camada de `dependency:go-offline`.
+- `.gitignore` e `.dockerignore` atualizados para ignorar `/node/` e `/node_modules/` (geradas em build time); `package-lock.json` permanece **versionado** (fonte da verdade do `npm ci`).
+- README — seção "Tailwind CSS" reescrita como "Build de CSS", documentando que não há passo manual: `./mvnw clean package` orquestra tudo.
+- Cobertura de testes: **141/141 verdes** (69 unit + 72 integration), partindo de 132 antes do QA. TDD seguido: 6 testes da seção "Ordem TDD" do plano implementados antes da produção (`StaticAssetsCssIT`: endpoint 200, tokens em `:root`, ausência de `@theme` cru, ausência de `cdn.tailwindcss`, preservação do `<link>` para `/css/app.css`, sobrevivência das classes do design system). QA estendeu com 9 cenários estruturais adicionais em `StaticAssetsCssCoverageIT` (utilitárias inline, variação de rotas públicas via `@ParameterizedTest`, `/verificar-email` autenticada via `@WithMockUser`, cap de tamanho do CSS, contrato de minificação, classes do design system referenciadas além das já cobertas, tokens semânticos consumidos pelo CSS literal). Nenhum teste de cor de pixel, fonte, layout ou microcopy — apenas contrato estrutural do CSS gerado.
+
+### Impacto
+- **Toolchain:** primeira introdução de Node no projeto. Isolada em `${project.basedir}/node/` — não afeta Node global do dev. `npm ci` é determinístico a partir do lockfile (1.096 linhas).
+- **Build time:** primeira execução baixa ~30 MB de Node + ~80 MB de `node_modules/` (`@tailwindcss/cli@^4.0.0` + `tailwindcss@^4.0.0` + transitivas). Execuções seguintes usam o cache local; CI/CD pode estender o cache em chore futura (sem alteração do workflow nesta task — escopo respeitado).
+- **Dependências novas no `pom.xml`:** `frontend-maven-plugin:1.15.1` (build-time apenas; não vira artefato de runtime).
+- **Migrations Flyway:** nenhuma. Esta chore é exclusivamente toolchain de frontend.
+- **Arquivos novos:**
+  - `package.json` (manifesto npm — `tailwindcss@^4.0.0`, `@tailwindcss/cli@^4.0.0`, script `build:css`).
+  - `package-lock.json` (lockfile determinístico).
+  - `tailwind.config.js` (config mínimo, `content` apontando para templates).
+  - `src/main/frontend/css/app.css` (input do Tailwind — bloco `@theme` + CSS literal migrado).
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsCssIT.java` (6 testes do Codificador — Ordem TDD).
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsCssCoverageIT.java` (9 testes adicionais do QA — cobertura estrutural estendida).
+- **Arquivos editados:**
+  - `pom.xml` (declaração e execuções do `frontend-maven-plugin`).
+  - `Dockerfile` (`COPY package.json package-lock.json tailwind.config.js ./`).
+  - `.gitignore` (`/node/`, `/node_modules/`; `.claude/worktrees` removido inadvertidamente — observação registrada na revisão, funcionalmente inerte).
+  - `.dockerignore` (`node/`, `node_modules/`).
+  - `README.md` (seção "Tailwind CSS" → "Build de CSS").
+  - `src/main/resources/templates/layout/base.html` (remoção do `<script src="https://cdn.tailwindcss.com">`).
+- **Arquivos removidos:**
+  - `src/main/resources/static/css/app.css` (o CSS agora é gerado em `target/classes/static/css/app.css` em build time).
+- **Efeitos colaterais:**
+  - Servir `/css/app.css` agora depende de `process-resources` ter rodado (`./mvnw test`, `verify`, `package` cobrem isso; `./mvnw -DskipFrontend` *não* é uma opção configurada — se for desejado pular o frontend em rodadas rápidas, é nova chore).
+  - Gap visual da US-001 (botões sem coral, inputs sem borda) provocado pelo `@theme` não-expandido **está resolvido**: os tokens agora chegam a `:root` como custom properties reais.
+
+### Como testar
+1. A partir do worktree (`/Users/dionia.oliveira/sources/atrilha/.claude/worktrees/agent-a3625b303d18ce1be`), rodar `./mvnw clean verify` — **BUILD SUCCESS**, 141 testes verdes (69 unit + 72 integration), 0 warnings (`failOnWarning=true` mantido).
+2. Conferir o CSS gerado: `grep -c '@theme' target/classes/static/css/app.css` deve retornar **0** (expansão Tailwind v4 ocorreu); `grep -oE -- '--color-primary-500:[^;]*' target/classes/static/css/app.css` deve retornar `--color-primary-500:#f25c54`; tamanho ~23 KB.
+3. Empacotar e inspecionar o jar: `./mvnw clean package -DskipTests` e `jar tf target/atrilha-0.0.1.jar | grep app.css` deve listar `BOOT-INF/classes/static/css/app.css`.
+4. Subir local (`./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`), abrir DevTools em `/`, `/comecar`, `/cadastro/adolescente`: console **não emite** mais `cdn.tailwindcss.com should not be used in production`. `GET /css/app.css` em runtime retorna 200 `text/css` com `:root{...}` minificado.
+5. Conferir o template servido (`curl -sf http://localhost:8080/comecar | grep -E 'cdn\.tailwindcss|tailwindcss\.com'`) — não deve retornar nada.
+
+### Gaps visuais / manuais (declarados pelo QA + Revisor)
+- **Build Docker não foi exercitado** nesta revisão (apenas `./mvnw` na host). O Dockerfile foi modificado para copiar `package*.json` e `tailwind.config.js` antes de `COPY src ./src`, mas validar `docker compose --profile full up --build` em volume PostgreSQL limpo fica como inspeção manual recomendada antes do merge — o pipeline CI/CD da chore-008 cobre o build linux/amd64.
+- **Inspeção visual pós-build não foi feita** (não é teste automatizável neste projeto: testes de cor de pixel/microcopy/layout são fora de escopo do QA). Recomenda-se ao humano que, antes do merge, abra `/comecar`, `/cadastro/adolescente` e `/verificar-email` no navegador e confirme paridade com o spec do design system (`doc/UX/02-componentes-base.md`): botão coral `#F25C54`, inputs com borda visível e foco, espaçamento coerente.
+- **Cache de CI/CD para `~/.npm` e `node/`** não foi adicionado ao workflow `.github/workflows/*` — escopo da chore foi estritamente Tailwind. Pode virar chore futura (sugestão: CHORE-CI-001).
+- **CDNs de HTMX/Alpine.js/Lottie permanecem** em `base.html` por decisão explícita do plano (fora de escopo). Migração para self-hosted via mesmo pipeline npm é candidata a chore futura.
+- **`.gitignore` linha 50 de main (`.claude/worktrees`) foi removida inadvertidamente** nesta entrega. Funcionalmente inerte (`.claude/` continua sendo escondido por outro mecanismo via `git status --ignored`), mas é desvio menor do plano. Registrado como observação não-bloqueante.
