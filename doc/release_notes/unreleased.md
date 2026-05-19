@@ -89,3 +89,62 @@
 - Neutral renumerada para escala 0→1000 (Issue exige), preservando os hex declarados na chore-ux-001 §2.5 nas paradas correspondentes (50/100/300/500/700/900) e interpolando 0/200/400/600/800/1000.
 - `--font-mono` definida apenas com stack do sistema (`ui-monospace, SFMono-Regular, …`) — nenhuma fonte mono é importada, preservando o budget de ~100KB tipográfico declarado na chore-ux-001 §4.1. `font-variant-numeric: tabular-nums` cobre o caso de streak sem precisar de fonte mono.
 - Tokens de componente (`--button-primary-bg`, `--card-radius`, etc.) deliberadamente **fora** desta task — nascem na chore-ux-003 junto com cada componente, conforme passo 13 da Issue.
+
+---
+
+## CHORE-UX-003 · Componentes base — botão, input, card, modal, header, navegação, badge, toast (#22)
+
+**Tipo:** Chore (UX, Sprint 2, marco M2)
+**Issue:** [#22](https://github.com/dionialves/atrilha/issues/22)
+**Branch:** chore/22-componentes-base
+**Data de conclusão:** 2026-05-18
+
+### O que foi feito
+
+- Criado `doc/UX/02-componentes-base.md` (1228 linhas, 13 seções) com o **catálogo dos 8 componentes-base reutilizáveis** que vão sustentar todas as telas do MVP: **button, input, card, modal/sheet, header, navigation (bottom-nav + nav-link), badge e toast** — cada um com as 8 subseções padronizadas exigidas pela Issue (propósito, anatomia, variantes, estados, comportamento, tokens consumidos, acessibilidade, ilustração ASCII + pseudocódigo Thymeleaf).
+- **Seção 0 — princípios gerais** (mobile-first 320px, touch target ≥44×44 via `--space-11`, foco visível com `--color-focus-ring`, loading HTMX explícito via `htmx-request`, respeito a `prefers-reduced-motion`, pt-BR para usuário e inglês para classes/IDs/fragments).
+- **Button**: 4 variantes (`primary`, `secondary`, `ghost`, `destructive`) × 3 sizes (`sm` 36px restrito, `md` 44px default RNF-A11Y-05, `lg` 52px CTA mobile) + modificador `icon-only` 44×44 com `aria-label` obrigatório; estado `loading` preserva label (anti-CLS) e bloqueia clique via `aria-busy="true"`.
+- **Input**: 4 variantes (`text`, `email`, `password`, `textarea`), label vinculada por `for`/`id` sempre, `aria-invalid`/`aria-describedby` para erro, contador Alpine para textarea US-024 (limite 1000 chars, vira danger quando ≤50 restantes), validação real no servidor via HTMX swap.
+- **Card**: 3 variantes (`flat`, `raised`, `interactive`), padding `--space-5` default ou `--space-4` em densidade alta; `card--interactive` renderiza como `<a>` ou `<button>` (nunca `<div role=button>`), com hover/focus dedicados e skeleton via `aria-busy`/`aria-live="polite"`.
+- **Modal / Sheet**: bottom sheet em mobile (`max-height: 80vh`), modal centrado em tablet/desktop (`max-width: 32rem`); variantes `default`/`dismissible`/`critical`; **acessibilidade obrigatória**: `role="dialog"` + `aria-modal="true"` + `aria-labelledby`, focus trap via Alpine `x-trap.inert.noscroll`, `Esc` sempre fecha (inclusive em `critical`), foco restaurado ao botão de origem; backdrop `rgba(26, 22, 20, 0.6)` derivado de `--color-neutral-900`.
+- **Header (topbar)**: variantes `compact` (~56px) e `expanded` (~80px com botão voltar + título + subtítulo); sticky com sombra dinâmica via Alpine listener (`scrollY > 8px`); logo é `<a aria-label="atrilha — página inicial">` referenciando chore-ux-001 §3.
+- **Navigation**: `bottom-nav` mobile com 3–5 itens (`<nav aria-label="Principal">`), cada `nav-link` com ícone SVG stroke 24×24 + label `--text-xs`, **estado ativo com redundância de canal** (cor + peso tipográfico + `aria-current="page"`), `padding-bottom: env(safe-area-inset-bottom)` para iOS; desktop por default oculta o bottom-nav e migra itens para o header expanded (decisão conservadora: uma superfície de navegação por vez).
+- **Badge**: 6 variantes (`neutral`, `primary`, `success`, `warning`, `danger`, `info`) × 2 sizes (`sm` 18px, `md` 24px) + variante `dot` 8×8 com `aria-label` obrigatório; consumidos por estado de nó da trilha ("HOJE", "Concluído", "Bloqueado"), marcador "Privado" do campo de reflexão (US-024) e contador de notificações no header.
+- **Toast**: 4 variantes com **distinção ARIA correta** — `aria-live="polite"` para `success`/`info` (não interrompe leitor) vs `role="alert"` para `warning`/`error` (interrompe e anuncia imediatamente); auto-dismiss 4s para success/info, 6s para warning/error (botão close obrigatório nessas duas), foco **não muda** automaticamente; pattern HTMX via header `HX-Trigger: {"toast": {...}}` consumido por listener global Alpine em `toast-region` (`<body @toast.window=…>`); **posição mobile: topo abaixo do header** (decisão conservadora — fora da zona do polegar, não compete com bottom-nav, padrão Duolingo/Threads).
+- **Seção 9 — Tokens de componente**: **38 tokens novos** no padrão `--<componente>-<propriedade>[-<modificador>]` (excede o mínimo de 12 da Issue), **todos referenciando primitivos/semânticos** já declarados em `doc/UX/01-design-tokens.md` — `--button-primary-bg = var(--color-primary)`, `--card-radius = var(--radius-lg)`, `--modal-backdrop = rgba(26,22,20,0.6)`, etc. **Nenhum hex novo** foi introduzido nesta task.
+- **Seção 10 — Estilo de implementação Thymeleaf**: contrato para o Codificador (1 fragment por componente em `src/main/resources/templates/components/<nome>.html`, parâmetros com default via Elvis `${param ?: 'valor'}`, variantes via classes Tailwind `th:classappend`, HTMX para servidor + Alpine para estado client, sem JS inline em fragments, CSS no stylesheet principal). **Implementação dos fragments é trabalho da primeira US que consumir cada componente, não desta task.**
+- **Seção 11 — Decisões implícitas registradas**: 10 pontos onde a Issue deixou margem (handle de arrastar OFF, toast no topo, bottom-nav oculto em desktop, sem animação de troca de aba, sem foco automático em toast, sem token novo para 56px do header, slots em aberto, Storybook fora do MVP, close opcional em success/info, dark theme fora do escopo). Cada decisão é reversível sem mexer em tokens.
+
+### Impacto
+
+- Arquivos novos: `doc/UX/02-componentes-base.md`.
+- Arquivos editados: `doc/changelog.md`, `doc/release_notes/unreleased.md` (este).
+- Nenhuma alteração em código Java, migrations, templates, `src/**`, `static`, `properties` ou `pom.xml`. Os fragments Thymeleaf em `src/main/resources/templates/components/*.html` serão criados pelo Codificador na primeira US que consumir cada componente.
+- **Destrava:** chore-ux-004 (trilha — usa card, badge, header), chore-ux-005 (sessão — usa card, button, input), chore-ux-006 (painel pais — usa card, badge, header) e chore-ux-008.
+
+### Como testar
+
+1. Abrir `doc/UX/02-componentes-base.md` e confirmar presença dos 8 componentes numerados 1..8 + Seção 0 (princípios gerais) + Seções 9..13 (tokens de componente, estilo Thymeleaf, decisões implícitas, pendências, referências cruzadas).
+2. Para cada componente, verificar as 8 subseções padronizadas (propósito, anatomia, variantes, estados, comportamento, tokens consumidos, acessibilidade, ilustração + pseudocódigo).
+3. Auditar critérios da Issue #22: Button cobre 4 variantes × 3 sizes com touch ≥44×44 em md/lg (§1.3); Modal documenta focus trap + `Esc` + `role="dialog"` + `aria-modal="true"` (§4.7); Toast diferencia `aria-live="polite"` (success/info) vs `role="alert"` (warning/error) (§8.3); Bottom-nav documenta `aria-current="page"` e `<nav aria-label="Principal">` (§6.5, §6.7); tabela de tokens de componente (§9) lista ≥12 tokens (entregues **38**) referenciando primitivos/semânticos da chore-ux-002.
+4. Cruzar tokens citados (`--color-primary-hover`, `--color-focus-ring`, `--shadow-focus`, `--radius-xl`, `--space-11`, `--duration-fast`, `--z-modal`, `--z-toast`, `--tracking-overline`, pares `*-100`/`*-700` de success/warning/danger/info) com `doc/UX/01-design-tokens.md` — todos existem.
+5. Confirmar consistência com `doc/UX/00-identidade-visual.md`: redundância de canal no estado ativo (§5.3 da identidade → §6.4 dos componentes), CTA primário full-width em mobile (§5.2 → button `lg`), cor de marca escassa (§5.6 → §0 princípio 7).
+6. Verificar que o documento declara explicitamente, em §0.9, §10 e §12, que **implementação dos fragments Thymeleaf não é desta task** — fica para a primeira US que consumir cada componente.
+
+### Decisões registradas (Seção 11 do doc)
+
+- **Handle de arrastar no bottom sheet:** OFF por padrão (exigiria biblioteca de gesto fora do ADR-011).
+- **Posição do toast em mobile:** topo abaixo do header (não compete com bottom-nav, fora da zona do polegar).
+- **Navegação em desktop:** bottom-nav oculto; itens migram para header expanded (uma superfície de navegação por vez).
+- **`--space-14` (header compact 56px):** sem token primitivo novo — Tailwind v4 gera `h-14` a partir do `--spacing` raiz.
+- **Slots em Card/Modal:** padrão Thymeleaf fica em aberto para a primeira US que consumir (slots via `~{...}` ou `th:fragment` filhos — ambos válidos).
+- **Catálogo visual (Storybook):** fora do MVP — registrado como recomendação futura.
+- **Dark theme em componentes:** fora do escopo desta task; plano já documentado em chore-ux-002 §11.2.
+
+### Pendências e o que NÃO está aqui (Seção 12 do doc)
+
+- **Implementação dos fragments Thymeleaf** (`templates/components/*.html`) — fica para o Codificador na primeira US que consumir cada componente.
+- **CSS de produção** — Codificador escreve consumindo tokens da chore-ux-002 + tokens de componente da §9 deste doc.
+- **Componentes adicionais que vão emergir**: progress bar (US-023), heatmap cell (US-041), chip removível (filtros), avatar com fallback iniciais, tooltip — nascem com cada US que precisar.
+- **Microcopy final** dos componentes (labels, mensagens) — definida em cada US específica.
+- **Internacionalização** — copy em pt-BR direto nos templates por enquanto; i18n fica para v2.
