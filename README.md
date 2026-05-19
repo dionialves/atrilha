@@ -48,10 +48,12 @@ docker compose --profile full up --build
 
 ## Frontend
 
-### Tailwind CSS
+### Build de CSS
 
-O projeto usa o **Tailwind Play CDN** temporariamente (chore-003 / Sprint 1) para destravar o desenvolvimento
-sem introduzir Node.js ou Tailwind CLI como dependencia de build. Isso e intencional e documentado.
+O CSS (incluindo o `@theme` Tailwind v4 com os tokens do design system) e compilado em build time
+pelo `frontend-maven-plugin`. Nao ha passo manual: `./mvnw clean package` baixa Node localmente
+em `node/`, instala dependencias em `node_modules/` (via `npm ci` deterministico a partir do
+`package-lock.json`) e gera `target/classes/static/css/app.css` antes de empacotar o jar.
 
-A Sprint 2 (ux-002) substituira o CDN pelo Tailwind standalone CLI ou integrado ao build Maven,
-junto com a identidade visual definitiva.
+Fonte do CSS: `src/main/frontend/css/app.css`. Saida: `target/classes/static/css/app.css`
+(servida como `/css/app.css` em runtime pelo `ResourceHandler` do Spring Boot).

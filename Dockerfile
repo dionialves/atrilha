@@ -5,6 +5,9 @@ WORKDIR /workspace
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 RUN chmod +x mvnw && ./mvnw -B -q dependency:go-offline
+# Manifestos do frontend (Tailwind v4 via frontend-maven-plugin): pre-copiados
+# para que o `npm ci` da fase generate-resources tenha o lockfile disponivel.
+COPY package.json package-lock.json tailwind.config.js ./
 COPY src ./src
 RUN ./mvnw -B -q -DskipTests package \
     && cp target/*.jar /workspace/app.jar
