@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Confirma teu e-mail no atrilha</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+               background-color: #f9fafb; margin: 0; padding: 0; color: #1f2937; }
+        .container { max-width: 480px; margin: 24px auto; background: #ffffff;
+                     border-radius: 12px; padding: 32px; }
+        h1 { font-size: 20px; margin-top: 0; }
+        .cta { display: inline-block; background-color: #ef5b3b; color: #ffffff;
+               padding: 12px 24px; border-radius: 8px; text-decoration: none;
+               font-weight: 600; margin: 16px 0; }
+        .footer { text-align: center; font-size: 12px; color: #6b7280; margin-top: 24px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>atrilha</h1>
+        <p>Oi, <strong th:text="${nickname}">amiga</strong></p>
+        <p>Tu te cadastraste no atrilha agora há pouco. Pra confirmar que esse e-mail é teu, clica no botão:</p>
+        <p>
+            <a th:href="${verificationUrl}" class="cta">Confirmar meu e-mail</a>
+        </p>
+        <p>Esse link vale por 24 horas. Se passou disso, é só pedir um novo lá no app.</p>
+        <p>Não foi tu? Ignora essa mensagem — sem o clique, nada acontece.</p>
+        <div class="footer">
+            atrilha · trilha diária da Lição da Escola Sabatina<br/>
+            Se precisar de algo, responde esse e-mail.
+        </div>
+    </div>
+</body>
+</html>

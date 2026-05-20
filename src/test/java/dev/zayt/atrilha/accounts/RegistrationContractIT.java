@@ -7,8 +7,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.postgresql.ds.PGSimpleDataSource;
+import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -61,6 +63,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.flyway.locations=classpath:db/migration",
         "spring.flyway.baseline-on-migrate=false"
 })
+@Import(RecordingEmailSenderTestConfig.class)
 @ActiveProfiles("test")
 @DirtiesContext
 class RegistrationContractIT {

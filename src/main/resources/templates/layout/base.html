@@ -17,6 +17,7 @@
 </head>
 <body class="min-h-screen flex flex-col bg-white text-slate-900 antialiased">
     <header th:replace="~{layout/fragments/header :: header}"></header>
+    <div th:replace="~{layout/fragments/email-verification-banner :: banner}"></div>
     <main class="flex-1 container mx-auto px-4 py-6">
         <th:block layout:fragment="content"></th:block>
     </main>

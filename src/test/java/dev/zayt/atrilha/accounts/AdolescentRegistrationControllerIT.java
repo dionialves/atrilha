@@ -2,8 +2,10 @@ package dev.zayt.atrilha.accounts;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -44,6 +46,7 @@ import static org.hamcrest.Matchers.containsString;
         "spring.flyway.locations=classpath:db/migration",
         "spring.flyway.baseline-on-migrate=false"
 })
+@Import(RecordingEmailSenderTestConfig.class)
 @ActiveProfiles("test")
 @DirtiesContext
 class AdolescentRegistrationControllerIT {

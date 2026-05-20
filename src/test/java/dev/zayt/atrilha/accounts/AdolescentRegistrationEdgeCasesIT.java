@@ -2,10 +2,12 @@ package dev.zayt.atrilha.accounts;
 
 import dev.zayt.atrilha.auth.AccountRole;
 import dev.zayt.atrilha.auth.AuthenticatedAccount;
+import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.context.SecurityContext;
@@ -54,6 +56,7 @@ import static org.hamcrest.Matchers.not;
         "spring.flyway.locations=classpath:db/migration",
         "spring.flyway.baseline-on-migrate=false"
 })
+@Import(RecordingEmailSenderTestConfig.class)
 @ActiveProfiles("test")
 @DirtiesContext
 class AdolescentRegistrationEdgeCasesIT {

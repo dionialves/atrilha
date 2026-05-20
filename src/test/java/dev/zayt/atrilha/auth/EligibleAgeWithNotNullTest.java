@@ -42,7 +42,21 @@ class EligibleAgeWithNotNullTest {
 
     static final LocalDate TODAY = LocalDate.of(2026, 5, 19);
 
-    @org.springframework.boot.autoconfigure.SpringBootApplication
+    // Minimal Spring Boot context — apenas o validador. Sem JPA/Mail e sem
+    // pull do EmailVerificationService (que vive no mesmo pacote).
+    @org.springframework.boot.autoconfigure.SpringBootApplication(
+            exclude = {
+                    org.springframework.boot.mail.autoconfigure.MailSenderAutoConfiguration.class,
+                    org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration.class,
+                    org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration.class,
+                    org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration.class
+            })
+    @org.springframework.context.annotation.ComponentScan(
+            basePackages = "dev.zayt.atrilha.auth",
+            useDefaultFilters = false,
+            includeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
+                    type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
+                    classes = AgeEligibilityChecker.class))
     static class TestApp {
         @Bean
         @Primary
