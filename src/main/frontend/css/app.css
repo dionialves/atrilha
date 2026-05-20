@@ -357,6 +357,17 @@ a { color: var(--color-text-link); }
   display: block;
   padding: var(--card-padding);
 }
+/* Variante default da spec UX (chore-ux-003 §3.3): fundo de superfície,
+ * borda divisória, sem sombra. Visualmente equivalente a `.card` base —
+ * declarada explicitamente para honrar o contrato CSS<->spec<->markup
+ * (card--${variant ?: 'flat'}, §3.8) e servir como ponto de extensão único
+ * quando a variante divergir da base (ex.: borda atenuada em densidade alta).
+ *
+ * Nota: declaramos `display: block` (já herdado de `.card`) para impedir que
+ * o minificador do Tailwind v4 descarte o seletor vazio durante o build.
+ * Não redeclaramos background, border nem border-radius — o contrato da
+ * spec §3.3 é exatamente herdar essas propriedades de `.card`. */
+.card--flat  { display: block; }
 .card--dense  { padding: var(--card-padding-dense); }
 .card--raised { box-shadow: var(--card-shadow-raised); border-color: transparent; }
 .card--interactive {
