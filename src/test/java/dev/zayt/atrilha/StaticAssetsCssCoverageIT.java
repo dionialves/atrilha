@@ -28,8 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Foco em:
  * <ul>
  *   <li>Sobrevivência das classes utilitárias Tailwind inline ao purge
- *       (content-based scan do {@code tailwind.config.js}). Se essas
- *       classes sumirem, o layout do {@code base.html} quebra
+ *       (content-based scan via diretiva {@code @source} no input CSS).
+ *       Se essas classes sumirem, o layout do {@code base.html} quebra
  *       silenciosamente — contrato estrutural.</li>
  *   <li>Variação de rotas: o saneamento do Play CDN e a presença do link
  *       para {@code /css/app.css} valem para <em>todas</em> as telas
@@ -66,8 +66,8 @@ class StaticAssetsCssCoverageIT {
     // ============================================================
     // A) Classes utilitárias Tailwind inline no markup sobrevivem ao purge.
     //
-    // O `content` em tailwind.config.js escaneia
-    // src/main/resources/templates/**/*.html. Se alguém quebrar essa
+    // A diretiva `@source` em src/main/frontend/css/app.css escaneia
+    // src/main/resources/templates recursivamente. Se alguém quebrar essa
     // configuração, classes como .min-h-screen e .container deixam de
     // ser geradas, e o layout em base.html vira fluido sem container.
     // Isso é contrato estrutural — não é teste de cor.
@@ -186,8 +186,8 @@ class StaticAssetsCssCoverageIT {
     }
 
     // ============================================================
-    // D) Cap de tamanho — guardrail contra alguém abrir o `content`
-    // do tailwind.config.js para algo como "**/*" e o CSS explodir.
+    // D) Cap de tamanho — guardrail contra alguém abrir o escopo do
+    // CSS para algo como "**/*" (alterar @source no input CSS) e o CSS explodir.
     //
     // CSS atual (minificado) ~23KB. 200KB é folga generosa, mas pega
     // crescimento de 10x — o suficiente para sinalizar que algo
@@ -201,7 +201,7 @@ class StaticAssetsCssCoverageIT {
 
         assertThat(css.length())
                 .as("CSS servido deve ficar abaixo de 200KB — acima disso provavelmente "
-                        + "o `content` em tailwind.config.js está pegando arquivos demais")
+                        + "o `@source` no input CSS está pegando arquivos demais")
                 .isLessThan(200_000);
         assertThat(css.length())
                 .as("CSS servido deve ser não-trivial — abaixo de 1KB algo no build quebrou")
@@ -349,6 +349,158 @@ class StaticAssetsCssCoverageIT {
         assertThat(css)
                 .as("Token --font-display deve estar declarado (consumido por h1-h2 e .avatar-initial)")
                 .contains("--font-display");
+    }
+
+    // ============================================================
+    // H) Higiene de config: tailwind.config.js foi extinto pela
+    //    chore-ux-010 — não pode reaparecer no repositório.
+    //
+    //    Nota: este teste depende do working directory do `mvn test`
+    //    ser a raiz do projeto. O Maven garante isso por padrão
+    //    (${project.basedir}). Em execução via IDE com cwd diferente
+    //    o teste pode falhar por motivo errado.
+    // ============================================================
+
+    @Test
+    void tailwindConfigJsIsAbsentFromProject() {
+        assertThat(java.nio.file.Files.exists(java.nio.file.Path.of("tailwind.config.js")))
+                .as("tailwind.config.js foi removido em chore-ux-010; escopo de scan vive em @source no input CSS")
+                .isFalse();
+    }
+
+    // ============================================================
+    // I) Input CSS declara @source explícito — Tailwind v4 CSS-first.
+    // ============================================================
+
+    @Test
+    void tailwindInputCssDeclaresExplicitSource() throws java.io.IOException {
+        String inputCss = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/frontend/css/app.css"));
+
+        assertThat(inputCss)
+                .as("input CSS deve preservar @import \"tailwindcss\";")
+                .contains("@import \"tailwindcss\"");
+
+        assertThat(inputCss)
+                .as("input CSS deve declarar @source apontando para resources/templates "
+                        + "(caminho relativo ao próprio input CSS)")
+                .containsPattern("@source\\s+[\"']\\.\\./resources/templates[\"']");
+    }
+
+    // ============================================================
+    // J) Cap apertado: com @source restrito, CSS não pode crescer
+    //    além de ~50KB. Acima disso indica que algo ampliou o scope
+    //    (ex.: alguém removeu @source e voltou para auto-detection).
+    //    O cap de 200KB do método (D) é o cap de catástrofe; este é
+    //    o cap de regressão de configuração.
+    // ============================================================
+
+    @Test
+    void cssOutputDoesNotIncludeNodeModulesArtifacts() throws Exception {
+        String css = fetchCss();
+
+        assertThat(css.length())
+                .as("CSS com @source restrito a templates deve ficar abaixo de 50KB "
+                        + "(atual ~23KB). Acima disso indica que o scan está pegando "
+                        + "arquivos fora do diretório de templates.")
+                .isLessThan(50_000);
+    }
+
+    // ============================================================
+    // K) (QA) @source declara um diretório que existe no repositório.
+    //
+    //    Extensão de (I): além do regex casar, o caminho-alvo precisa
+    //    existir como diretório real. Sem isso, o build do Tailwind
+    //    silenciosamente gera CSS vazio (zero classes utilitárias) e
+    //    o cap inferior de (D) — > 1KB — não pega o caso de "scope
+    //    aponta para diretório errado" (porque o CSS literal sozinho
+    //    já passa de 1KB). Aqui validamos a integridade do contrato.
+    //
+    //    Plano QA da issue #48, cenário 1.
+    // ============================================================
+
+    @Test
+    void tailwindSourceDirectoryTargetExistsOnDisk() {
+        java.nio.file.Path target = java.nio.file.Path.of("src/main/resources/templates");
+
+        assertThat(java.nio.file.Files.exists(target))
+                .as("@source aponta para src/main/resources/templates — diretório precisa existir")
+                .isTrue();
+        assertThat(java.nio.file.Files.isDirectory(target))
+                .as("src/main/resources/templates precisa ser diretório (não arquivo) para o scan recursivo do Tailwind v4")
+                .isTrue();
+    }
+
+    // ============================================================
+    // L) (QA) Input CSS NÃO declara @config — migração v3→v4 completa.
+    //
+    //    A diretiva @config "./tailwind.config.js" era a opção
+    //    descartada na decisão arquitetural (mistura paradigmas v3+v4
+    //    e mantém arquivo de config). Se alguém adicionar @config no
+    //    CSS no futuro, a chore-ux-010 está parcialmente regredida:
+    //    o tailwind.config.js voltaria a ser exigido em build time.
+    //    Este teste protege o "CSS-first puro" como contrato.
+    //
+    //    Plano QA da issue #48, cenário 2.
+    // ============================================================
+
+    @Test
+    void tailwindInputCssDoesNotDeclareAtConfigDirective() throws java.io.IOException {
+        String inputCss = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/frontend/css/app.css"));
+
+        assertThat(inputCss)
+                .as("input CSS não pode declarar @config — Tailwind v4 CSS-first puro (chore-ux-010); "
+                        + "se @config voltar, o tailwind.config.js volta a ser exigido em build time")
+                .doesNotContain("@config");
+    }
+
+    // ============================================================
+    // M) (QA) Nenhum @source declarado aponta para node_modules/target.
+    //
+    //    @source restritivo é o coração da chore-ux-010. Se alguém
+    //    adicionar @source apontando para node_modules/ ou target/,
+    //    o scan volta a varrer milhares de arquivos (o problema
+    //    original que motivou esta chore). O cap em (J) detecta o
+    //    sintoma (CSS gigante), mas só após o build; este teste
+    //    falha imediatamente no input.
+    //
+    //    Plano QA da issue #48, cenário 3.
+    // ============================================================
+
+    @Test
+    void tailwindInputCssHasNoScopeIntoNodeModulesOrBuildOutputs() throws java.io.IOException {
+        String inputCss = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/frontend/css/app.css"));
+
+        assertThat(inputCss)
+                .as("input CSS não pode referenciar node_modules — escopo deve ficar restrito a templates")
+                .doesNotContain("node_modules");
+        assertThat(inputCss)
+                .as("input CSS não pode referenciar /target — escopo deve ficar restrito a templates")
+                .doesNotContain("/target");
+    }
+
+    // ============================================================
+    // N) (QA) Cobertura cruzada — /cadastro/responsavel também
+    //    permanece livre do Play CDN e mantém o link para /css/app.css.
+    //
+    //    Rota pública servida por GuardianRegistrationStubController,
+    //    não coberta pelo ValueSource do método (B). Garante que o
+    //    saneamento do CDN e a entrega do CSS empacotado valem
+    //    universalmente para todas as rotas servidas pelo layout
+    //    base.html.
+    //
+    //    Plano QA da issue #48, cenário 4.
+    // ============================================================
+
+    @Test
+    void guardianRegistrationRouteHasNoTailwindPlayCdnScript() throws Exception {
+        String html = mvc.perform(get("/cadastro/responsavel"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertCdnFreeAndAppCssLinked(html, "/cadastro/responsavel");
     }
 
     // ============================================================

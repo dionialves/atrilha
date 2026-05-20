@@ -378,3 +378,47 @@
 - **Cache do HTML em CDN não foi alterado** — Spring Boot já não emite `Cache-Control` longo para responses dinâmicas Thymeleaf (default). O `infra/nginx/atrilha.app.conf` também não cacheia HTML. Aceito como invariante.
 - **Comentário em `application-prod.properties` linha 9** ainda menciona `/css/app.<hash>.css` (ponto) por inércia do plano v1; o formato real é com hífen (`/css/app-<hash>.css`). Não-bloqueante — pode ser polido no próximo PUBLISH ou em chore futura.
 - **Cenário 3 do QA (GET com hash inválido)** usa assertion adaptativa (`isIn(200, 404)`) por decisão arquitetural: o contrato exato do Spring nesse caso pode mudar entre versões do framework. O que importa para a funcionalidade — "GET na URL hashed real funciona depois de uma tentativa quebrada" — é validado e protegido.
+
+## CHORE · Mover scope do Tailwind v4 do `tailwind.config.js` para `@source` no CSS (#48)
+
+**Tipo:** Chore técnica (Sprint 3 — dívida do pipeline Tailwind introduzido pelo PR #44 / chore-ux-009)
+**Issue:** [#48](https://github.com/dionialves/atrilha/issues/48)
+**Branch:** `chore/48-tailwind-source-css`
+**Data de conclusão:** 2026-05-20
+
+### O que foi feito
+- Eliminado `tailwind.config.js` da raiz do repositório (`git rm`) — não-carregado pelo Tailwind v4 (config CSS-first é o paradigma da v4) e era **configuração morta**: o `content: ["./src/main/resources/templates/**/*.html"]` declarado lá nunca era honrado porque o `app.css` não importava o config via `@config`. O Tailwind caía em **auto-detection**, varrendo o cwd com base no `.gitignore`.
+- Migrado o escopo de scan para a diretiva **`@source "../resources/templates"`** declarada inline em `src/main/frontend/css/app.css:24`, logo após `@import "tailwindcss"`. Caminho é relativo ao próprio arquivo CSS de entrada (sintaxe documentada do Tailwind v4) — portável entre cwd local (`/Users/.../atrilha`) e container Docker (`/workspace`), sem depender de `.gitignore`.
+- Resolve dois sintomas com uma única mudança: (1) configuração morta dá falsa sensação de escopo restrito que não existe; (2) `.gitignore` não vai para dentro do Docker build, então o auto-detection dentro do estágio Maven escaneava `node/` + `node_modules/` (~80MB de JS) inflando build e arriscando classes espúrias no CSS final.
+- `Dockerfile` linha 10 reduzida para `COPY package.json package-lock.json ./` — sem referência ao config removido. Sem mexer em mais nada do Dockerfile; `COPY src ./src` continua trazendo o input CSS, e o `@source` declarado garante escopo determinístico independente de `.gitignore`.
+- Comentários em `StaticAssetsCssCoverageIT.java` que ainda mencionavam `tailwind.config.js` (linhas 31, 69-70, 190 e mensagem do `.as(...)` em 204) foram atualizados para referenciar `@source` no input CSS — nenhum comentário sobrevivente da era pré-chore. As menções remanescentes ao nome do arquivo são **documentais explícitas**: o teste H valida que o arquivo NÃO existe e o teste L explica `@config` como antipadrão.
+- Cobertura de testes: **148/148 verdes** (`failOnWarning=true` mantido). TDD respeitado conforme "Ordem TDD" do plano: 3 testes do Codificador escritos antes da produção em `StaticAssetsCssCoverageIT` (H — `tailwindConfigJsIsAbsentFromProject`, I — `tailwindInputCssDeclaresExplicitSource`, J — `cssOutputDoesNotIncludeNodeModulesArtifacts` com cap apertado de 50 KB sobre o CSS gerado). QA estendeu com 4 cenários do plano (K — diretório-alvo do `@source` existe no disco, L — ausência de `@config` no input CSS, M — `@source` não aponta para `node_modules` ou `/target`, N — cobertura cruzada da rota `/cadastro/responsavel`). Total na classe: 13 testes (6 herdados + 3 Codificador + 4 QA).
+- CSS gerado: ~25 KB (`target/classes/static/css/app.css`) — bem abaixo do cap apertado de 50 KB que protege contra regressão futura de configuração de escopo.
+
+### Impacto
+- **Módulo:** toolchain de frontend (Tailwind v4 / build). Sem código Java de produção alterado.
+- **Migrations Flyway:** nenhuma.
+- **Mudanças no `pom.xml`:** nenhuma — `frontend-maven-plugin` permanece como está.
+- **Arquivos novos:** nenhum (testes H/I/J/K/L/M/N adicionados à classe existente `StaticAssetsCssCoverageIT.java`).
+- **Arquivos editados:**
+  - `src/main/frontend/css/app.css` (+5 linhas: bloco de comentário + `@source "../resources/templates";` após o `@import`).
+  - `Dockerfile` (linha 10: removida menção a `tailwind.config.js`).
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsCssCoverageIT.java` (comentários atualizados + 7 testes novos).
+- **Arquivos removidos:**
+  - `tailwind.config.js` (config morta — substituída pela diretiva `@source` no CSS).
+- **Efeitos colaterais:**
+  - Escopo de scan do Tailwind agora é **determinístico em qualquer ambiente** (local, CI, Docker) — independe de cwd e `.gitignore`.
+  - Tamanho do CSS gerado permanece estável (~25 KB) — não houve regressão visual nem de cobertura. Auto-detection deixou de ser acionado em qualquer cenário.
+
+### Como testar
+1. A partir do worktree (`/Users/dionia.oliveira/sources/atrilha-worktrees/48-tailwind-source`), rodar `./mvnw clean verify` — **BUILD SUCCESS**, 148 testes verdes, 0 warnings.
+2. Conferir que `tailwind.config.js` sumiu: `ls tailwind.config.js 2>&1` (erro esperado) e `git ls-files | grep tailwind.config.js` (vazio).
+3. Conferir o `@source` declarado: `grep -n '@source' src/main/frontend/css/app.css` deve retornar a linha 24 com `"../resources/templates"`.
+4. Conferir tamanho do CSS pós-build: `wc -c target/classes/static/css/app.css` deve retornar ~25 KB (bem abaixo do cap de 50 KB do teste J).
+5. (Opcional) Build Docker: `docker compose --profile full up --build` — confirma que dentro do container o CSS continua sendo gerado em tamanho razoável (a prova real de que o auto-detection deixou de varrer `node_modules/` no Docker).
+
+### Gaps visuais / manuais (declarados pelo QA + Revisor)
+- **Validação dentro do Docker** não foi exercitada nesta revisão (apenas `./mvnw` na host). O Dockerfile foi modificado de forma cirúrgica (remoção de um arquivo da lista de `COPY`); o pipeline CI/CD da chore-008 cobre o build linux/amd64 no merge. Inspeção manual `docker compose --profile full up --build` recomendada se houver dúvida.
+- **Gap consciente do teste J (cap < 50 KB):** o teste valida o **resultado** (CSS pequeno) como proxy de "scope restrito"; não prova diretamente que `node_modules/` não está sendo escaneado **dentro do Docker**. A prova end-to-end exigiria rodar `docker build` dentro de `mvn test`, o que é inviável. O `@source` explícito + a inspeção do `Dockerfile` (sem `tailwind.config.js` na linha `COPY`) cobrem o restante do contrato.
+- **`doc/UX/01-design-tokens.md:7`** menciona `tailwind.config.js` em uma nota sobre Tailwind v4. A referência continua tecnicamente correta (o ponto da nota é "Tailwind v4 não usa `tailwind.config.js` da v3 para tokens, usa `@theme`") — **sem ação requerida** nesta chore (`doc/UX/**` só é editado pelo Designer pela matriz de propriedade). Registrado como observação não-bloqueante.
+- **Recomendação não-bloqueante:** cache de `node/` e `~/.npm` no GitHub Actions pode acelerar builds em CI (chore separada, opcional).

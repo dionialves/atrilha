@@ -18,6 +18,11 @@
 
 @import "tailwindcss";
 
+/* Scope explícito de scan (Tailwind v4 CSS-first). Caminho relativo a este
+ * arquivo CSS de entrada. Substitui o `content: [...]` do antigo
+ * `tailwind.config.js`, removido em chore-ux-010. */
+@source "../resources/templates";
+
 @theme {
   /* ===== CORES — PRIMITIVOS ===== */
   --color-primary-50:  #FFF1F0;

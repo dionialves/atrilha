@@ -12,6 +12,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Chore
 - chore(chore-ux-009): substituir Tailwind Play CDN por build standalone do Tailwind v4 ([#43](https://github.com/dionialves/atrilha/issues/43))
+- chore(chore-ux-010): mover scope do Tailwind v4 do `tailwind.config.js` para `@source` no CSS ([#48](https://github.com/dionialves/atrilha/issues/48))
 
 ### Bug Fixes
 - fix-001 · Corrige cache de CSS em produção via fingerprint ([#49](https://github.com/dionialves/atrilha/issues/49))
