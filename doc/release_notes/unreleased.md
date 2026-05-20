@@ -379,6 +379,7 @@
 - **Comentário em `application-prod.properties` linha 9** ainda menciona `/css/app.<hash>.css` (ponto) por inércia do plano v1; o formato real é com hífen (`/css/app-<hash>.css`). Não-bloqueante — pode ser polido no próximo PUBLISH ou em chore futura.
 - **Cenário 3 do QA (GET com hash inválido)** usa assertion adaptativa (`isIn(200, 404)`) por decisão arquitetural: o contrato exato do Spring nesse caso pode mudar entre versões do framework. O que importa para a funcionalidade — "GET na URL hashed real funciona depois de uma tentativa quebrada" — é validado e protegido.
 
+<<<<<<< chore/48-tailwind-source-css
 ## CHORE · Mover scope do Tailwind v4 do `tailwind.config.js` para `@source` no CSS (#48)
 
 **Tipo:** Chore técnica (Sprint 3 — dívida do pipeline Tailwind introduzido pelo PR #44 / chore-ux-009)
@@ -422,3 +423,45 @@
 - **Gap consciente do teste J (cap < 50 KB):** o teste valida o **resultado** (CSS pequeno) como proxy de "scope restrito"; não prova diretamente que `node_modules/` não está sendo escaneado **dentro do Docker**. A prova end-to-end exigiria rodar `docker build` dentro de `mvn test`, o que é inviável. O `@source` explícito + a inspeção do `Dockerfile` (sem `tailwind.config.js` na linha `COPY`) cobrem o restante do contrato.
 - **`doc/UX/01-design-tokens.md:7`** menciona `tailwind.config.js` em uma nota sobre Tailwind v4. A referência continua tecnicamente correta (o ponto da nota é "Tailwind v4 não usa `tailwind.config.js` da v3 para tokens, usa `@theme`") — **sem ação requerida** nesta chore (`doc/UX/**` só é editado pelo Designer pela matriz de propriedade). Registrado como observação não-bloqueante.
 - **Recomendação não-bloqueante:** cache de `node/` e `~/.npm` no GitHub Actions pode acelerar builds em CI (chore separada, opcional).
+=======
+## FIX · Declara seletor `.card--flat` no CSS conforme spec UX §3.3 (#46)
+
+**Tipo:** Bug Fix (Sprint 3 — débito de design system descoberto na revisão da chore-ux-009)
+**Issue:** [#46](https://github.com/dionialves/atrilha/issues/46)
+**Branch:** `fix/46-card-flat`
+**Data de conclusão:** 2026-05-20
+
+### O que foi feito
+- Reparado o contrato `HTML ↔ spec UX ↔ CSS` em torno da variante default `Card → flat` (`doc/UX/02-componentes-base.md §3.3` e §3.8). Quatro templates já em produção (`verificar-email.html`, `verify-email-resultado.html`, `cadastro/adolescente_bloqueado.html`, `cadastro/responsavel_em_breve.html`) emitem `<article class="card card--flat">`, mas até então **não existia seletor `.card--flat` em `src/main/frontend/css/app.css`**. A spec §3.8 prevê o fragment Thymeleaf `th:fragment="card(variant, dense)"` gerando `card--${variant ?: 'flat'}`, ou seja, o nome `card--flat` é parte do contrato público do design system. Sem declaração no CSS, a UI passava por coincidência (flat coincide visualmente com a base `.card`), mas o contrato ficava implícito e qualquer evolução futura da spec §3.3 (ex.: borda mais sutil em densidade alta) seria aplicada no seletor errado.
+- Adicionada a declaração `.card--flat { display: block; }` em `src/main/frontend/css/app.css` entre `.card` (linhas 353-359) e `.card--dense`, precedida por um bloco de comentário de 9 linhas que cita explicitamente `chore-ux-003 §3.3` + §3.8 e justifica a decisão de **não** redeclarar `background`, `border` nem `border-radius` (a spec §3.3 prescreve herança literal do `.card` base).
+- **Desvio cirúrgico do plano (autorizado e documentado):** o plano original prescrevia bloco vazio `.card--flat { /* herda */ }`. Em RED→GREEN, o Codificador descobriu que o minificador `@tailwindcss/cli@4.x` descarta seletores com bloco vazio durante o build standalone (chore-ux-009 #43), o que faria os 2 testes da Ordem TDD continuarem falhando. Solução: declarar uma propriedade **estritamente no-op visual** — `display: block` já é o valor que `.card` base declara e que qualquer `<article>`/`<div>` consome por default; redeclará-lo em `.card--flat` não altera nada do que o navegador renderiza. A invariante "no-op" foi formalizada pelo QA num teste blocklist explícito (`cardFlatDoesNotRedeclareInheritedBaseProperties`) que extrai o bloco minificado e afirma ausência de `background`, `border:`, `border-radius` e `border-color` — qualquer dev futuro que ampliar o seletor com propriedades de fato divergentes da base será capturado.
+- Cobertura de testes: **232/232 verdes** (86 unit + 146 IT), 0 falhas, 0 skipped, 0 warnings (`failOnWarning=true` mantido). TDD seguido: 2 testes da "Ordem TDD" do plano (`StaticAssetsCssIT#cssDeclaresCardFlatVariantSelector` e `#cssRetainsCardFlatClassNameAcrossPurge`) escritos antes do código de produção, observados em RED, levados a GREEN apenas após a edição do `app.css`. QA estendeu com 3 cenários estruturais em `StaticAssetsCssCoverageIT`: (a) `cssDeclaresCardSiblingVariantSelectors` protege as variantes irmãs (`.card--dense`, `.card--raised`, `.card--interactive`) contra regressão de purge; (b) `cardFlatDoesNotRedeclareInheritedBaseProperties` codifica a invariante "no-op visual" do critério #3 da issue; (c) `guardianStubPageRendersCardFlatVariant` fecha o loop HTML↔CSS via Jsoup parsing de `/cadastro/responsavel` confirmando que o `<article>` ainda emite o par BEM `card card--flat`. Nenhum teste de cor de pixel, fonte, layout ou microcopy — apenas contrato estrutural.
+
+### Impacto
+- **Módulo:** design system / frontend CSS (zero impacto em Java de produção).
+- **Migrations Flyway:** nenhuma.
+- **Mudanças no `pom.xml`:** nenhuma.
+- **Arquivos editados (produção):**
+  - `src/main/frontend/css/app.css` (`+11/-0`: declaração `.card--flat { display: block; }` + comentário de 9 linhas referenciando spec).
+- **Arquivos editados (testes):**
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsCssIT.java` (`+23/-0`: 2 testes da Ordem TDD do Codificador).
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsCssCoverageIT.java` (`+157/-0`: 3 testes adicionais do QA + 2 imports — `Element`, `java.util.regex.{Matcher,Pattern}`).
+- **Arquivos novos:** nenhum.
+- **Arquivos removidos:** nenhum.
+- **Templates intocados (preservação de contrato):** `verificar-email.html`, `verify-email-resultado.html`, `cadastro/adolescente_bloqueado.html`, `cadastro/responsavel_em_breve.html`.
+- **Efeitos colaterais:** zero observável. A regra adicionada é `display: block` que já é o valor herdado/computado; o CSS gerado em `target/classes/static/css/app.css` agora contém literalmente a string `.card--flat{display:block}` (após minificação) — o que o teste `cssRetainsCardFlatClassNameAcrossPurge` valida.
+
+### Como testar
+1. A partir do worktree (`/Users/dionia.oliveira/sources/atrilha-worktrees/46-card-flat`), rodar `./mvnw clean verify` — **BUILD SUCCESS**, 232 testes verdes (86 unit + 146 IT), 0 warnings.
+2. Inspecionar o CSS gerado: `grep -oE -- '\.card--flat[^{]*\{[^}]*\}' target/classes/static/css/app.css` deve retornar `.card--flat{display:block}` (ou variante minificada equivalente).
+3. Confirmar que o seletor não redeclara propriedades proibidas: `grep -oE -- '\.card--flat\{[^}]*\}' target/classes/static/css/app.css | grep -E '(background|border-radius|border-color|border:)'` deve retornar **vazio**.
+4. Subir o app local: `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` (com Postgres local via `docker compose up -d postgres mailpit`).
+5. Abrir `http://localhost:8084/cadastro/responsavel` — DevTools → inspecionar o `<article>` raiz → confirmar que ambas as classes `card` e `card--flat` estão presentes; aba "Computed" deve exibir as mesmas propriedades visuais que `.card` puro (paridade visual exigida pela spec §3.3).
+6. Inspeção dirigida das outras 3 rotas que usam `card card--flat`: `/verificar-email` (autenticada, login antes), `/verify-email?token=00000000-0000-0000-0000-000000000000` (erro inválido), e o estado de bloqueio `/cadastro/adolescente_bloqueado` (alcançável submetendo idade fora da faixa em `/cadastro/adolescente`).
+
+### Gaps visuais / manuais (declarados pelo QA + Revisor)
+- **Sem regressão visual esperada.** A declaração é no-op por construção (`display: block` já é o valor herdado de `.card` e o default de `<article>`/`<div>`). Não há mudança observável a olho nu em nenhuma das 4 rotas que usam `card card--flat`.
+- **Inspeção visual nas 4 rotas pós-merge** fica como conferência pró-forma do humano: confirmar que as telas continuam idênticas antes/depois — a expectativa é paridade pixel-perfect.
+- **Ponto de extensão futuro:** quando a spec §3.3 evoluir para diferenciar `flat` da base `.card` (ex.: borda atenuada em densidade alta, ou novo token `--card-border-flat`), o seletor agora declarado é o lugar canônico para essa divergência. Toda a invariante "no-op" formalizada pelo QA fica explicitamente blindada — ampliar o bloco com `background`/`border:`/`border-radius`/`border-color` faz `cardFlatDoesNotRedeclareInheritedBaseProperties` falhar, forçando revisão consciente da decisão.
+- **Numeração da issue:** o código `fix-001` foi reutilizado entre a issue #49 (cache de CSS) e a issue #46 (card--flat) por inércia do plano. A numeração definitiva fica para o próximo PUBLISH (sugestão: renumerar para `fix-002` no momento da release `vX.Y.Z`); não-bloqueante.
+>>>>>>> main
