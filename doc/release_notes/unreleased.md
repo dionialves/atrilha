@@ -328,3 +328,53 @@
 - **Decisão pós-SUCCESS: sem auto-redirect / sem recriação explícita do `Authentication`.** A UX spec §4 originalmente fala em recriar `Authentication` com authorities atualizadas para evitar novo login. A implementação faz mais simples: o `EmailVerificationBannerAdvice` consulta o `AccountReader` a cada request — quando `email_verified_at` muda no banco, o atributo `unverifiedEmail` passa a `false` automaticamente sem mexer no `SecurityContext`. Custo: 1 lookup por request enquanto o usuário está logado (mitigável por cache no advice em chore futura, se virar dor).
 - **Telemetria (US-069) não instrumentada nesta task** — eventos `email_verification_sent`/`clicked`/`resend_requested`/`resend_rate_limited` ficam para US-069 (Sprint 17); os pontos de extensão estão claros no service e no controller.
 - **Rate-limit em SQL é a escolha entregue** (não in-memory): atende dor sem precisar de Redis. Não é dívida técnica pendente — é melhoria deliberada sobre a sugestão original do plano.
+
+## FIX · Corrige cache de CSS em produção via fingerprint (#49)
+
+**Tipo:** Bug Fix (Sprint 3 — follow-up direto da chore-ux-009 / PR #44)
+**Issue:** [#49](https://github.com/dionialves/atrilha/issues/49)
+**Branch:** `fix/49-fingerprint-css-prod`
+**Data de conclusão:** 2026-05-20
+
+### O que foi feito
+- Resolvido o bug em que **deploys de CSS em produção demoravam até 24h para chegar ao usuário final** por conta da combinação `Cache-Control: max-age=86400` + URL estável `/css/app.css` cacheada no Cloudflare e no navegador. Após esta fix, a próxima request do navegador (cold ou warm) recebe o CSS novo imediatamente após cada deploy que altere o conteúdo do CSS.
+- **Estratégia content-hash do Spring** habilitada **apenas em produção** via `application-prod.properties`: o `ResourceUrlEncodingFilter` intercepta `th:href="@{/css/app.css}"` no Thymeleaf e reescreve para `/css/app-<hash>.css` (MD5 do conteúdo, 32 chars hex). Quando o CSS muda, o hash muda, a URL no HTML muda, e a CDN + o navegador veem MISS legítimo. O `max-age=86400` continua válido porque agora a URL é imutável-por-conteúdo.
+- **Destravado o hook `response.encodeURL()` em `SecurityConfig`** com `.sessionManagement(s -> s.enableSessionUrlRewriting(true))` — única linha em `src/main/java/**` alterada. Sem isso, o `DisableEncodeUrlFilter` que o Spring Security 7 injeta por default no chain neutralizaria silenciosamente o `ResourceUrlEncodingFilter` (o filter de Security está antes do filter de resources no chain). Decisão alinhada com o Javadoc oficial de `SessionManagementConfigurer.enableSessionUrlRewriting`, que cita `ResourceUrlEncodingFilter` por nome como caso de uso. Trade-off "session-id-in-URL leakage" é **inexistente** nesta app (zero uso de `JSESSIONID`/`encodeURL`/`encodeRedirectURL`/`SessionTrackingMode` no código; sessão 100% cookie-based, `HttpOnly`).
+- **Chain explicitamente desligado em dev e test** para preservar URLs literais úteis em DevTools e manter as suítes existentes (`StaticAssetsCssIT`, `StaticAssetsCssCoverageIT`) verdes sem alterações. ITs novos religam o chain em isolamento via `@TestPropertySource`.
+- **Cobertura de testes:** **141/141 verdes** (86 unit + 55 IT), 0 falhas, 0 warnings (`failOnWarning=true` mantido). TDD seguido (4 testes da Ordem TDD em `StaticAssetsFingerprintProdIT` escritos antes da produção; regex corrigida na revisão v2 para o formato real do Spring `app-<hash>.css` com hífen, conforme `FileNameVersionPathStrategy.addVersion`). QA estendeu com 9 cenários adicionais em 2 arquivos: cobertura paramétrica de rotas, determinismo do hash, comportamento documentado para hash inválido, cap de tamanho da URL, paridade de `Cache-Control`, e 4 testes de regressão de auth confirmando que `enableSessionUrlRewriting(true)` é cirúrgico (não afrouxa CSRF nem bloqueio anônimo).
+
+### Impacto
+- **Módulo:** `auth` (única linha de produção: `SecurityConfig`).
+- **Migrations Flyway:** nenhuma — fix é puramente configuração + uma linha em filter chain.
+- **Mudanças no `pom.xml`:** nenhuma.
+- **Arquivos editados (produção):**
+  - `src/main/java/dev/zayt/atrilha/auth/SecurityConfig.java` (`+13/-0`: linha + bloco de comentário explicando a interação com `ResourceUrlEncodingFilter`).
+  - `src/main/resources/application-prod.properties` (`+9/-0`: 3 properties de chain content-hash + comentário).
+  - `src/main/resources/application-dev.properties` (`+4/-0`: chain explicitamente desligado + comentário).
+- **Arquivos editados (testes):**
+  - `src/test/resources/application-test.properties` (`+7/-0`: chain explicitamente desligado + comentário).
+- **Arquivos novos (testes):**
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsFingerprintProdIT.java` (4 testes da Ordem TDD do Codificador: link hashed no HTML, GET na URL hashed responde 200 + CSS, GET na URL legada responde 200, `Cache-Control: max-age=86400` na resposta hashed).
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsFingerprintCoverageIT.java` (5 testes / 7 invocações parametrizadas do QA: variação de rotas, hash determinístico para o mesmo conteúdo, GET com hash inválido com asserção adaptativa, cap de tamanho da URL hashed < 80 chars, paridade de `Cache-Control` no caminho legado).
+  - `src/test/java/dev/zayt/atrilha/auth/SecurityConfigSessionRewritingIT.java` (4 testes do QA: GET anônimo em rotas autenticadas continua bloqueado, POST sem CSRF em rota pública e em rota autenticada continua 403).
+- **Efeitos colaterais:**
+  - Em prod, o HTML servido passa a referenciar `/css/app-<32-hex>.css` em vez de `/css/app.css`. A URL legada `/css/app.css` continua respondendo 200 (backward compat preservado pelo próprio Spring).
+  - Em dev e test, o comportamento observável **não muda** — chain desligado mantém `@{}` resolvendo para URL literal.
+  - `DisableEncodeUrlFilter` do Spring Security **não** entra mais no chain em nenhum profile. Sem efeito observável em dev/test porque `response.encodeURL()` só é chamado quando `ResourceUrlEncodingFilter` está ativo (somente em prod ou ITs com `@TestPropertySource`).
+
+### Como testar
+1. A partir do worktree (`/Users/dionia.oliveira/sources/atrilha-worktrees/49-fingerprint-css-prod`), rodar `./mvnw clean verify` — **BUILD SUCCESS**, 141 testes verdes (86 unit + 55 IT), 0 falhas, 0 warnings.
+2. Validação manual local (opcional, recomendada antes do merge):
+   - `./mvnw spring-boot:run -Dspring-boot.run.profiles=prod` (com env vars mínimas para Postgres e Mail).
+   - `curl -s http://localhost:8084/comecar | grep -oE '/css/app-[a-f0-9]+\.css'` — deve devolver `/css/app-<32-hex>.css` (ex.: `/css/app-73de766ea2c33ad3ac256ffaaeff3977.css`).
+   - `curl -sI http://localhost:8084/css/app-<hash>.css` — deve responder `200 OK` + `Content-Type: text/css` + `Cache-Control: max-age=86400`.
+3. Validação manual pós-deploy em produção (decisão do humano):
+   - Após o merge + deploy, alterar uma cor em `src/main/frontend/css/app.css`, rebuildar e deployar. Em uma janela anônima sem cache local, abrir `https://atrilha.app/comecar` — o novo CSS deve aparecer imediatamente, sem precisar de `Ctrl+Shift+R`.
+   - Confirmar no DevTools que o `<link rel="stylesheet">` aponta para uma URL com hash novo.
+
+### Gaps visuais / manuais (declarados pelo QA + Revisor)
+- **Validação em runtime contra Cloudflare real** fica como inspeção manual antes/após o merge: não temos como simular o edge cache em teste automatizado. O contrato testado pela suíte (URL hashed gerada + servida + cacheada com `max-age` longo) é suficiente para garantir que a CDN verá MISS legítimo no próximo deploy.
+- **URL legada `/css/app.css` continua sendo servida** — usuários que acessarem links diretos antigos podem ver CSS desatualizado por até 24h (Cloudflare ainda tem o objeto antigo na borda). Impacto real avaliado como **zero**: ninguém referencia `/css/app.css` diretamente; a URL legada só seria atingida por bookmarks raros ou scrapers. Cloudflare purge da URL legada eliminaria essa janela; fica como follow-up opcional se virar dor.
+- **Cache do HTML em CDN não foi alterado** — Spring Boot já não emite `Cache-Control` longo para responses dinâmicas Thymeleaf (default). O `infra/nginx/atrilha.app.conf` também não cacheia HTML. Aceito como invariante.
+- **Comentário em `application-prod.properties` linha 9** ainda menciona `/css/app.<hash>.css` (ponto) por inércia do plano v1; o formato real é com hífen (`/css/app-<hash>.css`). Não-bloqueante — pode ser polido no próximo PUBLISH ou em chore futura.
+- **Cenário 3 do QA (GET com hash inválido)** usa assertion adaptativa (`isIn(200, 404)`) por decisão arquitetural: o contrato exato do Spring nesse caso pode mudar entre versões do framework. O que importa para a funcionalidade — "GET na URL hashed real funciona depois de uma tentativa quebrada" — é validado e protegido.

@@ -40,6 +40,19 @@ class SecurityConfig {
                         // Demais rotas seguem públicas (cadastro, 404, etc.).
                         .anyRequest().permitAll()
                 )
+                // fix-001: habilita session-url-rewriting para que o
+                // DisableEncodeUrlFilter do Spring Security NAO seja
+                // adicionado ao chain. Esse filter, quando ativo, envolve
+                // a HttpServletResponse com um wrapper cujo encodeURL() e
+                // no-op — o que neutraliza o ResourceUrlEncodingFilter do
+                // Spring Web e impede o fingerprint de CSS configurado em
+                // application-prod.properties. A app nao usa JSESSIONID em
+                // URL em nenhum lugar (sessao 100% cookie-based,
+                // HttpOnly), entao liberar essa flag e seguro. Referencia:
+                // SessionManagementConfigurer.enableSessionUrlRewriting,
+                // Spring Security 7.0.5, Javadoc cita ResourceUrlEncodingFilter
+                // pelo nome como o caso de uso desta opcao.
+                .sessionManagement(s -> s.enableSessionUrlRewriting(true))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .build();
