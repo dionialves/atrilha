@@ -47,6 +47,8 @@ services:
       MAIL_PASSWORD:     ${MAIL_PASSWORD}
       MAIL_FROM:         ${MAIL_FROM}
       BASE_URL:          ${BASE_URL}
+      GOOGLE_OAUTH_CLIENT_ID:     ${GOOGLE_OAUTH_CLIENT_ID}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
       TZ: America/Sao_Paulo
     ports:
       # Apenas loopback — Nginx faz proxy externo

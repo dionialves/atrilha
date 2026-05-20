@@ -26,7 +26,10 @@ import org.springframework.security.web.SecurityFilterChain;
 class SecurityConfig {
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http,
+                                    GoogleOAuth2UserService googleOAuth2UserService,
+                                    OAuthSuccessHandler oauthSuccessHandler,
+                                    OAuthFailureHandler oauthFailureHandler) throws Exception {
         return http
                 .authorizeHttpRequests(authorize -> authorize
                         // /verify-email é o endpoint público do link do e-mail
@@ -53,6 +56,15 @@ class SecurityConfig {
                 // Spring Security 7.0.5, Javadoc cita ResourceUrlEncodingFilter
                 // pelo nome como o caso de uso desta opcao.
                 .sessionManagement(s -> s.enableSessionUrlRewriting(true))
+                // US-002: OAuth2 login (cadastro Google). userService valida
+                // email_verified=true; handlers customizados despacham para
+                // a tela de complementacao ou para a tela de escolha com
+                // toast de erro. CSRF do callback /login/oauth2/code/google
+                // e tratado pelo proprio Spring Security (fora do chain padrao).
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(ui -> ui.userService(googleOAuth2UserService))
+                        .successHandler(oauthSuccessHandler)
+                        .failureHandler(oauthFailureHandler))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .build();

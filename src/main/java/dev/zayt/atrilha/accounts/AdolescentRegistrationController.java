@@ -99,6 +99,9 @@ class AdolescentRegistrationController {
                         "Esse e-mail já tem conta. Quer entrar?");
                 yield FORM_VIEW;
             }
+            case RegisterAdolescentService.Outcome.GoogleRegistered ignored ->
+                throw new IllegalStateException(
+                        "register(...) (US-001) nunca devolve GoogleRegistered — esse outcome e exclusivo de registerFromGoogle (US-002)");
         };
     }
 

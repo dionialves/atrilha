@@ -1,6 +1,9 @@
 package dev.zayt.atrilha.accounts;
 
 import dev.zayt.atrilha.auth.AccountRegisteredEvent;
+import dev.zayt.atrilha.auth.PendingGoogleSignup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,8 @@ import java.util.UUID;
  */
 @Service
 class RegisterAdolescentService {
+
+    private static final Logger log = LoggerFactory.getLogger(RegisterAdolescentService.class);
 
     private final AccountRepository accountRepository;
     private final AdolescentProfileRepository profileRepository;
@@ -97,12 +102,86 @@ class RegisterAdolescentService {
     }
 
     /**
+     * Cadastra um adolescente a partir do callback OAuth do Google (US-002).
+     *
+     * <p>Diferencas em relacao a {@link #register}:
+     * <ul>
+     *   <li>{@code oauth_provider="google"} em vez de {@code password_hash}
+     *       (XOR no banco — accounts_credential_chk).</li>
+     *   <li>{@code email_verified_at} preenchido com o timestamp do
+     *       {@code pending} — Google ja entregou e-mail verificado
+     *       (RF-E1-07).</li>
+     *   <li><strong>NAO</strong> publica {@link AccountRegisteredEvent} —
+     *       isso dispararia a US-006 (e-mail de verificacao), que e
+     *       redundante para contas Google.</li>
+     *   <li>Avatar segue o {@link CompleteGoogleSignupForm.PhotoSource}:
+     *       {@code GOOGLE} grava o URL da foto Google direto;
+     *       {@code UPLOAD} delega ao {@link AvatarStorage};
+     *       {@code NONE} deixa {@code avatar_url} null.</li>
+     * </ul>
+     * </p>
+     */
+    @Transactional
+    Outcome registerFromGoogle(PendingGoogleSignup pending,
+                               CompleteGoogleSignupRequest request,
+                               MultipartFile uploadedPhoto) {
+        String email = pending.email().trim().toLowerCase(Locale.ROOT);
+
+        if (accountRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(email)) {
+            return new Outcome.EmailConflict();
+        }
+
+        UUID accountId = UUID.randomUUID();
+        Account account = new Account();
+        account.setId(accountId);
+        account.setType("ADOLESCENT");
+        account.setEmail(email);
+        account.setOauthProvider("google");
+        account.setEmailVerifiedAt(pending.emailVerifiedAt());
+        account.setCreatedAt(OffsetDateTime.now());
+        Account persistedAccount = accountRepository.saveAndFlush(account);
+
+        AdolescentProfile profile = new AdolescentProfile();
+        profile.setAccount(persistedAccount);
+        profile.setNickname(htmlSanitizer.clean(request.nickname()));
+        profile.setBirthDate(request.birthDate());
+        profile.setTimezone("America/Sao_Paulo");
+
+        switch (request.photoSource()) {
+            case GOOGLE -> {
+                String picture = pending.picture();
+                if (picture != null && !picture.isBlank()) {
+                    profile.setAvatarUrl(picture);
+                }
+            }
+            case UPLOAD -> {
+                if (uploadedPhoto != null && !uploadedPhoto.isEmpty()) {
+                    profile.setAvatarUrl(avatarStorage.store(accountId, uploadedPhoto));
+                }
+            }
+            case NONE -> {
+                // avatar_url permanece null — fallback inicial do apelido.
+            }
+        }
+
+        profileRepository.saveAndFlush(profile);
+
+        // PRD §13.1: log estruturado sem PII. Instrumentacao real fica para US-069.
+        log.info("account_created type=ADOLESCENT oauth_provider=google account_id={}", accountId);
+
+        return new Outcome.GoogleRegistered(accountId);
+    }
+
+    /**
      * Resultado do cadastro. Sealed para forçar pattern matching exaustivo
      * no controller.
      */
-    sealed interface Outcome permits Outcome.Registered, Outcome.EmailConflict {
+    sealed interface Outcome permits Outcome.Registered, Outcome.GoogleRegistered, Outcome.EmailConflict {
 
         record Registered(UUID accountId) implements Outcome {
+        }
+
+        record GoogleRegistered(UUID accountId) implements Outcome {
         }
 
         record EmailConflict() implements Outcome {

@@ -28,4 +28,12 @@ public interface AccountReader {
      * (preserva timestamp original — US-006 critério de idempotência).
      */
     void markEmailVerifiedAt(UUID accountId, OffsetDateTime when);
+
+    /**
+     * Indica se existe uma conta nao soft-deletada com o e-mail dado,
+     * case-insensitive. Usada pelo {@code OAuthSuccessHandler} (US-002) para
+     * detectar conflito antes de criar {@link dev.zayt.atrilha.auth.PendingGoogleSignup}
+     * em sessao.
+     */
+    boolean existsByEmailIgnoreCase(String email);
 }

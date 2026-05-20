@@ -36,4 +36,12 @@ class JpaAccountReader implements AccountReader {
             }
         });
     }
+
+    @Override
+    public boolean existsByEmailIgnoreCase(String email) {
+        if (email == null) {
+            return false;
+        }
+        return accountRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(email);
+    }
 }

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}">
+<head><title>Quase lá</title></head>
+<body>
+<section layout:fragment="content" class="cadastro-form" x-data="{ photoSource: $el.querySelector('input[name=photoSource]:checked')?.value || 'NONE' }">
+    <header>
+        <p class="overline">Cadastro · Adolescente</p>
+        <h1>
+            <span th:text="|Quase lá, ${pending.givenName()}|">Quase lá</span>
+        </h1>
+        <p class="cadastro-form__lead">
+            Falta só apelido, data de nascimento e, se quiser, escolher a foto.
+        </p>
+    </header>
+
+    <!-- Cartao "Sua conta Google" (read-only) -->
+    <article class="google-account-card" aria-label="Sua conta Google">
+        <div class="google-account-card__avatar"
+             th:if="${pending.picture() != null and !pending.picture().isBlank()}">
+            <img th:src="${pending.picture()}" alt="" width="48" height="48"/>
+        </div>
+        <div class="google-account-card__avatar google-account-card__avatar--initial"
+             th:unless="${pending.picture() != null and !pending.picture().isBlank()}"
+             aria-hidden="true"
+             th:text="${pending.givenName() != null and !pending.givenName().isBlank() ? pending.givenName().substring(0,1).toUpperCase() : '?'}">J</div>
+        <div class="google-account-card__body">
+            <p class="google-account-card__label">Sua conta Google</p>
+            <p class="google-account-card__email" th:text="${pending.email()}">julia@gmail.com</p>
+        </div>
+    </article>
+
+    <form th:action="@{/cadastro/adolescente/complementar}" method="post"
+          th:object="${form}" enctype="multipart/form-data"
+          class="cadastro-form__form" novalidate>
+
+        <!-- Apelido -->
+        <div class="input-group" th:classappend="${#fields.hasErrors('nickname')} ? 'input-group--error' : ''">
+            <label for="nickname" class="input-label">Como a gente te chama</label>
+            <input id="nickname" type="text" name="nickname" autocomplete="nickname"
+                   th:field="*{nickname}"
+                   th:attr="aria-invalid=${#fields.hasErrors('nickname')}, aria-describedby=${#fields.hasErrors('nickname')} ? 'nickname-error' : 'nickname-helper'"
+                   class="input-field" minlength="3" maxlength="20"/>
+            <span th:unless="${#fields.hasErrors('nickname')}" id="nickname-helper" class="input-helper">
+                De 3 a 20 caracteres. Pode ser teu nome, apelido, qualquer coisa.
+            </span>
+            <span th:if="${#fields.hasErrors('nickname')}" id="nickname-error" class="input-error" role="alert"
+                  th:errors="*{nickname}"></span>
+        </div>
+
+        <!-- Data de nascimento -->
+        <div class="input-group" th:classappend="${#fields.hasErrors('birthDate')} ? 'input-group--error' : ''">
+            <label for="birthDate" class="input-label">Data de nascimento</label>
+            <input id="birthDate" type="date" name="birthDate"
+                   th:field="*{birthDate}"
+                   th:attr="aria-invalid=${#fields.hasErrors('birthDate')}, aria-describedby=${#fields.hasErrors('birthDate')} ? 'birthDate-error' : null"
+                   class="input-field"/>
+            <span th:if="${#fields.hasErrors('birthDate')}" id="birthDate-error" class="input-error" role="alert"
+                  th:errors="*{birthDate}"></span>
+        </div>
+
+        <!-- Foto (radios + upload condicional) -->
+        <fieldset class="input-group">
+            <legend class="input-label">Foto (opcional)</legend>
+
+            <label class="radio-option"
+                   th:if="${pending.picture() != null and !pending.picture().isBlank()}">
+                <input type="radio" name="photoSource" value="GOOGLE"
+                       th:field="*{photoSource}"
+                       x-on:change="photoSource = $event.target.value"/>
+                <span>Usar a foto da minha conta Google</span>
+            </label>
+
+            <label class="radio-option">
+                <input type="radio" name="photoSource" value="UPLOAD"
+                       th:field="*{photoSource}"
+                       x-on:change="photoSource = $event.target.value"/>
+                <span>Enviar outra foto</span>
+            </label>
+
+            <label class="radio-option">
+                <input type="radio" name="photoSource" value="NONE"
+                       th:field="*{photoSource}"
+                       x-on:change="photoSource = $event.target.value"/>
+                <span>Ficar sem foto (vira a inicial do apelido)</span>
+            </label>
+
+            <div class="input-group input-group--upload"
+                 x-show="photoSource === 'UPLOAD'"
+                 x-cloak>
+                <label for="photo" class="input-label">Arquivo</label>
+                <input id="photo" type="file" name="photo"
+                       accept="image/jpeg,image/png,image/webp"
+                       class="input-field input-field--file"/>
+                <span class="input-helper">JPG, PNG ou WEBP. Até 5 MB.</span>
+            </div>
+        </fieldset>
+
+        <div class="cadastro-form__actions">
+            <button type="submit" class="btn btn-primary btn-lg">Concluir cadastro</button>
+            <a th:href="@{/cadastro/adolescente/complementar(cancel=1)}" class="btn btn-ghost btn-md">Cancelar</a>
+        </div>
+
+        <p class="cadastro-form__legal">
+            Ao continuar, você aceita os
+            <a href="#">Termos</a> e a
+            <a href="#">Política de Privacidade</a>.
+        </p>
+    </form>
+</section>
+</body>
+</html>

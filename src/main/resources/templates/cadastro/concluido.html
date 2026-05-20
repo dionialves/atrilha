@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}">
+<head><title>Conta criada</title></head>
+<body>
+<section layout:fragment="content" class="cadastro-concluido">
+    <div class="cadastro-concluido__icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48"
+             fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+             stroke-linejoin="round" class="text-lime-500">
+            <circle cx="24" cy="24" r="20"/>
+            <path d="M15 24 l7 7 l11 -14"/>
+        </svg>
+    </div>
+    <h1>Conta criada</h1>
+    <p class="cadastro-concluido__lead">
+        Pronto. Daqui pra frente seguimos juntas.
+    </p>
+
+    <article class="card card--flat cadastro-concluido__next">
+        <h3>Em breve</h3>
+        <p>
+            A próxima etapa — vincular tua responsável — entra no próximo
+            passo do atrilha.
+        </p>
+    </article>
+
+    <p class="cadastro-concluido__cta">
+        <a th:href="@{/}" class="btn btn-primary btn-md">Ir para o início</a>
+    </p>
+</section>
+</body>
+</html>
