@@ -1,10 +1,10 @@
 # docker-compose.prod.yml — Atrilha (producao)
-# Versao: chore-006
+# Versao: chore-010 (path de deploy alinhado a deploy.yml)
 #
 # Uso na VPS:
-#   cp infra/compose/docker-compose.prod.yml /opt/atrilha/docker-compose.yml
-#   cp infra/compose/.env.example            /opt/atrilha/.env   # preencha os valores reais
-#   cd /opt/atrilha
+#   cp infra/compose/docker-compose.prod.yml /opt/zayt/atrilha/docker-compose.yml
+#   cp infra/compose/.env.example            /opt/zayt/atrilha/.env   # preencha os valores reais
+#   cd /opt/zayt/atrilha
 #   docker compose pull && docker compose up -d
 
 services:

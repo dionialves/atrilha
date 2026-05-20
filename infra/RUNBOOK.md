@@ -5,6 +5,8 @@
 **SO alvo:** Ubuntu 24.04 LTS  
 **Autor:** chore-006 (Arquiteto/Codificador)
 
+**Path canonico de deploy:** `/opt/zayt/atrilha` — usado pelo pipeline automatizado em `.github/workflows/deploy.yml`. Mantenha em sincronia: ao alterar o path no workflow, atualize tambem este RUNBOOK.
+
 ---
 
 ## Pre-requisitos
@@ -206,8 +208,8 @@ systemctl list-timers | grep certbot
 ## Passo 10 — Diretorio de Deploy
 
 ```bash
-sudo mkdir -p /opt/atrilha
-sudo chown deploy:deploy /opt/atrilha
+sudo mkdir -p /opt/zayt/atrilha
+sudo chown deploy:deploy /opt/zayt/atrilha
 ```
 
 ---
@@ -216,25 +218,25 @@ sudo chown deploy:deploy /opt/atrilha
 
 ```bash
 # Na sua maquina local:
-scp infra/compose/docker-compose.prod.yml deploy@<IP_DA_VPS>:/opt/atrilha/docker-compose.yml
-scp infra/compose/.env.example            deploy@<IP_DA_VPS>:/opt/atrilha/.env.example
+scp infra/compose/docker-compose.prod.yml deploy@<IP_DA_VPS>:/opt/zayt/atrilha/docker-compose.yml
+scp infra/compose/.env.example            deploy@<IP_DA_VPS>:/opt/zayt/atrilha/.env.example
 ```
 
 Na VPS, crie o `.env` real com as credenciais de producao:
 
 ```bash
 # Na VPS como deploy:
-cp /opt/atrilha/.env.example /opt/atrilha/.env
-nano /opt/atrilha/.env   # preencha POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, APP_TAG
+cp /opt/zayt/atrilha/.env.example /opt/zayt/atrilha/.env
+nano /opt/zayt/atrilha/.env   # preencha POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, APP_TAG
 ```
 
-> O arquivo `/opt/atrilha/.env` **nunca** deve ser commitado no repositorio. Ele contem credenciais de producao.
+> O arquivo `/opt/zayt/atrilha/.env` **nunca** deve ser commitado no repositorio. Ele contem credenciais de producao.
 
 Verifique permissoes:
 
 ```bash
-chmod 600 /opt/atrilha/.env
-ls -la /opt/atrilha/
+chmod 600 /opt/zayt/atrilha/.env
+ls -la /opt/zayt/atrilha/
 ```
 
 Resultado esperado: `docker-compose.yml`, `.env.example` e `.env`, todos de propriedade de `deploy:deploy`.
@@ -246,7 +248,7 @@ Resultado esperado: `docker-compose.yml`, `.env.example` e `.env`, todos de prop
 > Execute apos `chore-008` fazer o primeiro deploy real da imagem.
 
 ```bash
-cd /opt/atrilha
+cd /opt/zayt/atrilha
 docker compose pull
 docker compose up -d
 
@@ -293,7 +295,7 @@ certbot renew --dry-run
 ## Notas de Seguranca
 
 - **HSTS** esta declarado no Nginx com `max-age=31536000` (1 ano). Em emergencia de rollback de HTTPS, lembre que browsers com cache do HSTS continuarao forçando HTTPS por ate 1 ano.
-- **Credenciais** de banco ficam exclusivamente em `/opt/atrilha/.env` na VPS. O `.env.example` no repositorio contem apenas chaves vazias.
+- **Credenciais** de banco ficam exclusivamente em `/opt/zayt/atrilha/.env` na VPS. O `.env.example` no repositorio contem apenas chaves vazias.
 - **Porta 5432** do PostgreSQL nao esta exposta no host — o container so e acessivel pela rede Docker interna `backend`.
 - **Porta 8084** esta vinculada apenas ao loopback (`127.0.0.1:8084`) — inacessivel diretamente da internet; todo acesso externo passa pelo Nginx.
 
