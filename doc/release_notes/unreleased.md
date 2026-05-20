@@ -508,3 +508,114 @@
 - **Inspeção visual nas 4 rotas pós-merge** fica como conferência pró-forma do humano: confirmar que as telas continuam idênticas antes/depois — a expectativa é paridade pixel-perfect.
 - **Ponto de extensão futuro:** quando a spec §3.3 evoluir para diferenciar `flat` da base `.card` (ex.: borda atenuada em densidade alta, ou novo token `--card-border-flat`), o seletor agora declarado é o lugar canônico para essa divergência. Toda a invariante "no-op" formalizada pelo QA fica explicitamente blindada — ampliar o bloco com `background`/`border:`/`border-radius`/`border-color` faz `cardFlatDoesNotRedeclareInheritedBaseProperties` falhar, forçando revisão consciente da decisão.
 - **Numeração da issue:** o código `fix-001` foi reutilizado entre a issue #49 (cache de CSS) e a issue #46 (card--flat) por inércia do plano. A numeração definitiva fica para o próximo PUBLISH (sugestão: renumerar para `fix-002` no momento da release `vX.Y.Z`); não-bloqueante.
+
+## US-002 · Cadastro de adolescente via Google (#37)
+
+**Tipo:** User Story (Sprint 3, marco M2 — Auth essencial / E1 parte 1)
+**Issue:** [#37](https://github.com/dionialves/atrilha/issues/37)
+**Branch:** `feat/37-cadastro-google`
+**Data de conclusão:** 2026-05-20
+
+### O que foi feito
+- Entregue o segundo caminho de cadastro do produto: **OAuth2 com Google** para adolescentes (13–17). A partir de `GET /cadastro`, Júlia escolhe "Sou adolescente", vai para `GET /cadastro/adolescente/escolher-metodo` (Tela 2), clica em "Continuar com Google", autoriza no Google, volta autenticada para `GET /cadastro/adolescente/complementar` (Tela 3 — coleta apelido, data de nascimento e foto opcional), submete e segue para `GET /cadastro/concluido` (Tela 4, placeholder até US-012 fechar o destino real do Sprint 5).
+- **Reuso máximo, isolamento de fluxo.** Nenhuma alteração no `AdolescentRegistrationController` (US-001) — criado controller novo `AdolescentGoogleSignupController` apenas para as sub-rotas exclusivas Google. `RegisterAdolescentService` ganhou **um único método novo** `registerFromGoogle(PendingGoogleSignup, CompleteGoogleSignupRequest, MultipartFile)` que reusa as deps existentes (account/profile repositories, `AvatarStorage`, `HtmlSanitizer`) e respeita a invariante "uma conta de adolescente é criada por um lugar só". O outcome ganhou a variante `Outcome.GoogleRegistered` (sealed permits estendido com retrocompatibilidade do fluxo e-mail/senha).
+- **Sem migration.** O schema `accounts` da US-001 (`V2__accounts_and_adolescent_profiles.sql`) já contemplava OAuth via `oauth_provider` nullable + constraint XOR `accounts_credential_chk` (`password_hash` ⊕ `oauth_provider`). Conta Google nasce com `password_hash IS NULL`, `oauth_provider='google'` e `email_verified_at` preenchido com o timestamp do callback (RF-E1-07: Google já entrega e-mail verificado).
+- **`AccountRegisteredEvent` deliberadamente NÃO é publicado** no fluxo Google. Conta Google chega com e-mail já verificado, então acionar a US-006 (e-mail de verificação + banner âmbar) seria redundante e confuso. Comportamento blindado pelo teste `RegisterAdolescentServiceGoogleIT#nao_dispara_AccountRegisteredEvent`.
+- **`SecurityConfig` recebeu `.oauth2Login(...)`** no chain existente — sem filter chain paralelo. CSRF continua habilitado por default; o callback `/login/oauth2/code/google` é tratado pelo próprio Spring Security fora do CSRF check por design.
+- **Handlers OAuth customizados (package-private em `auth/`):**
+  - `GoogleOAuth2UserService` estende `DefaultOAuth2UserService` e valida que a claim `email_verified=true` está presente. Caso contrário, lança `OAuth2AuthenticationException` com error code `email_unverified`.
+  - `OAuthSuccessHandler` despacha o callback: se já existe conta com aquele e-mail (case-insensitive, ignorando soft-delete), limpa `SecurityContext` e redireciona para `?error=account_exists`. Caso contrário, cria `PendingGoogleSignup` (record `Serializable`), guarda na sessão HTTP e redireciona para a Tela 3. Em ambos os casos limpa o `SecurityContext` — Júlia só fica autenticada após o POST de complementação via `SessionAuthenticator`.
+  - `OAuthFailureHandler` classifica `access_denied`/`user_cancelled_login` como `cancelled`, `email_unverified` como `email_unverified`, demais erros como `oauth`, e redireciona para a Tela 2 com `?error=<code>` para toast apropriado.
+- **`AccountReader` ganhou `existsByEmailIgnoreCase(String)`** (interface package-public + implementação `JpaAccountReader`) — única extensão aditiva no contrato cross-module. Sem ela, o `OAuthSuccessHandler` precisaria do `AccountRepository` direto, o que violaria o invariante "controllers/handlers em `auth/` consomem `accounts/` apenas via leitores leves".
+- **`detectAgeBlockVariant` duplicado deliberadamente** entre `AdolescentRegistrationController` (US-001) e `AdolescentGoogleSignupController` (esta US). A lógica é delicada (precondição `getFieldErrorCount() == 1` para não revelar a regra interna de idade em erros compostos — CA-4 US-005). Extração para `AgeBlockVariantResolver` ficou registrada como **REF futuro** para evitar refactor cross-cutting nesta US.
+- **Cobertura de testes:** **104/104 verdes** em `./mvnw test`, 0 falhas, 0 skipped, 0 warnings de compilação. TDD seguido conforme Ordem TDD do plano (27 testes-âncora escritos antes do código de produção: 6 unitários da Suíte A, 7 IT do `RegisterAdolescentServiceGoogleIT`, 8 IT do `AdolescentGoogleSignupControllerIT`, 5 IT do `OAuthHandlersIT`, 1 IT do `SecurityConfigOAuth2IT`). QA expandiu com **33 testes adicionais** (commit `5640cc3`) cobrindo bordas exatas das idades 12/13/17/18 sob o `Clock` injetado, race condition de e-mail duplicado, claims OAuth malformadas (email vazio/null/missing/`email_verified` ausente), regressão de US-001 e US-006, contratos do form, e `PendingGoogleSignup` serializável.
+- **Templates novos (4):** `cadastro/escolher-papel.html` (Tela 1), `cadastro/adolescente_escolher_metodo.html` (Tela 2 com botão Google branding oficial + 4 toasts condicionais para `?error=cancelled|email_unverified|account_exists|oauth`), `cadastro/adolescente_complementar.html` (Tela 3 com cartão Google + form CSRF Thymeleaf + 3 radios `photoSource={GOOGLE,UPLOAD,NONE}`), `cadastro/concluido.html` (Tela 4 placeholder). Logo Google oficial 4 cores como SVG inline no botão (sem recolorir).
+- **Smoke manual com Google real NÃO executado.** Depende de credenciais reais (`GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET`) e configuração do Google Cloud Console — responsabilidade do humano antes do merge. Ver "Pré-requisitos de deploy" abaixo.
+
+### Impacto
+- **Módulos afetados:**
+  - `auth` (handlers OAuth + service user customizado + record da sessão + edição `SecurityConfig`).
+  - `accounts` (controller novo + form + request record + método novo em service existente + método aditivo no `AccountReader`).
+  - `web` (controller novo `SignupEntryController` para `GET /cadastro` e `GET /cadastro/concluido`).
+- **Nenhuma migration nova** — schema `accounts` já comportava OAuth desde a US-001 (`V2`).
+- **Dependências novas no `pom.xml`:**
+  - `spring-boot-starter-oauth2-client` (única dep adicionada — Spring Security 7 já estava presente desde a US-001).
+- **Arquivos novos (produção):**
+  - `src/main/java/dev/zayt/atrilha/auth/GoogleOAuth2UserService.java`
+  - `src/main/java/dev/zayt/atrilha/auth/OAuthSuccessHandler.java`
+  - `src/main/java/dev/zayt/atrilha/auth/OAuthFailureHandler.java`
+  - `src/main/java/dev/zayt/atrilha/auth/PendingGoogleSignup.java`
+  - `src/main/java/dev/zayt/atrilha/accounts/AdolescentGoogleSignupController.java`
+  - `src/main/java/dev/zayt/atrilha/accounts/CompleteGoogleSignupForm.java`
+  - `src/main/java/dev/zayt/atrilha/accounts/CompleteGoogleSignupRequest.java`
+  - `src/main/java/dev/zayt/atrilha/web/SignupEntryController.java`
+  - `src/main/resources/static/img/google-g.svg`
+  - `src/main/resources/templates/cadastro/escolher-papel.html`
+  - `src/main/resources/templates/cadastro/adolescente_escolher_metodo.html`
+  - `src/main/resources/templates/cadastro/adolescente_complementar.html`
+  - `src/main/resources/templates/cadastro/concluido.html`
+  - `.env.example`
+- **Arquivos novos (testes):**
+  - `src/test/java/dev/zayt/atrilha/auth/GoogleOAuth2UserServiceTest.java`
+  - `src/test/java/dev/zayt/atrilha/auth/GoogleOAuth2UserServiceEdgeCasesTest.java`
+  - `src/test/java/dev/zayt/atrilha/auth/PendingGoogleSignupTest.java`
+  - `src/test/java/dev/zayt/atrilha/auth/OAuthHandlersIT.java`
+  - `src/test/java/dev/zayt/atrilha/auth/OAuthHandlersEdgeCasesIT.java`
+  - `src/test/java/dev/zayt/atrilha/auth/SecurityConfigOAuth2IT.java`
+  - `src/test/java/dev/zayt/atrilha/accounts/CompleteGoogleSignupFormTest.java`
+  - `src/test/java/dev/zayt/atrilha/accounts/RegisterAdolescentServiceGoogleIT.java`
+  - `src/test/java/dev/zayt/atrilha/accounts/AdolescentGoogleSignupControllerIT.java`
+  - `src/test/java/dev/zayt/atrilha/accounts/AdolescentGoogleSignupEdgeCasesIT.java`
+  - `src/test/java/dev/zayt/atrilha/accounts/RegressionUS001AndUS006IT.java`
+  - `src/test/java/dev/zayt/atrilha/web/SignupEntryControllerIT.java`
+  - `src/test/resources/application-test.properties` (fixtures OAuth: `test-client-id`/`test-client-secret` para contexto carregar)
+- **Arquivos editados:**
+  - `pom.xml` (`+4/-0`: dep `spring-boot-starter-oauth2-client`).
+  - `src/main/java/dev/zayt/atrilha/accounts/AccountReader.java` (`+8/-0`: novo método `existsByEmailIgnoreCase`).
+  - `src/main/java/dev/zayt/atrilha/accounts/JpaAccountReader.java` (`+8/-0`: implementação delegando ao `AccountRepository`).
+  - `src/main/java/dev/zayt/atrilha/accounts/AdolescentRegistrationController.java` (`+3/-0`: ajuste cirúrgico para coexistência de rotas — sem mudança de comportamento da US-001).
+  - `src/main/java/dev/zayt/atrilha/accounts/RegisterAdolescentService.java` (`+81/-0`: método `registerFromGoogle` + variante `Outcome.GoogleRegistered`).
+  - `src/main/java/dev/zayt/atrilha/auth/SecurityConfig.java` (`+14/-0`: `.oauth2Login(...)` no chain existente + DI dos handlers).
+  - `src/main/resources/application.properties` (`+7/-0`: registration Google com placeholders `${...:}` para boot sem credenciais).
+  - `src/main/resources/application-dev.properties` (`+5/-0`: env vars obrigatórias).
+  - `src/main/resources/application-prod.properties` (`+4/-0`: env vars obrigatórias em prod).
+  - `.gitignore` (`+3/-0`: `.env` ignorado).
+- **Efeitos colaterais:**
+  - O bean `clientRegistrationRepository` é auto-configurado pelo Spring Boot a partir das properties; nenhuma config manual.
+  - O CSRF do callback `/login/oauth2/code/google` é gerenciado pelo Spring Security — não precisa de exclusão manual.
+  - Sessão Spring Security é criada **apenas após** o POST de complementação bem-sucedido — Júlia não fica autenticada como ela mesma durante o passo intermediário entre callback OAuth e form de complementação.
+  - Coexistência limpa com US-001: rota raiz `GET /cadastro/adolescente` continua sendo o form e-mail/senha; novas sub-rotas (`/escolher-metodo`, `/complementar`) são exclusivas Google.
+
+### Pré-requisitos de deploy
+- **Variáveis de ambiente obrigatórias em produção:** `GOOGLE_OAUTH_CLIENT_ID` e `GOOGLE_OAUTH_CLIENT_SECRET` precisam estar configuradas no container/host **antes do boot**. Sem essas env vars, o profile prod **falha no startup** (preferível a falha silenciosa). Em dev, sem as env vars o boot funciona em modo degradado (botão Google retorna 500 ao clicar), aceitável apenas para desenvolvedores que não tocarão o fluxo OAuth.
+- **Google Cloud Console (responsabilidade do humano):**
+  1. Criar projeto em `https://console.cloud.google.com`.
+  2. Configurar OAuth consent screen (External, scopes: `openid`, `email`, `profile`).
+  3. Criar credenciais "OAuth client ID" tipo "Web application".
+  4. Origens autorizadas: `http://localhost:8084` (dev), `https://atrilha.app` (prod).
+  5. Redirect URIs: `http://localhost:8084/login/oauth2/code/google` (dev) e `https://atrilha.app/login/oauth2/code/google` (prod).
+  6. Copiar `client_id`/`client_secret` para `.env` local (não versionado, já no `.gitignore`); setar como variáveis de ambiente em prod.
+- **Sem `GOOGLE_OAUTH_CLIENT_SECRET` no profile prod o startup falha — comportamento esperado e não há teste automatizado para isso** (depende de boot real do contexto prod com env vars ausentes). Recomenda-se checklist manual de deploy: confirmar variáveis no `.env` do container/runner antes de subir.
+
+### Como testar
+1. A partir do worktree (`/Users/dionia.oliveira/sources/atrilha/.claude/worktrees/agent-af3a046f9a92c7757`), rodar `./mvnw test` — **BUILD SUCCESS**, 104 testes verdes (inclui 60+ testes específicos da US-002).
+2. **`./mvnw verify` (Testcontainers Postgres):** rodar com Docker ativo (`docker compose up -d postgres`). Suíte completa de IT — esperar 180+ testes verdes baseando-se em `./mvnw verify` do QA (foi 183 verdes em sessão anterior do Codificador). Esta sessão de revisão validou apenas `./mvnw test` (104 verdes) porque o Docker estava desligado no host.
+3. **Smoke manual (humano antes do merge):**
+   1. Configurar `.env` na raiz a partir de `.env.example` com `GOOGLE_OAUTH_CLIENT_ID` e `GOOGLE_OAUTH_CLIENT_SECRET` reais.
+   2. Subir infra: `docker compose up -d postgres mailpit`.
+   3. Subir app: `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`.
+   4. Abrir `http://localhost:8084/cadastro` → "Sou adolescente" → "Continuar com Google" → autorizar no Google.
+   5. Em `/cadastro/adolescente/complementar`: confirmar cartão Google (avatar + e-mail), apelido pré-preenchido com `given_name` truncado em 20 chars, radio "Usar foto do Google" pré-selecionado, data obrigatória.
+   6. Submeter form válido → redireciona para `/cadastro/concluido` autenticado.
+   7. Voltar ao Google e reautenticar com a mesma conta → ver toast `?error=account_exists` na Tela 2.
+   8. Tentar com conta Google sem `email_verified=true` (rara) → toast `?error=email_unverified` na Tela 2.
+   9. Cancelar a autorização no Google → toast `?error=cancelled` na Tela 2.
+4. **Verificação no banco (após sucesso):** `psql -U atrilha -d atrilha -c "SELECT id, email, oauth_provider, password_hash, email_verified_at FROM accounts WHERE email='<seu-email>';"` deve mostrar `oauth_provider='google'`, `password_hash=NULL`, `email_verified_at != NULL`.
+5. **Verificação de regressão US-006:** após cadastro Google bem-sucedido, abrir `/` e qualquer rota — o banner âmbar "confirme teu e-mail" **NÃO deve aparecer** (já é uma conta com `email_verified_at` preenchido).
+
+### Gaps visuais / manuais (declarados pelo QA + Revisor)
+- **Classes CSS `btn-google`, `google-account-card`, `escolher-metodo*`, `alert--info|warning|error`, `btn-secondary` referenciadas nos templates novos NÃO estão definidas no pipeline Tailwind v4** (`src/main/frontend/css/app.css`). Isto **não é regressão desta US** — é estado pré-existente do projeto: o template `verificar-email.html` (US-006) já referencia `btn-secondary` e `btn-ghost` sem definição. As classes referenciadas pela US-002 funcionarão com **degradação graciosa** (botão Google aparecerá com layout default, sem o branding white-surface obrigatório; cartão Google aparecerá como bloco neutro). O comportamento funcional do fluxo (links, form, redirects, OAuth) **está 100% operacional**. Recomenda-se chore separada para fechar o débito de Tailwind do projeto inteiro (sugestão de código: `CHORE-UX-011 · Declarar tokens e seletores BEM faltantes em app.css`).
+- **Smoke manual com Google real não foi executado** nesta entrega — depende de credenciais e configuração do Google Cloud Console (ver "Pré-requisitos de deploy"). É inspeção pró-forma obrigatória do humano antes do merge.
+- **`./mvnw verify` (Testcontainers) não rodou nesta sessão de revisão** porque o Docker estava desligado no host. O QA reportou ter atingido 183 verdes em sessão anterior com Docker ativo. O Codificador reportou 183 verdes em `./mvnw verify` na entrega original. Humano pode revalidar `./mvnw verify` após `docker compose up -d` antes do merge se desejar redundância de confiança.
+- **Boot em profile prod sem `GOOGLE_OAUTH_CLIENT_SECRET` não tem teste automatizado** — comportamento é esperado e desejado (failure cedo > falha silenciosa). Documentado em "Pré-requisitos de deploy" acima.
+- **Validação visual das 4 telas** em viewport (mobile 360px, tablet 768px, desktop 1280px) fica como inspeção manual antes do merge. Referência: `doc/UX/us-002-spec.md`.

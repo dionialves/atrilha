@@ -46,6 +46,9 @@ data/
 # Infra — credenciais de producao (nunca commitar)
 infra/compose/.env
 
+# Variaveis de ambiente locais (US-002: GOOGLE_OAUTH_*). .env.example versionado.
+.env
+
 
 # Frontend toolchain (frontend-maven-plugin)
 # Node e dependencias sao baixadas localmente em build time; package-lock.json
