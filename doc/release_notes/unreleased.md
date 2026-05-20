@@ -378,3 +378,50 @@
 - **Cache do HTML em CDN não foi alterado** — Spring Boot já não emite `Cache-Control` longo para responses dinâmicas Thymeleaf (default). O `infra/nginx/atrilha.app.conf` também não cacheia HTML. Aceito como invariante.
 - **Comentário em `application-prod.properties` linha 9** ainda menciona `/css/app.<hash>.css` (ponto) por inércia do plano v1; o formato real é com hífen (`/css/app-<hash>.css`). Não-bloqueante — pode ser polido no próximo PUBLISH ou em chore futura.
 - **Cenário 3 do QA (GET com hash inválido)** usa assertion adaptativa (`isIn(200, 404)`) por decisão arquitetural: o contrato exato do Spring nesse caso pode mudar entre versões do framework. O que importa para a funcionalidade — "GET na URL hashed real funciona depois de uma tentativa quebrada" — é validado e protegido.
+
+## CHORE · Sincronizar path de deploy no RUNBOOK com o estado real do servidor (#47)
+
+**Tipo:** Chore técnica operacional (correção puramente documental — sprint 3, débito de drift)
+**Issue:** [#47](https://github.com/dionialves/atrilha/issues/47)
+**Branch:** `chore/47-runbook-path`
+**Data de conclusão:** 2026-05-20
+
+### O que foi feito
+- Alinhada a documentação operacional ao path canônico de deploy `/opt/zayt/atrilha`, que o pipeline automatizado em `.github/workflows/deploy.yml:50` já usa em produção desde a chore-008. O RUNBOOK (chore-006) e o cabeçalho do `docker-compose.prod.yml` ainda referenciavam `/opt/atrilha` — drift que, se seguido por um operador em recuperação manual, faria subir uma segunda instância paralela à real, competindo por portas e bind mounts (descrito em detalhes no corpo da Issue #47).
+- Substituídas as **11 ocorrências** de `/opt/atrilha` em `infra/RUNBOOK.md` (Passos 10/11/12 + Notas de Segurança) por `/opt/zayt/atrilha`, seguindo a tabela linha-a-linha do plano.
+- Acrescentada **nota explícita no topo do RUNBOOK** (logo após a linha do autor) declarando `/opt/zayt/atrilha` como path canônico, com referência ao `.github/workflows/deploy.yml` como fonte da verdade e guard-rail "ao alterar o path no workflow, atualize também este RUNBOOK".
+- Atualizado o **cabeçalho de comentários** do `infra/compose/docker-compose.prod.yml` (linhas 1-9): instruções de `cp` e `cd` agora usam `/opt/zayt/atrilha`; bump da `Versão: chore-006` → `Versão: chore-010 (path de deploy alinhado a deploy.yml)` para rastreabilidade. **Nenhuma linha** dos blocos `services:`, `networks:`, `volumes:` foi tocada — chore puramente cosmética para o cabeçalho.
+- **Ampliação de escopo aceita pelo Revisor:** o `infra/compose/.env.example` continha 5 ocorrências residuais de `/opt/atrilha` (incluindo o exemplo de `HOST_MEDIA_DIR=/opt/atrilha/media`) que o próprio RUNBOOK Passo 11 instrui a copiar para o servidor. Drift no template lido pelo operador contradiz o espírito da chore (zero drift operacional). Substituídas pelo Codificador na 2ª passada — mesmo tema, mesmo risco (texto/comentário), zero impacto em runtime.
+- `.github/workflows/deploy.yml`, `infra/scripts/smoke.sh`, `README.md` e `doc/release_notes/0.0.1.md` **não foram alterados** — release histórica imutável continua refletindo o path que valia na v0.0.1, conforme decisão do plano.
+- Verificação: `mvn test` continua **86/86 verde** (chore documental, zero efeito esperado); `docker compose -f infra/compose/docker-compose.prod.yml config` parseia sem erros sintáticos. TDD não se aplica (nenhum código de produção foi tocado, conforme seção "Verificação" do plano).
+
+### Impacto
+- **Módulos:** nenhum (sem código Java/HTML/SQL/properties tocado).
+- **Migrations Flyway:** nenhuma.
+- **Mudanças no `pom.xml`:** nenhuma.
+- **Arquivos editados:**
+  - `infra/RUNBOOK.md` (`+13/-11`: 11 substituições + nota canônica nova no topo).
+  - `infra/compose/docker-compose.prod.yml` (`+4/-4`: cabeçalho de comentários atualizado + bump de versão).
+  - `infra/compose/.env.example` (`+5/-5`: 5 substituições em comentários + `HOST_MEDIA_DIR` de exemplo).
+- **Servidor de produção:** intocado. Zero comandos SSH, zero `docker compose` em VPS, zero alteração em `.env` real.
+- **Efeitos colaterais:** nenhum em runtime. Único efeito observável é a próxima pessoa que ler o RUNBOOK chegar ao mesmo path que o pipeline automatizado usa.
+
+### Como testar
+1. A partir do worktree (`../atrilha-worktrees/47-runbook-path`), rodar `./mvnw test` — **BUILD SUCCESS**, 86 testes verdes (chore documental, zero regressão esperada).
+2. Critério literal de aceitação da issue:
+   ```bash
+   grep -rn "/opt/atrilha" . --include="*.md" --include="*.yml" --include="*.yaml" --include="*.sh" --include="*.conf"
+   ```
+   Deve retornar **exatamente 1 match**: `doc/release_notes/0.0.1.md:94` (release histórica intocada).
+3. Critério complementar — path canônico presente:
+   ```bash
+   grep -rn "/opt/zayt/atrilha" . --include="*.md" --include="*.yml" --include="*.yaml" --include="*.sh" --include="*.conf"
+   ```
+   Deve retornar matches em `.github/workflows/deploy.yml`, `infra/RUNBOOK.md` (11 linhas + a nota canônica nova), `infra/compose/docker-compose.prod.yml` (3 linhas) e `infra/compose/.env.example` (5 linhas).
+4. Sanidade do compose: `docker compose -f infra/compose/docker-compose.prod.yml config --quiet` deve sair com código 0 quando as env vars do `.env` estão preenchidas (testado com valores dummy no Revisor).
+5. Leitura humana ponta-a-ponta do `infra/RUNBOOK.md` Passos 10 → 12: um operador novo seguindo o RUNBOOK chega ao mesmo path (`/opt/zayt/atrilha`) que o pipeline usa.
+
+### Gaps visuais / manuais (declarados pelo QA + Revisor)
+- **Servidor real não foi tocado** — esta chore alinha documentação ao estado real. Se em algum momento o time migrar o servidor para `/opt/atrilha` (path mais curto, sem namespace `zayt`), abre-se chore operacional dedicada para mover containers, bind mounts e atualizar `deploy.yml:50` em conjunto. **Decisão registrada: fora do escopo desta chore.**
+- **`doc/release_notes/0.0.1.md:94` mantém `/opt/atrilha/` deliberadamente** — release notes publicadas são imutáveis (registro do que valia na v0.0.1). O drift atual será mencionado no PUBLISH da próxima versão como "documentação operacional alinhada ao path real de produção".
+- **Ampliação para `.env.example`** foi decisão do Codificador na 2ª passada após o QA apontar drift residual. O critério literal de aceitação da issue (grep com includes específicos) já passava antes; a ampliação fortalece o objetivo declarado (zero drift operacional) sem alterar risco. Aceito pelo Revisor.
