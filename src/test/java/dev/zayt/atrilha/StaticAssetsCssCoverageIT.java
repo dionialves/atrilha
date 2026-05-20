@@ -32,8 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Foco em:
  * <ul>
  *   <li>Sobrevivência das classes utilitárias Tailwind inline ao purge
- *       (content-based scan do {@code tailwind.config.js}). Se essas
- *       classes sumirem, o layout do {@code base.html} quebra
+ *       (content-based scan via diretiva {@code @source} no input CSS).
+ *       Se essas classes sumirem, o layout do {@code base.html} quebra
  *       silenciosamente — contrato estrutural.</li>
  *   <li>Variação de rotas: o saneamento do Play CDN e a presença do link
  *       para {@code /css/app.css} valem para <em>todas</em> as telas
@@ -70,8 +70,8 @@ class StaticAssetsCssCoverageIT {
     // ============================================================
     // A) Classes utilitárias Tailwind inline no markup sobrevivem ao purge.
     //
-    // O `content` em tailwind.config.js escaneia
-    // src/main/resources/templates/**/*.html. Se alguém quebrar essa
+    // A diretiva `@source` em src/main/frontend/css/app.css escaneia
+    // src/main/resources/templates recursivamente. Se alguém quebrar essa
     // configuração, classes como .min-h-screen e .container deixam de
     // ser geradas, e o layout em base.html vira fluido sem container.
     // Isso é contrato estrutural — não é teste de cor.
@@ -190,8 +190,8 @@ class StaticAssetsCssCoverageIT {
     }
 
     // ============================================================
-    // D) Cap de tamanho — guardrail contra alguém abrir o `content`
-    // do tailwind.config.js para algo como "**/*" e o CSS explodir.
+    // D) Cap de tamanho — guardrail contra alguém abrir o escopo do
+    // CSS para algo como "**/*" (alterar @source no input CSS) e o CSS explodir.
     //
     // CSS atual (minificado) ~23KB. 200KB é folga generosa, mas pega
     // crescimento de 10x — o suficiente para sinalizar que algo
@@ -205,7 +205,7 @@ class StaticAssetsCssCoverageIT {
 
         assertThat(css.length())
                 .as("CSS servido deve ficar abaixo de 200KB — acima disso provavelmente "
-                        + "o `content` em tailwind.config.js está pegando arquivos demais")
+                        + "o `@source` no input CSS está pegando arquivos demais")
                 .isLessThan(200_000);
         assertThat(css.length())
                 .as("CSS servido deve ser não-trivial — abaixo de 1KB algo no build quebrou")
@@ -356,156 +356,155 @@ class StaticAssetsCssCoverageIT {
     }
 
     // ============================================================
-    // H) Variantes irmãs do .card declaradas no CSS — regressão.
+    // H) Higiene de config: tailwind.config.js foi extinto pela
+    //    chore-ux-010 — não pode reaparecer no repositório.
     //
-    // O IT do Codificador adicionou guarda específica para .card--flat
-    // (fix-001). As variantes irmãs .card--dense, .card--raised e
-    // .card--interactive já existiam antes do fix e continuam sendo
-    // referenciadas em pelo menos um template:
-    //   - .card--interactive → templates/comecar.html (CTAs principais)
-    //                          e templates/components/card.html (fragment
-    //                          default da spec §3.8).
-    //   - .card--dense       → variante de densidade prevista no fragment
-    //                          card.html (§3.8) — usada quando o caller
-    //                          passa dense=true.
-    //   - .card--raised      → variante de elevação prevista pela spec
-    //                          §3.3; sua remoção do CSS quebra qualquer
-    //                          futuro consumidor sem aviso.
-    //
-    // Sem este teste, basta o purge do Tailwind v4 ser mal-configurado
-    // ou alguém deletar o seletor literal de app.css para a variante
-    // sumir silenciosamente do CSS servido. Contrato estrutural do
-    // design system.
+    //    Nota: este teste depende do working directory do `mvn test`
+    //    ser a raiz do projeto. O Maven garante isso por padrão
+    //    (${project.basedir}). Em execução via IDE com cwd diferente
+    //    o teste pode falhar por motivo errado.
     // ============================================================
 
     @Test
-    void cssDeclaresCardSiblingVariantSelectors() throws Exception {
+    void tailwindConfigJsIsAbsentFromProject() {
+        assertThat(java.nio.file.Files.exists(java.nio.file.Path.of("tailwind.config.js")))
+                .as("tailwind.config.js foi removido em chore-ux-010; escopo de scan vive em @source no input CSS")
+                .isFalse();
+    }
+
+    // ============================================================
+    // I) Input CSS declara @source explícito — Tailwind v4 CSS-first.
+    // ============================================================
+
+    @Test
+    void tailwindInputCssDeclaresExplicitSource() throws java.io.IOException {
+        String inputCss = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/frontend/css/app.css"));
+
+        assertThat(inputCss)
+                .as("input CSS deve preservar @import \"tailwindcss\";")
+                .contains("@import \"tailwindcss\"");
+
+        assertThat(inputCss)
+                .as("input CSS deve declarar @source apontando para resources/templates "
+                        + "(caminho relativo ao próprio input CSS)")
+                .containsPattern("@source\\s+[\"']\\.\\./resources/templates[\"']");
+    }
+
+    // ============================================================
+    // J) Cap apertado: com @source restrito, CSS não pode crescer
+    //    além de ~50KB. Acima disso indica que algo ampliou o scope
+    //    (ex.: alguém removeu @source e voltou para auto-detection).
+    //    O cap de 200KB do método (D) é o cap de catástrofe; este é
+    //    o cap de regressão de configuração.
+    // ============================================================
+
+    @Test
+    void cssOutputDoesNotIncludeNodeModulesArtifacts() throws Exception {
         String css = fetchCss();
 
-        Pattern cardDense = Pattern.compile("\\.card--dense\\s*\\{");
-        assertThat(cardDense.matcher(css).find())
-                .as("CSS servido deve conter a regra .card--dense { ... } "
-                        + "(variante de densidade prevista pelo fragment §3.8)")
-                .isTrue();
+        assertThat(css.length())
+                .as("CSS com @source restrito a templates deve ficar abaixo de 50KB "
+                        + "(atual ~23KB). Acima disso indica que o scan está pegando "
+                        + "arquivos fora do diretório de templates.")
+                .isLessThan(50_000);
+    }
 
-        Pattern cardRaised = Pattern.compile("\\.card--raised\\s*\\{");
-        assertThat(cardRaised.matcher(css).find())
-                .as("CSS servido deve conter a regra .card--raised { ... } "
-                        + "(variante de elevação prevista pela spec §3.3)")
-                .isTrue();
+    // ============================================================
+    // K) (QA) @source declara um diretório que existe no repositório.
+    //
+    //    Extensão de (I): além do regex casar, o caminho-alvo precisa
+    //    existir como diretório real. Sem isso, o build do Tailwind
+    //    silenciosamente gera CSS vazio (zero classes utilitárias) e
+    //    o cap inferior de (D) — > 1KB — não pega o caso de "scope
+    //    aponta para diretório errado" (porque o CSS literal sozinho
+    //    já passa de 1KB). Aqui validamos a integridade do contrato.
+    //
+    //    Plano QA da issue #48, cenário 1.
+    // ============================================================
 
-        Pattern cardInteractive = Pattern.compile("\\.card--interactive\\s*\\{");
-        assertThat(cardInteractive.matcher(css).find())
-                .as("CSS servido deve conter a regra .card--interactive { ... } "
-                        + "(variante usada por comecar.html nos CTAs principais)")
+    @Test
+    void tailwindSourceDirectoryTargetExistsOnDisk() {
+        java.nio.file.Path target = java.nio.file.Path.of("src/main/resources/templates");
+
+        assertThat(java.nio.file.Files.exists(target))
+                .as("@source aponta para src/main/resources/templates — diretório precisa existir")
+                .isTrue();
+        assertThat(java.nio.file.Files.isDirectory(target))
+                .as("src/main/resources/templates precisa ser diretório (não arquivo) para o scan recursivo do Tailwind v4")
                 .isTrue();
     }
 
     // ============================================================
-    // I) .card--flat não pode redeclarar background / border /
-    // border-radius — invariante "no-op visual" da spec §3.3.
+    // L) (QA) Input CSS NÃO declara @config — migração v3→v4 completa.
     //
-    // O critério de aceitação #3 da fix-001 declara textualmente:
-    //   ".card--flat NÃO redeclara background, border nem
-    //    border-radius (herda de .card)."
+    //    A diretiva @config "./tailwind.config.js" era a opção
+    //    descartada na decisão arquitetural (mistura paradigmas v3+v4
+    //    e mantém arquivo de config). Se alguém adicionar @config no
+    //    CSS no futuro, a chore-ux-010 está parcialmente regredida:
+    //    o tailwind.config.js voltaria a ser exigido em build time.
+    //    Este teste protege o "CSS-first puro" como contrato.
     //
-    // O Codificador descobriu que o minificador do Tailwind v4 descarta
-    // blocos vazios, então adicionou `display: block` (já herdado de
-    // .card) como propriedade no-op visualmente neutra. Esse desvio
-    // é coerente com o espírito da spec — desde que ninguém amplie o
-    // bloco no futuro com propriedades que de fato divirjam de .card
-    // sem antes promover .card--flat a variante distinta.
-    //
-    // Este teste extrai o bloco `.card--flat{...}` do CSS servido e
-    // verifica que nenhuma das propriedades proibidas pela spec
-    // (background, border:, border-radius, border-color) aparece
-    // dentro dele. Se um dev futuro adicionar `border: 0` ou
-    // `background: white` ao seletor sem revisar a spec, este teste
-    // falha imediatamente.
-    //
-    // Contrato estrutural: protege a decisão de design "flat herda do
-    // base" — se quebrar, o componente passa a divergir do que a §3.3
-    // promete ao consumidor do design system.
+    //    Plano QA da issue #48, cenário 2.
     // ============================================================
 
     @Test
-    void cardFlatDoesNotRedeclareInheritedBaseProperties() throws Exception {
-        String css = fetchCss();
+    void tailwindInputCssDoesNotDeclareAtConfigDirective() throws java.io.IOException {
+        String inputCss = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/frontend/css/app.css"));
 
-        // Captura o conteúdo entre `.card--flat{` e o próximo `}`.
-        // Minificação do Tailwind v4 colapsa espaços, mas o padrão é
-        // tolerante a whitespace para sobreviver a pretty-print local.
-        Pattern cardFlatBlock = Pattern.compile("\\.card--flat\\s*\\{([^}]*)\\}");
-        Matcher matcher = cardFlatBlock.matcher(css);
-
-        assertThat(matcher.find())
-                .as("CSS deve conter o bloco .card--flat { ... } extraível para inspecionar "
-                        + "as propriedades declaradas (precondição para verificar a invariante "
-                        + "no-op da spec §3.3)")
-                .isTrue();
-
-        String declarations = matcher.group(1);
-
-        // A spec §3.3 + critério de aceitação #3 da fix-001 proíbem
-        // explicitamente estas propriedades em .card--flat:
-        assertThat(declarations)
-                .as(".card--flat NÃO pode redeclarar `background` — a spec §3.3 exige "
-                        + "herança de .card base (declarações encontradas: <%s>)", declarations)
-                .doesNotContain("background");
-        assertThat(declarations)
-                .as(".card--flat NÃO pode redeclarar `border:` shorthand — a spec §3.3 exige "
-                        + "herança de .card base (declarações encontradas: <%s>)", declarations)
-                .doesNotContain("border:");
-        assertThat(declarations)
-                .as(".card--flat NÃO pode redeclarar `border-radius` — a spec §3.3 exige "
-                        + "herança de .card base (declarações encontradas: <%s>)", declarations)
-                .doesNotContain("border-radius");
-        assertThat(declarations)
-                .as(".card--flat NÃO pode redeclarar `border-color` — a spec §3.3 exige "
-                        + "herança de .card base (declarações encontradas: <%s>)", declarations)
-                .doesNotContain("border-color");
+        assertThat(inputCss)
+                .as("input CSS não pode declarar @config — Tailwind v4 CSS-first puro (chore-ux-010); "
+                        + "se @config voltar, o tailwind.config.js volta a ser exigido em build time")
+                .doesNotContain("@config");
     }
 
     // ============================================================
-    // J) Contrato HTML↔CSS: a página servida por /cadastro/responsavel
-    // continua emitindo <article class="card card--flat">.
+    // M) (QA) Nenhum @source declarado aponta para node_modules/target.
     //
-    // O motivo de existir a declaração `.card--flat` em app.css é
-    // honrar o contrato com 4 templates que nominalmente usam essa
-    // classe (verificar-email.html, verify-email-resultado.html,
-    // cadastro/adolescente_bloqueado.html, cadastro/responsavel_em_breve.html).
+    //    @source restritivo é o coração da chore-ux-010. Se alguém
+    //    adicionar @source apontando para node_modules/ ou target/,
+    //    o scan volta a varrer milhares de arquivos (o problema
+    //    original que motivou esta chore). O cap em (J) detecta o
+    //    sintoma (CSS gigante), mas só após o build; este teste
+    //    falha imediatamente no input.
     //
-    // Das 4, apenas `cadastro/responsavel_em_breve.html` é servida por
-    // rota pública sem precondições — `/cadastro/responsavel` é um stub
-    // controller (GuardianRegistrationStubController) que retorna a view
-    // diretamente. As demais são autenticadas (/verificar-email) ou
-    // dependem do fluxo de POST de cadastro (adolescente_bloqueado).
-    //
-    // Este teste fecha o loop: se alguém remover a classe `card--flat`
-    // do template, o CSS da fix-001 vira código morto e o contrato
-    // HTML↔CSS↔spec se quebra silenciosamente. Note que NÃO testamos
-    // texto, cor, layout ou microcopy — apenas a presença estrutural
-    // do par de classes BEM (`card` + `card--flat`) no DOM renderizado.
+    //    Plano QA da issue #48, cenário 3.
     // ============================================================
 
     @Test
-    void guardianStubPageRendersCardFlatVariant() throws Exception {
+    void tailwindInputCssHasNoScopeIntoNodeModulesOrBuildOutputs() throws java.io.IOException {
+        String inputCss = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/frontend/css/app.css"));
+
+        assertThat(inputCss)
+                .as("input CSS não pode referenciar node_modules — escopo deve ficar restrito a templates")
+                .doesNotContain("node_modules");
+        assertThat(inputCss)
+                .as("input CSS não pode referenciar /target — escopo deve ficar restrito a templates")
+                .doesNotContain("/target");
+    }
+
+    // ============================================================
+    // N) (QA) Cobertura cruzada — /cadastro/responsavel também
+    //    permanece livre do Play CDN e mantém o link para /css/app.css.
+    //
+    //    Rota pública servida por GuardianRegistrationStubController,
+    //    não coberta pelo ValueSource do método (B). Garante que o
+    //    saneamento do CDN e a entrega do CSS empacotado valem
+    //    universalmente para todas as rotas servidas pelo layout
+    //    base.html.
+    //
+    //    Plano QA da issue #48, cenário 4.
+    // ============================================================
+
+    @Test
+    void guardianRegistrationRouteHasNoTailwindPlayCdnScript() throws Exception {
         String html = mvc.perform(get("/cadastro/responsavel"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        Document doc = Jsoup.parse(html);
-
-        Element card = doc.selectFirst("article.card.card--flat");
-        assertThat(card)
-                .as("/cadastro/responsavel deve emitir um <article> com ambas as classes "
-                        + "BEM `card` e `card--flat` — contrato HTML↔CSS da fix-001 que "
-                        + "justifica a declaração de .card--flat em app.css")
-                .isNotNull();
-
-        assertThat(card.classNames())
-                .as("class list do <article> deve conter exatamente o par BEM esperado pela spec §3.3")
-                .contains("card", "card--flat");
+        assertCdnFreeAndAppCssLinked(html, "/cadastro/responsavel");
     }
 
     // ============================================================
