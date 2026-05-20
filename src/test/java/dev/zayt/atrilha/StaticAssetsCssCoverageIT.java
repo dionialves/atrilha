@@ -2,6 +2,7 @@ package dev.zayt.atrilha;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -13,6 +14,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -349,6 +353,159 @@ class StaticAssetsCssCoverageIT {
         assertThat(css)
                 .as("Token --font-display deve estar declarado (consumido por h1-h2 e .avatar-initial)")
                 .contains("--font-display");
+    }
+
+    // ============================================================
+    // H) Variantes irmãs do .card declaradas no CSS — regressão.
+    //
+    // O IT do Codificador adicionou guarda específica para .card--flat
+    // (fix-001). As variantes irmãs .card--dense, .card--raised e
+    // .card--interactive já existiam antes do fix e continuam sendo
+    // referenciadas em pelo menos um template:
+    //   - .card--interactive → templates/comecar.html (CTAs principais)
+    //                          e templates/components/card.html (fragment
+    //                          default da spec §3.8).
+    //   - .card--dense       → variante de densidade prevista no fragment
+    //                          card.html (§3.8) — usada quando o caller
+    //                          passa dense=true.
+    //   - .card--raised      → variante de elevação prevista pela spec
+    //                          §3.3; sua remoção do CSS quebra qualquer
+    //                          futuro consumidor sem aviso.
+    //
+    // Sem este teste, basta o purge do Tailwind v4 ser mal-configurado
+    // ou alguém deletar o seletor literal de app.css para a variante
+    // sumir silenciosamente do CSS servido. Contrato estrutural do
+    // design system.
+    // ============================================================
+
+    @Test
+    void cssDeclaresCardSiblingVariantSelectors() throws Exception {
+        String css = fetchCss();
+
+        Pattern cardDense = Pattern.compile("\\.card--dense\\s*\\{");
+        assertThat(cardDense.matcher(css).find())
+                .as("CSS servido deve conter a regra .card--dense { ... } "
+                        + "(variante de densidade prevista pelo fragment §3.8)")
+                .isTrue();
+
+        Pattern cardRaised = Pattern.compile("\\.card--raised\\s*\\{");
+        assertThat(cardRaised.matcher(css).find())
+                .as("CSS servido deve conter a regra .card--raised { ... } "
+                        + "(variante de elevação prevista pela spec §3.3)")
+                .isTrue();
+
+        Pattern cardInteractive = Pattern.compile("\\.card--interactive\\s*\\{");
+        assertThat(cardInteractive.matcher(css).find())
+                .as("CSS servido deve conter a regra .card--interactive { ... } "
+                        + "(variante usada por comecar.html nos CTAs principais)")
+                .isTrue();
+    }
+
+    // ============================================================
+    // I) .card--flat não pode redeclarar background / border /
+    // border-radius — invariante "no-op visual" da spec §3.3.
+    //
+    // O critério de aceitação #3 da fix-001 declara textualmente:
+    //   ".card--flat NÃO redeclara background, border nem
+    //    border-radius (herda de .card)."
+    //
+    // O Codificador descobriu que o minificador do Tailwind v4 descarta
+    // blocos vazios, então adicionou `display: block` (já herdado de
+    // .card) como propriedade no-op visualmente neutra. Esse desvio
+    // é coerente com o espírito da spec — desde que ninguém amplie o
+    // bloco no futuro com propriedades que de fato divirjam de .card
+    // sem antes promover .card--flat a variante distinta.
+    //
+    // Este teste extrai o bloco `.card--flat{...}` do CSS servido e
+    // verifica que nenhuma das propriedades proibidas pela spec
+    // (background, border:, border-radius, border-color) aparece
+    // dentro dele. Se um dev futuro adicionar `border: 0` ou
+    // `background: white` ao seletor sem revisar a spec, este teste
+    // falha imediatamente.
+    //
+    // Contrato estrutural: protege a decisão de design "flat herda do
+    // base" — se quebrar, o componente passa a divergir do que a §3.3
+    // promete ao consumidor do design system.
+    // ============================================================
+
+    @Test
+    void cardFlatDoesNotRedeclareInheritedBaseProperties() throws Exception {
+        String css = fetchCss();
+
+        // Captura o conteúdo entre `.card--flat{` e o próximo `}`.
+        // Minificação do Tailwind v4 colapsa espaços, mas o padrão é
+        // tolerante a whitespace para sobreviver a pretty-print local.
+        Pattern cardFlatBlock = Pattern.compile("\\.card--flat\\s*\\{([^}]*)\\}");
+        Matcher matcher = cardFlatBlock.matcher(css);
+
+        assertThat(matcher.find())
+                .as("CSS deve conter o bloco .card--flat { ... } extraível para inspecionar "
+                        + "as propriedades declaradas (precondição para verificar a invariante "
+                        + "no-op da spec §3.3)")
+                .isTrue();
+
+        String declarations = matcher.group(1);
+
+        // A spec §3.3 + critério de aceitação #3 da fix-001 proíbem
+        // explicitamente estas propriedades em .card--flat:
+        assertThat(declarations)
+                .as(".card--flat NÃO pode redeclarar `background` — a spec §3.3 exige "
+                        + "herança de .card base (declarações encontradas: <%s>)", declarations)
+                .doesNotContain("background");
+        assertThat(declarations)
+                .as(".card--flat NÃO pode redeclarar `border:` shorthand — a spec §3.3 exige "
+                        + "herança de .card base (declarações encontradas: <%s>)", declarations)
+                .doesNotContain("border:");
+        assertThat(declarations)
+                .as(".card--flat NÃO pode redeclarar `border-radius` — a spec §3.3 exige "
+                        + "herança de .card base (declarações encontradas: <%s>)", declarations)
+                .doesNotContain("border-radius");
+        assertThat(declarations)
+                .as(".card--flat NÃO pode redeclarar `border-color` — a spec §3.3 exige "
+                        + "herança de .card base (declarações encontradas: <%s>)", declarations)
+                .doesNotContain("border-color");
+    }
+
+    // ============================================================
+    // J) Contrato HTML↔CSS: a página servida por /cadastro/responsavel
+    // continua emitindo <article class="card card--flat">.
+    //
+    // O motivo de existir a declaração `.card--flat` em app.css é
+    // honrar o contrato com 4 templates que nominalmente usam essa
+    // classe (verificar-email.html, verify-email-resultado.html,
+    // cadastro/adolescente_bloqueado.html, cadastro/responsavel_em_breve.html).
+    //
+    // Das 4, apenas `cadastro/responsavel_em_breve.html` é servida por
+    // rota pública sem precondições — `/cadastro/responsavel` é um stub
+    // controller (GuardianRegistrationStubController) que retorna a view
+    // diretamente. As demais são autenticadas (/verificar-email) ou
+    // dependem do fluxo de POST de cadastro (adolescente_bloqueado).
+    //
+    // Este teste fecha o loop: se alguém remover a classe `card--flat`
+    // do template, o CSS da fix-001 vira código morto e o contrato
+    // HTML↔CSS↔spec se quebra silenciosamente. Note que NÃO testamos
+    // texto, cor, layout ou microcopy — apenas a presença estrutural
+    // do par de classes BEM (`card` + `card--flat`) no DOM renderizado.
+    // ============================================================
+
+    @Test
+    void guardianStubPageRendersCardFlatVariant() throws Exception {
+        String html = mvc.perform(get("/cadastro/responsavel"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Document doc = Jsoup.parse(html);
+
+        Element card = doc.selectFirst("article.card.card--flat");
+        assertThat(card)
+                .as("/cadastro/responsavel deve emitir um <article> com ambas as classes "
+                        + "BEM `card` e `card--flat` — contrato HTML↔CSS da fix-001 que "
+                        + "justifica a declaração de .card--flat em app.css")
+                .isNotNull();
+
+        assertThat(card.classNames())
+                .as("class list do <article> deve conter exatamente o par BEM esperado pela spec §3.3")
+                .contains("card", "card--flat");
     }
 
     // ============================================================

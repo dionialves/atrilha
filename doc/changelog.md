@@ -15,6 +15,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Bug Fixes
 - fix-001 · Corrige cache de CSS em produção via fingerprint ([#49](https://github.com/dionialves/atrilha/issues/49))
+- fix-001 · Declara seletor `.card--flat` no CSS conforme spec UX §3.3 ([#46](https://github.com/dionialves/atrilha/issues/46))
 
 ## [0.2.0] - 2026-05-19
 

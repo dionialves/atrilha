@@ -180,6 +180,29 @@ class StaticAssetsCssIT {
                 .contains(".card");
     }
 
+    @Test
+    void cssDeclaresCardFlatVariantSelector() throws Exception {
+        String css = fetchCss();
+
+        Pattern cardFlatRule = Pattern.compile("\\.card--flat\\s*\\{");
+        assertThat(cardFlatRule.matcher(css).find())
+                .as("CSS servido deve conter a regra .card--flat { ... } "
+                        + "(variante default da spec UX chore-ux-003 §3.3, "
+                        + "usada por verificar-email, verify-email-resultado, "
+                        + "cadastro/adolescente_bloqueado e cadastro/responsavel_em_breve)")
+                .isTrue();
+    }
+
+    @Test
+    void cssRetainsCardFlatClassNameAcrossPurge() throws Exception {
+        String css = fetchCss();
+
+        assertThat(css)
+                .as("Nome da classe .card--flat deve sobreviver ao build (proteção contra "
+                        + "regressão de purge ou remoção acidental do seletor literal em app.css)")
+                .contains(".card--flat");
+    }
+
     // ============================================================
     // Helpers
     // ============================================================
