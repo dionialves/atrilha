@@ -425,3 +425,86 @@
 - **Servidor real não foi tocado** — esta chore alinha documentação ao estado real. Se em algum momento o time migrar o servidor para `/opt/atrilha` (path mais curto, sem namespace `zayt`), abre-se chore operacional dedicada para mover containers, bind mounts e atualizar `deploy.yml:50` em conjunto. **Decisão registrada: fora do escopo desta chore.**
 - **`doc/release_notes/0.0.1.md:94` mantém `/opt/atrilha/` deliberadamente** — release notes publicadas são imutáveis (registro do que valia na v0.0.1). O drift atual será mencionado no PUBLISH da próxima versão como "documentação operacional alinhada ao path real de produção".
 - **Ampliação para `.env.example`** foi decisão do Codificador na 2ª passada após o QA apontar drift residual. O critério literal de aceitação da issue (grep com includes específicos) já passava antes; a ampliação fortalece o objetivo declarado (zero drift operacional) sem alterar risco. Aceito pelo Revisor.
+## CHORE · Mover scope do Tailwind v4 do `tailwind.config.js` para `@source` no CSS (#48)
+
+**Tipo:** Chore técnica (Sprint 3 — dívida do pipeline Tailwind introduzido pelo PR #44 / chore-ux-009)
+**Issue:** [#48](https://github.com/dionialves/atrilha/issues/48)
+**Branch:** `chore/48-tailwind-source-css`
+**Data de conclusão:** 2026-05-20
+
+### O que foi feito
+- Eliminado `tailwind.config.js` da raiz do repositório (`git rm`) — não-carregado pelo Tailwind v4 (config CSS-first é o paradigma da v4) e era **configuração morta**: o `content: ["./src/main/resources/templates/**/*.html"]` declarado lá nunca era honrado porque o `app.css` não importava o config via `@config`. O Tailwind caía em **auto-detection**, varrendo o cwd com base no `.gitignore`.
+- Migrado o escopo de scan para a diretiva **`@source "../resources/templates"`** declarada inline em `src/main/frontend/css/app.css:24`, logo após `@import "tailwindcss"`. Caminho é relativo ao próprio arquivo CSS de entrada (sintaxe documentada do Tailwind v4) — portável entre cwd local (`/Users/.../atrilha`) e container Docker (`/workspace`), sem depender de `.gitignore`.
+- Resolve dois sintomas com uma única mudança: (1) configuração morta dá falsa sensação de escopo restrito que não existe; (2) `.gitignore` não vai para dentro do Docker build, então o auto-detection dentro do estágio Maven escaneava `node/` + `node_modules/` (~80MB de JS) inflando build e arriscando classes espúrias no CSS final.
+- `Dockerfile` linha 10 reduzida para `COPY package.json package-lock.json ./` — sem referência ao config removido. Sem mexer em mais nada do Dockerfile; `COPY src ./src` continua trazendo o input CSS, e o `@source` declarado garante escopo determinístico independente de `.gitignore`.
+- Comentários em `StaticAssetsCssCoverageIT.java` que ainda mencionavam `tailwind.config.js` (linhas 31, 69-70, 190 e mensagem do `.as(...)` em 204) foram atualizados para referenciar `@source` no input CSS — nenhum comentário sobrevivente da era pré-chore. As menções remanescentes ao nome do arquivo são **documentais explícitas**: o teste H valida que o arquivo NÃO existe e o teste L explica `@config` como antipadrão.
+- Cobertura de testes: **148/148 verdes** (`failOnWarning=true` mantido). TDD respeitado conforme "Ordem TDD" do plano: 3 testes do Codificador escritos antes da produção em `StaticAssetsCssCoverageIT` (H — `tailwindConfigJsIsAbsentFromProject`, I — `tailwindInputCssDeclaresExplicitSource`, J — `cssOutputDoesNotIncludeNodeModulesArtifacts` com cap apertado de 50 KB sobre o CSS gerado). QA estendeu com 4 cenários do plano (K — diretório-alvo do `@source` existe no disco, L — ausência de `@config` no input CSS, M — `@source` não aponta para `node_modules` ou `/target`, N — cobertura cruzada da rota `/cadastro/responsavel`). Total na classe: 13 testes (6 herdados + 3 Codificador + 4 QA).
+- CSS gerado: ~25 KB (`target/classes/static/css/app.css`) — bem abaixo do cap apertado de 50 KB que protege contra regressão futura de configuração de escopo.
+
+### Impacto
+- **Módulo:** toolchain de frontend (Tailwind v4 / build). Sem código Java de produção alterado.
+- **Migrations Flyway:** nenhuma.
+- **Mudanças no `pom.xml`:** nenhuma — `frontend-maven-plugin` permanece como está.
+- **Arquivos novos:** nenhum (testes H/I/J/K/L/M/N adicionados à classe existente `StaticAssetsCssCoverageIT.java`).
+- **Arquivos editados:**
+  - `src/main/frontend/css/app.css` (+5 linhas: bloco de comentário + `@source "../resources/templates";` após o `@import`).
+  - `Dockerfile` (linha 10: removida menção a `tailwind.config.js`).
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsCssCoverageIT.java` (comentários atualizados + 7 testes novos).
+- **Arquivos removidos:**
+  - `tailwind.config.js` (config morta — substituída pela diretiva `@source` no CSS).
+- **Efeitos colaterais:**
+  - Escopo de scan do Tailwind agora é **determinístico em qualquer ambiente** (local, CI, Docker) — independe de cwd e `.gitignore`.
+  - Tamanho do CSS gerado permanece estável (~25 KB) — não houve regressão visual nem de cobertura. Auto-detection deixou de ser acionado em qualquer cenário.
+
+### Como testar
+1. A partir do worktree (`/Users/dionia.oliveira/sources/atrilha-worktrees/48-tailwind-source`), rodar `./mvnw clean verify` — **BUILD SUCCESS**, 148 testes verdes, 0 warnings.
+2. Conferir que `tailwind.config.js` sumiu: `ls tailwind.config.js 2>&1` (erro esperado) e `git ls-files | grep tailwind.config.js` (vazio).
+3. Conferir o `@source` declarado: `grep -n '@source' src/main/frontend/css/app.css` deve retornar a linha 24 com `"../resources/templates"`.
+4. Conferir tamanho do CSS pós-build: `wc -c target/classes/static/css/app.css` deve retornar ~25 KB (bem abaixo do cap de 50 KB do teste J).
+5. (Opcional) Build Docker: `docker compose --profile full up --build` — confirma que dentro do container o CSS continua sendo gerado em tamanho razoável (a prova real de que o auto-detection deixou de varrer `node_modules/` no Docker).
+
+### Gaps visuais / manuais (declarados pelo QA + Revisor)
+- **Validação dentro do Docker** não foi exercitada nesta revisão (apenas `./mvnw` na host). O Dockerfile foi modificado de forma cirúrgica (remoção de um arquivo da lista de `COPY`); o pipeline CI/CD da chore-008 cobre o build linux/amd64 no merge. Inspeção manual `docker compose --profile full up --build` recomendada se houver dúvida.
+- **Gap consciente do teste J (cap < 50 KB):** o teste valida o **resultado** (CSS pequeno) como proxy de "scope restrito"; não prova diretamente que `node_modules/` não está sendo escaneado **dentro do Docker**. A prova end-to-end exigiria rodar `docker build` dentro de `mvn test`, o que é inviável. O `@source` explícito + a inspeção do `Dockerfile` (sem `tailwind.config.js` na linha `COPY`) cobrem o restante do contrato.
+- **`doc/UX/01-design-tokens.md:7`** menciona `tailwind.config.js` em uma nota sobre Tailwind v4. A referência continua tecnicamente correta (o ponto da nota é "Tailwind v4 não usa `tailwind.config.js` da v3 para tokens, usa `@theme`") — **sem ação requerida** nesta chore (`doc/UX/**` só é editado pelo Designer pela matriz de propriedade). Registrado como observação não-bloqueante.
+- **Recomendação não-bloqueante:** cache de `node/` e `~/.npm` no GitHub Actions pode acelerar builds em CI (chore separada, opcional).
+## FIX · Declara seletor `.card--flat` no CSS conforme spec UX §3.3 (#46)
+
+**Tipo:** Bug Fix (Sprint 3 — débito de design system descoberto na revisão da chore-ux-009)
+**Issue:** [#46](https://github.com/dionialves/atrilha/issues/46)
+**Branch:** `fix/46-card-flat`
+**Data de conclusão:** 2026-05-20
+
+### O que foi feito
+- Reparado o contrato `HTML ↔ spec UX ↔ CSS` em torno da variante default `Card → flat` (`doc/UX/02-componentes-base.md §3.3` e §3.8). Quatro templates já em produção (`verificar-email.html`, `verify-email-resultado.html`, `cadastro/adolescente_bloqueado.html`, `cadastro/responsavel_em_breve.html`) emitem `<article class="card card--flat">`, mas até então **não existia seletor `.card--flat` em `src/main/frontend/css/app.css`**. A spec §3.8 prevê o fragment Thymeleaf `th:fragment="card(variant, dense)"` gerando `card--${variant ?: 'flat'}`, ou seja, o nome `card--flat` é parte do contrato público do design system. Sem declaração no CSS, a UI passava por coincidência (flat coincide visualmente com a base `.card`), mas o contrato ficava implícito e qualquer evolução futura da spec §3.3 (ex.: borda mais sutil em densidade alta) seria aplicada no seletor errado.
+- Adicionada a declaração `.card--flat { display: block; }` em `src/main/frontend/css/app.css` entre `.card` (linhas 353-359) e `.card--dense`, precedida por um bloco de comentário de 9 linhas que cita explicitamente `chore-ux-003 §3.3` + §3.8 e justifica a decisão de **não** redeclarar `background`, `border` nem `border-radius` (a spec §3.3 prescreve herança literal do `.card` base).
+- **Desvio cirúrgico do plano (autorizado e documentado):** o plano original prescrevia bloco vazio `.card--flat { /* herda */ }`. Em RED→GREEN, o Codificador descobriu que o minificador `@tailwindcss/cli@4.x` descarta seletores com bloco vazio durante o build standalone (chore-ux-009 #43), o que faria os 2 testes da Ordem TDD continuarem falhando. Solução: declarar uma propriedade **estritamente no-op visual** — `display: block` já é o valor que `.card` base declara e que qualquer `<article>`/`<div>` consome por default; redeclará-lo em `.card--flat` não altera nada do que o navegador renderiza. A invariante "no-op" foi formalizada pelo QA num teste blocklist explícito (`cardFlatDoesNotRedeclareInheritedBaseProperties`) que extrai o bloco minificado e afirma ausência de `background`, `border:`, `border-radius` e `border-color` — qualquer dev futuro que ampliar o seletor com propriedades de fato divergentes da base será capturado.
+- Cobertura de testes: **232/232 verdes** (86 unit + 146 IT), 0 falhas, 0 skipped, 0 warnings (`failOnWarning=true` mantido). TDD seguido: 2 testes da "Ordem TDD" do plano (`StaticAssetsCssIT#cssDeclaresCardFlatVariantSelector` e `#cssRetainsCardFlatClassNameAcrossPurge`) escritos antes do código de produção, observados em RED, levados a GREEN apenas após a edição do `app.css`. QA estendeu com 3 cenários estruturais em `StaticAssetsCssCoverageIT`: (a) `cssDeclaresCardSiblingVariantSelectors` protege as variantes irmãs (`.card--dense`, `.card--raised`, `.card--interactive`) contra regressão de purge; (b) `cardFlatDoesNotRedeclareInheritedBaseProperties` codifica a invariante "no-op visual" do critério #3 da issue; (c) `guardianStubPageRendersCardFlatVariant` fecha o loop HTML↔CSS via Jsoup parsing de `/cadastro/responsavel` confirmando que o `<article>` ainda emite o par BEM `card card--flat`. Nenhum teste de cor de pixel, fonte, layout ou microcopy — apenas contrato estrutural.
+
+### Impacto
+- **Módulo:** design system / frontend CSS (zero impacto em Java de produção).
+- **Migrations Flyway:** nenhuma.
+- **Mudanças no `pom.xml`:** nenhuma.
+- **Arquivos editados (produção):**
+  - `src/main/frontend/css/app.css` (`+11/-0`: declaração `.card--flat { display: block; }` + comentário de 9 linhas referenciando spec).
+- **Arquivos editados (testes):**
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsCssIT.java` (`+23/-0`: 2 testes da Ordem TDD do Codificador).
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsCssCoverageIT.java` (`+157/-0`: 3 testes adicionais do QA + 2 imports — `Element`, `java.util.regex.{Matcher,Pattern}`).
+- **Arquivos novos:** nenhum.
+- **Arquivos removidos:** nenhum.
+- **Templates intocados (preservação de contrato):** `verificar-email.html`, `verify-email-resultado.html`, `cadastro/adolescente_bloqueado.html`, `cadastro/responsavel_em_breve.html`.
+- **Efeitos colaterais:** zero observável. A regra adicionada é `display: block` que já é o valor herdado/computado; o CSS gerado em `target/classes/static/css/app.css` agora contém literalmente a string `.card--flat{display:block}` (após minificação) — o que o teste `cssRetainsCardFlatClassNameAcrossPurge` valida.
+
+### Como testar
+1. A partir do worktree (`/Users/dionia.oliveira/sources/atrilha-worktrees/46-card-flat`), rodar `./mvnw clean verify` — **BUILD SUCCESS**, 232 testes verdes (86 unit + 146 IT), 0 warnings.
+2. Inspecionar o CSS gerado: `grep -oE -- '\.card--flat[^{]*\{[^}]*\}' target/classes/static/css/app.css` deve retornar `.card--flat{display:block}` (ou variante minificada equivalente).
+3. Confirmar que o seletor não redeclara propriedades proibidas: `grep -oE -- '\.card--flat\{[^}]*\}' target/classes/static/css/app.css | grep -E '(background|border-radius|border-color|border:)'` deve retornar **vazio**.
+4. Subir o app local: `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` (com Postgres local via `docker compose up -d postgres mailpit`).
+5. Abrir `http://localhost:8084/cadastro/responsavel` — DevTools → inspecionar o `<article>` raiz → confirmar que ambas as classes `card` e `card--flat` estão presentes; aba "Computed" deve exibir as mesmas propriedades visuais que `.card` puro (paridade visual exigida pela spec §3.3).
+6. Inspeção dirigida das outras 3 rotas que usam `card card--flat`: `/verificar-email` (autenticada, login antes), `/verify-email?token=00000000-0000-0000-0000-000000000000` (erro inválido), e o estado de bloqueio `/cadastro/adolescente_bloqueado` (alcançável submetendo idade fora da faixa em `/cadastro/adolescente`).
+
+### Gaps visuais / manuais (declarados pelo QA + Revisor)
+- **Sem regressão visual esperada.** A declaração é no-op por construção (`display: block` já é o valor herdado de `.card` e o default de `<article>`/`<div>`). Não há mudança observável a olho nu em nenhuma das 4 rotas que usam `card card--flat`.
+- **Inspeção visual nas 4 rotas pós-merge** fica como conferência pró-forma do humano: confirmar que as telas continuam idênticas antes/depois — a expectativa é paridade pixel-perfect.
+- **Ponto de extensão futuro:** quando a spec §3.3 evoluir para diferenciar `flat` da base `.card` (ex.: borda atenuada em densidade alta, ou novo token `--card-border-flat`), o seletor agora declarado é o lugar canônico para essa divergência. Toda a invariante "no-op" formalizada pelo QA fica explicitamente blindada — ampliar o bloco com `background`/`border:`/`border-radius`/`border-color` faz `cardFlatDoesNotRedeclareInheritedBaseProperties` falhar, forçando revisão consciente da decisão.
+- **Numeração da issue:** o código `fix-001` foi reutilizado entre a issue #49 (cache de CSS) e a issue #46 (card--flat) por inércia do plano. A numeração definitiva fica para o próximo PUBLISH (sugestão: renumerar para `fix-002` no momento da release `vX.Y.Z`); não-bloqueante.
