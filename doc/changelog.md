@@ -13,6 +13,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Chore
 - chore(chore-ux-009): substituir Tailwind Play CDN por build standalone do Tailwind v4 ([#43](https://github.com/dionialves/atrilha/issues/43))
 
+### Bug Fixes
+- fix-001 · Corrige cache de CSS em produção via fingerprint ([#49](https://github.com/dionialves/atrilha/issues/49))
+
 ## [0.2.0] - 2026-05-19
 
 Marco M1 — Identidade visual definida (Sprint 2). APROVADO pelo humano em Issue [#27](https://github.com/dionialves/atrilha/issues/27).
