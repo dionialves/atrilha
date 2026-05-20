@@ -8,13 +8,150 @@ Decomposição da US-007 em tarefas independentes para execução paralela/seque
 
 ---
 
-## Subtask 007.01 — Infra: dependências e propriedades de configuração
+## Passo a passo — execução da subtask 007.01
 
-**Tipo:** `chore` | **Prioridade:** alta | **Depende de:** nada
+> **Pré-requisito:** criar a GitHub Issue com o título `chore(007.01): adiciona-dependencias-security-oauth-e-config` e labels `chore`, `infra`, `us-007`. Criar branch `chore/??-us007-deps-e-config` a partir de `main`.
 
-Adiciona as dependências do Spring Security + OAuth2 ao `pom.xml` e configura as properties de sessão, rate-limit e seeds em todos os perfis.
+### Passo 1 — Adicionar dependências ao `pom.xml`
 
-### Arquivos a editar/criar
+O `pom.xml` já possui `spring-boot-starter-security` e `spring-security-test`. **Só adicionar o que falta:**
+
+1. Entre as dependências existentes, adicione `spring-boot-starter-oauth2-client` (infra de OAuth2 Google — compartilhada por US-002, US-004 e US-007). Colocar perto de `spring-boot-starter-security`.
+
+2. Adicione `thymeleaf-extras-springsecurity6` (dialeto `sec:` nos templates). Colocar junto das dependências de Thymeleaf (perto do `thymeleaf-layout-dialect`).
+
+**Verificação:** `mvn compile` passa sem errors nem warnings.
+
+### Passo 2 — Adicionar blocos de configuração em `application.properties`
+
+O arquivo atual tem apenas: nome da app, porta 8084, i18n messages, actuator/health e mail config. Adicionar os blocos abaixo **no final do arquivo**, respeitando a ordem:
+
+**2a — Sessão (compartilhada por todos os perfis):**
+```
+spring.session.store-type=cookie
+server.servlet.session.timeout=30d
+server.servlet.session.cookie.max-age=30d
+server.servlet.session.cookie.http-only=true
+# same-site=lax e secure=false em dev/test; prod sobrescreve com secure=true
+server.servlet.session.cookie.same-site=lax
+server.servlet.session.cookie.secure=false
+```
+
+**2b — OAuth Google (registrado uma vez, compartilhado por US-002/004/007):**
+Adicionar um comentário no topo do bloco:
+```
+# OAuth2 Google — registrado uma vez aqui, reutilizado por US-002 (cadastro
+# via Google), US-004 e US-007. Em dev usa credenciais fixas; em prod
+# exige variaveis de ambiente GOOGlE_OAUTH_CLIENT_ID e _CLIENT_SECRET.
+spring.security.oauth2.client.registration.google.client-id=${GOOGLE_OAUTH_CLIENT_ID:dev-oauth-client-id}
+spring.security.oauth2.client.registration.google.client-secret=${GOOGLE_OAUTH_CLIENT_SECRET:dev-oauth-client-secret}
+spring.security.oauth2.client.registration.google.scope=openid,email,profile
+spring.security.oauth2.client.registration.google.authorization-grant-type=authorization_code
+spring.security.oauth2.client.registration.google.redirect-uri={baseUrl}/login/oauth2/code/google
+spring.security.oauth2.client.provider.google.authorization-uri=https://accounts.google.com/o/oauth2/v2/auth
+spring.security.oauth2.client.provider.google.token-uri=https://oauth2.googleapis.com/token
+spring.security.oauth2.client.provider.google.user-info-uri=https://openidconnect.googleapis.com/v1/userinfo
+spring.security.oauth2.client.provider.google.jwk-set-uri=https://www.googleapis.com/oauth2/v3/certs
+```
+
+> **Nota:** O fallback `${GOOGLE_OAUTH_CLIENT_ID:dev-oauth-client-id}` permite boot em dev/test sem env vars. Em prod, `application-prod.properties` sobrescreve com `${GOOGLE_OAUTH_CLIENT_ID}` (sem fallback) — a app falha fast se não estiver definida.
+
+**2c — Rate-limit de login (valores padrão):**
+```
+atrilha.auth.login.max-attempts=5
+atrilha.auth.login.attempt-window=15m
+atrilha.auth.login.block-duration=15m
+```
+
+**2d — Seeds de teste (valores de desenvolvimento):**
+```
+atrilha.auth.seed.teen.email=teen@atrilha.dev
+atrilha.auth.seed.teen.password=teen123
+atrilha.auth.seed.guardian-linked.email=guardian@atrilha.dev
+atrilha.auth.seed.guardian-linked.password=guard123
+atrilha.auth.seed.guardian-linked.has-guardian-link=true
+atrilha.auth.seed.guardian-unlinked.email=guardian-new@atrilha.dev
+atrilha.auth.seed.guardian-unlinked.password=guard123
+```
+
+### Passo 3 — Atualizar `application-dev.properties`
+
+No final do arquivo, adicionar OAuth com credenciais de fallback dev (garante boot sem env vars):
+```
+spring.security.oauth2.client.registration.google.client-id=dev-oauth-client-id
+spring.security.oauth2.client.registration.google.client-secret=dev-oauth-client-secret
+```
+
+> **Importante:** NÃO alterar as config existentes de datasource, flyway, thymeleaf cache (`false`), resource chain (`enabled=false` — fix-001) ou mail (Mailpit). Só adicionar o bloco OAuth.
+
+### Passo 4 — Atualizar `application-prod.properties`
+
+No final do arquivo, adicionar:
+
+**4a — Cookie de sessão seguro (sobrescreve `secure=false` do base):**
+```
+server.servlet.session.cookie.secure=true
+```
+
+**4b — OAuth Google exigindo env vars (sem fallback):**
+```
+spring.security.oauth2.client.registration.google.client-id=${GOOGLE_OAUTH_CLIENT_ID}
+spring.security.oauth2.client.registration.google.client-secret=${GOOGLE_OAUTH_CLIENT_SECRET}
+```
+
+> **Importante:** Sem fallback `${...:default}` — a app deve fail-fast se as variáveis não estiverem setadas em produção. NÃO alterar config existentes de datasource, resource chain (fingerprinting fix-001) ou mail.
+
+### Passo 5 — Atualizar `application-test.properties`
+
+No final do arquivo, adicionar:
+
+**5a — OAuth mock para testes:**
+```
+spring.security.oauth2.client.registration.google.client-id=test-client-id
+spring.security.oauth2.client.registration.google.client-secret=test-client-secret
+```
+
+**5b — Seeds determinísticas para testes:**
+```
+atrilha.auth.seed.teen.email=teen@atrilha.test
+atrilha.auth.seed.teen.password=test123
+atrilha.auth.seed.guardian-linked.email=guardian@atrilha.test
+atrilha.auth.seed.guardian-linked.password=test123
+atrilha.auth.seed.guardian-linked.has-guardian-link=true
+atrilha.auth.seed.guardian-unlinked.email=guardian-new@atrilha.test
+atrilha.auth.seed.guardian-unlinked.password=test123
+```
+
+> **Importante:** NÃO alterar config existentes de H2, flyway desabilitado, media upload dir ou mail fake.
+
+### Passo 6 — Adicionar `@ConfigurationPropertiesScan` ao `AtrilhaApplication.java`
+
+O arquivo atual tem apenas `@SpringBootApplication`. Adicionar:
+```java
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+
+@SpringBootApplication
+@ConfigurationPropertiesScan("dev.zayt.atrilha")
+public class AtrilhaApplication {
+```
+
+> **Por que é necessário:** Sem esta anotação, os beans `LoginRateLimitProperties` (007.04) e o stub de seeds (007.03) com `@ConfigurationProperties` não são escaneados automaticamente, porque o package `dev.zayt.atrilha.auth` e `dev.zayt.atrilha.accounts` não são sub-packages do package da classe principal quando os beans estão em pacotes irmãos. O scan explícito garante que `@EnableConfigurationProperties` não seja necessário em cada bean.
+
+### Passo 7 — Validar
+
+1. `mvn compile` — passa sem errors nem warnings.
+2. `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` — app sobe sem NPE de properties não-resolvidas.
+3. `./mvnw spring-boot:run -Dspring-boot.run.profiles=test` — app sobe sem NPE.
+4. `GOOGLE_OAUTH_CLIENT_ID=g1 GOOGLE_OAUTH_CLIENT_SECRET=s2 ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod` — app tenta subir (vai falhar por database/mail, mas não por OAuth).
+5. Sem as env vars em prod: `./mvnw spring-boot:run -Dspring-boot.run.profiles=prod` — app **deve** falhar no boot com binding error por `${GOOGLE_OAUTH_CLIENT_ID}` não resolvido.
+6. `mvn test` — todos os testes existentes continuam verdes (regressão).
+
+### Observações finais
+- OAuth Google é registrado **uma única vez** (infra compartilhada por US-002, US-004, US-007). Documentar com comentário no topo do bloco em `application.properties`.
+- As seeds de produção devem ser desabilitadas via `@Profile("!prod")` na implementação do stub (subtask 007.03).
+- `secure=true` do cookie só em prod — sobrescrever em `application-prod.properties`.
+
+### Critérios de aceitação
 - `pom.xml` — adicionar:
   - `spring-boot-starter-security`
   - `spring-boot-starter-oauth2-client`
