@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Fragment: email-verification-banner (US-006 §7)
+  Renderiza um banner âmbar no topo da página para usuários autenticados
+  com email_verified_at IS NULL. O atributo do modelo `unverifiedEmail`
+  vem do EmailVerificationBannerAdvice (@ControllerAdvice).
+
+  Não aparece em /verificar-email (próprio fluxo de verificação) nem em
+  /verify-email (tela de resultado) — checagem feita no th:if abaixo a
+  partir de #request.requestURI.
+
+  ARIA: role="status" + aria-live="polite". O botão fechar usa Alpine.js
+  + sessionStorage (key atrilha.banner.email.dismissed) para dispensa
+  temporária dentro da sessão (P11 — sem dark pattern).
+-->
+<div th:fragment="banner"
+     th:if="${showEmailVerificationBanner}"
+     x-data="{ dismissed: sessionStorage.getItem('atrilha.banner.email.dismissed') === '1' }"
+     x-show="!dismissed"
+     x-cloak
+     data-testid="email-verification-banner"
+     role="status"
+     aria-live="polite"
+     class="bg-amber-50 border-b border-amber-200 px-4 py-3 text-sm text-slate-800">
+    <div class="container mx-auto flex flex-wrap items-center justify-between gap-2">
+        <span>Falta confirmar teu e-mail.</span>
+        <div class="flex items-center gap-3">
+            <a th:href="@{/verificar-email}"
+               class="font-medium underline text-amber-800 hover:text-amber-900">
+                Verificar agora
+            </a>
+            <button type="button"
+                    aria-label="Dispensar aviso por enquanto"
+                    class="w-11 h-11 inline-flex items-center justify-center text-amber-800"
+                    x-on:click="sessionStorage.setItem('atrilha.banner.email.dismissed','1'); dismissed = true">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

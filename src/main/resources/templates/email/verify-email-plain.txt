@@ -1,0 +1,16 @@
+Oi, [(${nickname})]
+
+Tu te cadastraste no atrilha agora ha pouco.
+Pra confirmar que esse e-mail e teu, abre esse link:
+
+[(${verificationUrl})]
+
+Esse link vale por 24 horas. Se passou disso, e so pedir
+um novo la no app.
+
+Nao foi tu? Ignora essa mensagem - sem o clique, nada
+acontece.
+
+-
+atrilha - trilha diaria da Licao da Escola Sabatina
+Se precisar de algo, responde esse e-mail.

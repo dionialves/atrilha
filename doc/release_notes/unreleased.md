@@ -211,3 +211,120 @@
 - **Cache de CI/CD para `~/.npm` e `node/`** não foi adicionado ao workflow `.github/workflows/*` — escopo da chore foi estritamente Tailwind. Pode virar chore futura (sugestão: CHORE-CI-001).
 - **CDNs de HTMX/Alpine.js/Lottie permanecem** em `base.html` por decisão explícita do plano (fora de escopo). Migração para self-hosted via mesmo pipeline npm é candidata a chore futura.
 - **`.gitignore` linha 50 de main (`.claude/worktrees`) foi removida inadvertidamente** nesta entrega. Funcionalmente inerte (`.claude/` continua sendo escondido por outro mecanismo via `git status --ignored`), mas é desvio menor do plano. Registrado como observação não-bloqueante.
+
+## US-006 · Verificação de e-mail (#39)
+
+**Tipo:** User Story (Sprint 3, marco M2 — Auth essencial / E1 parte 1)
+**Issue:** [#39](https://github.com/dionialves/atrilha/issues/39)
+**Branch:** `feat/39-verificacao-email`
+**Data de conclusão:** 2026-05-19
+
+### O que foi feito
+- Implementado o fluxo completo de verificação de e-mail (RF-E1-07): emissão de token UUID v4 + persistência em `email_verification_token`, e-mail multipart (HTML + texto-plano) via `JavaMailSender` + Thymeleaf, tela `/verificar-email` (autenticada) com reenvio, endpoint público `GET /verify-email?token=...` cobrindo os três outcomes (SUCCESS, ALREADY_USED, EXPIRED_OR_INVALID) numa única view com `th:switch`, banner persistente para usuários não-verificados via `@ControllerAdvice` + fragment Thymeleaf, e ponto de extensão `@RequiresVerifiedEmail` + `HandlerInterceptor` (plantado para US-012/US-014, não aplicado a endpoints reais nesta US).
+- **Disparo automático pós-cadastro:** `RegisterAdolescentService` publica `AccountRegisteredEvent` no fim da transação; `AccountRegisteredEventListener` consome com `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Transactional(propagation = REQUIRES_NEW)` — garantindo que o e-mail só sai se o INSERT da conta persistiu. Falha SMTP no listener é catchada com WARN sem token nem corpo (PRD §11.8) e a conta + token permanecem no banco, viabilizando o reenvio manual em `/verificar-email`.
+- **Rate-limit em SQL (não in-memory):** o service `EmailVerificationService.resend` consulta `count(*) WHERE created_at > now-1h` e `findFirst by accountId order by createdAt desc` para impor cooldown de 60s e limite de 5/hora por usuário. Decisão arquitetural deliberada: a contagem fica no Postgres, sobrevive a restart e funciona multi-instance — supera a sugestão original do plano (`in-memory` evoluiu para `Redis pós-MVP`); o backend atual já está pronto para escala.
+- **Privacidade do contrato externo:** token inválido, expirado e malformado caem todos em `EXPIRED_OR_INVALID` (UX spec §5.3); o limite/hora não é revelado ao usuário (apenas `retryAfterSeconds`). UUID malformado no `?token=` é parseado defensivamente em `try/catch` no controller — retorna a mesma view de "link inválido".
+- **Race condition de verificação corrigida em bug-fix da 2ª rodada:** `findByTokenForUpdate(UUID)` com `@Lock(LockModeType.PESSIMISTIC_WRITE)` + `@Query` JPQL explícito serializa duas chamadas concorrentes do mesmo token. A primeira marca `used_at`; a segunda, ao adquirir o lock após o commit, vê `used_at != null` e retorna `ALREADY_USED`. Teste de concorrência `verify_concurrentCallsOnSameToken_onlyOneSucceeds` apertado para `isEqualTo(1L)` confirmando contrato externo determinístico.
+- **Banner persistente** em `layout/base.html` renderiza apenas para usuário autenticado com `email_verified_at IS NULL`; `EmailVerificationBannerAdvice` injeta o atributo `showEmailVerificationBanner` levando em conta a URI da requisição (não aparece em `/verificar-email`, `/verificar-email/reenviar` nem `/verify-email`, UX §7.1). Botão dispensar usa Alpine.js + `sessionStorage` (key `atrilha.banner.email.dismissed`) sem dark pattern (P11).
+- **`SecurityConfig`:** rota pública `/verify-email` (token é a credencial); rotas autenticadas `/verificar-email` e `/verificar-email/reenviar`; CSRF mantido em todo POST.
+- **Mailpit em dev** (`docker-compose.yml`): novo serviço `axllent/mailpit:latest`, SMTP 1025 + UI 8025. `application-dev.properties` aponta `spring.mail.host=localhost`. **GreenMail em test** (escopo `test` no `pom.xml`, `com.icegreen:greenmail-junit5:2.1.0`) usado pelo `JavaMailVerificationSenderIT`. **Prod** parametrizado por `${MAIL_HOST}`/`${MAIL_USERNAME}`/etc. — provider real (SES/Mailgun/Postmark/SendGrid) fica como chore separada antes do M2 (registrado em "Ressalvas" no PR).
+- **2 testes da US-005 ajustados** (`EligibleAgeValidatorTest`, `EligibleAgeWithNotNullTest`): adicionado `@SpringBootApplication(exclude = {MailSenderAutoConfiguration, DataSourceAutoConfiguration, HibernateJpaAutoConfiguration, DataJpaRepositoriesAutoConfiguration})` + `@ComponentScan` filtrado ao `AgeEligibilityChecker` no `static class TestApp`. Razão: o novo `EmailVerificationService` no pacote `auth/` arrastava beans JPA/Mail no contexto, quebrando os testes puros do validador. Decisão revisor: ajuste cirúrgico aceito (a) — `auth/` é o pacote correto para verificação de e-mail (faz parte de identidade/autenticação); mover o service para um pacote `verification/` criaria fragmentação artificial. Comportamento testado por essas duas suítes permanece preservado.
+- **Guardrail `AgeEligibilityNoTraceTest` inalterado e válido**: a varredura é em `auth/` por `@Entity`/`JpaRepository`/`JavaMailSender`/`@Repository`/`EntityManager`/`@Table`/`CrudRepository`. Classes novas em `auth/` não introduzem nenhum desses marcadores — a entidade `EmailVerificationToken` + repositório ficam em `accounts/`. O contrato CA-5 da US-005 continua honrado.
+- **Cobertura de testes:** **212/212 verdes** (86 unit + 126 integration), 0 falhas, 0 skipped, 0 warnings (`failOnWarning=true` mantido). TDD seguido conforme Ordem TDD do plano (Suítes 1–6, 32 testes-âncora antes do código de produção); QA expandiu com 18 cenários adicionais cobrindo bordas exatas do rate-limit (59s/60s, 5º/6º na janela), token expirado por 1s, token de outra conta, concorrência real com `CountDownLatch`, contrato HTTP, idempotência, falha SMTP, config Mailpit em dev. Nenhum teste de layout/microcopy.
+- **Rebase em main** (`547f86f`): adaptação cirúrgica do teste `StaticAssetsCssCoverageIT#verifyEmailRouteHasNoTailwindPlayCdnScript` (originalmente da chore-ux-009 #43) — `/verificar-email` deixou de ser placeholder público e passou a autenticada, então o teste agora aceita o redirect 302 e valida que o response (corpo vazio do redirect) não contém `cdn.tailwindcss`/`tailwindcss.com`. Intent original preservada; a cobertura efetiva do `<script>` ausente em `base.html` continua viva nas 3 rotas públicas (`/`, `/comecar`, `/cadastro/adolescente`) e nos testes IT específicos da US-006.
+
+### Impacto
+- **Módulos:**
+  - `auth` (service + controller + event listener + interceptor + advice + anotação pública + 2 exceções + enum). Primeiro orquestrador real de máquina de estado do épico E1.
+  - `accounts` (entidade `EmailVerificationToken` + repositório + interfaces de leitura cross-module `AccountReader`/`AccountProfileLookup` com implementações JPA). A entidade vive aqui por pertencer ao subdomínio "conta"; a orquestração (verify/resend) vive em `auth`.
+  - `notifications` (interface `EmailVerificationSender` + implementação `JavaMailEmailVerificationSender` com `TemplateEngine` interno separado do Spring MVC).
+- **Migration Flyway:** `V3__email_verification.sql` (testada por `EmailVerificationTokenMigrationIT` + `FlywayMigrationIT` em Testcontainers Postgres 18-alpine). Cria tabela `email_verification_token` (UUID PK + FK CASCADE para `accounts(id)`), índice parcial em `account_id WHERE used_at IS NULL` e índice composto `(account_id, created_at DESC)` para rate-limit.
+- **Dependências novas no `pom.xml`:**
+  - `com.icegreen:greenmail-junit5:2.1.0` (test scope) — SMTP em memória para testes de envio real.
+  - `spring-boot-starter-mail` já entrou na US-001 como dependência inerte; aqui passa a ser configurado em `application-{dev,prod,test}.properties` e exercitado em runtime.
+- **Arquivos novos (produção):**
+  - `src/main/java/dev/zayt/atrilha/accounts/AccountProfileLookup.java`
+  - `src/main/java/dev/zayt/atrilha/accounts/AccountReader.java`
+  - `src/main/java/dev/zayt/atrilha/accounts/EmailVerificationToken.java`
+  - `src/main/java/dev/zayt/atrilha/accounts/EmailVerificationTokenRepository.java`
+  - `src/main/java/dev/zayt/atrilha/accounts/JpaAccountProfileLookup.java`
+  - `src/main/java/dev/zayt/atrilha/accounts/JpaAccountReader.java`
+  - `src/main/java/dev/zayt/atrilha/auth/AccountRegisteredEvent.java`
+  - `src/main/java/dev/zayt/atrilha/auth/AccountRegisteredEventListener.java`
+  - `src/main/java/dev/zayt/atrilha/auth/AuthWebMvcConfig.java`
+  - `src/main/java/dev/zayt/atrilha/auth/EmailResendRateLimitedException.java`
+  - `src/main/java/dev/zayt/atrilha/auth/EmailVerificationBannerAdvice.java`
+  - `src/main/java/dev/zayt/atrilha/auth/EmailVerificationController.java`
+  - `src/main/java/dev/zayt/atrilha/auth/EmailVerificationService.java`
+  - `src/main/java/dev/zayt/atrilha/auth/RequiresVerifiedEmail.java`
+  - `src/main/java/dev/zayt/atrilha/auth/RequiresVerifiedEmailInterceptor.java`
+  - `src/main/java/dev/zayt/atrilha/auth/VerificationResult.java`
+  - `src/main/java/dev/zayt/atrilha/notifications/EmailVerificationSender.java`
+  - `src/main/java/dev/zayt/atrilha/notifications/JavaMailEmailVerificationSender.java`
+  - `src/main/resources/db/migration/V3__email_verification.sql`
+  - `src/main/resources/templates/email/verify-email.html`
+  - `src/main/resources/templates/email/verify-email-plain.txt`
+  - `src/main/resources/templates/layout/fragments/email-verification-banner.html`
+  - `src/main/resources/templates/verify-email-resultado.html`
+- **Arquivos novos (testes):**
+  - `src/test/java/dev/zayt/atrilha/accounts/AccountTestFactory.java`
+  - `src/test/java/dev/zayt/atrilha/accounts/EmailVerificationTokenMigrationIT.java`
+  - `src/test/java/dev/zayt/atrilha/accounts/EmailVerificationTokenRepositoryIT.java`
+  - `src/test/java/dev/zayt/atrilha/auth/AccountRegisteredEventListenerIT.java`
+  - `src/test/java/dev/zayt/atrilha/auth/AccountRegisteredEventListenerSmtpFailureIT.java`
+  - `src/test/java/dev/zayt/atrilha/auth/EmailVerificationBannerAdviceTest.java`
+  - `src/test/java/dev/zayt/atrilha/auth/EmailVerificationControllerContractIT.java`
+  - `src/test/java/dev/zayt/atrilha/auth/EmailVerificationControllerIT.java`
+  - `src/test/java/dev/zayt/atrilha/auth/EmailVerificationServiceBoundaryIT.java`
+  - `src/test/java/dev/zayt/atrilha/auth/EmailVerificationServiceIT.java`
+  - `src/test/java/dev/zayt/atrilha/auth/EmailVerificationServiceRateLimitIT.java`
+  - `src/test/java/dev/zayt/atrilha/auth/RequiresVerifiedEmailInterceptorTest.java`
+  - `src/test/java/dev/zayt/atrilha/notifications/DevMailpitConfigTest.java`
+  - `src/test/java/dev/zayt/atrilha/notifications/JavaMailVerificationSenderIT.java`
+  - `src/test/java/dev/zayt/atrilha/notifications/JavaMailVerificationSenderLogTest.java`
+  - `src/test/java/dev/zayt/atrilha/notifications/RecordedEmail.java`
+  - `src/test/java/dev/zayt/atrilha/notifications/RecordingEmailSender.java`
+  - `src/test/java/dev/zayt/atrilha/notifications/RecordingEmailSenderTestConfig.java`
+- **Arquivos editados:**
+  - `docker-compose.yml` (serviço `mailpit`).
+  - `pom.xml` (`greenmail-junit5:2.1.0` em scope test).
+  - `src/main/java/dev/zayt/atrilha/accounts/RegisterAdolescentService.java` (publica `AccountRegisteredEvent` no fim da transação).
+  - `src/main/java/dev/zayt/atrilha/auth/SecurityConfig.java` (libera `/verify-email`, exige sessão em `/verificar-email` e `/verificar-email/reenviar`).
+  - `src/main/resources/application.properties`, `application-dev.properties`, `application-prod.properties` (config `spring.mail.*`, `atrilha.mail.from`, `atrilha.base-url`).
+  - `src/main/resources/templates/layout/base.html` (inclusão do fragment `email-verification-banner`).
+  - `src/main/resources/templates/verificar-email.html` (substituído o placeholder por tela real com form de reenvio + flash messages).
+  - `src/test/resources/application-test.properties` (host mail fake + `management.health.mail.enabled=false`).
+  - `src/test/java/dev/zayt/atrilha/accounts/AdolescentRegistrationControllerIT.java`, `AdolescentRegistrationEdgeCasesIT.java`, `RegisterAdolescentServiceIT.java`, `RegistrationContractIT.java` (instalações do `RecordingEmailSenderTestConfig` para isolar o e-mail do fluxo de cadastro nos testes existentes da US-001).
+  - `src/test/java/dev/zayt/atrilha/auth/EligibleAgeValidatorTest.java`, `EligibleAgeWithNotNullTest.java` (ajuste cirúrgico: excluem autoconfig JPA/Mail no `TestApp` interno; comportamento testado preservado).
+  - `src/test/java/dev/zayt/atrilha/StaticAssetsCssCoverageIT.java` (adaptação ao rebase: `/verificar-email` agora autenticado redireciona; teste passa a aceitar 302 e ainda valida ausência de CDN no response).
+- **Arquivos removidos:**
+  - `src/main/java/dev/zayt/atrilha/accounts/VerifyEmailPlaceholderController.java` (substituído pelo `EmailVerificationController` real).
+
+### Como testar
+1. A partir do worktree (`/Users/dionia.oliveira/sources/atrilha/.claude/worktrees/agent-ad302147b722639dc`), rodar `./mvnw clean verify` — **BUILD SUCCESS**, 212 testes verdes (86 unit + 126 integration), 0 warnings (`failOnWarning=true` mantido).
+2. Conferir migração: subir o Postgres (`docker compose up -d postgres mailpit`) e em outro shell `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`. Em outro terminal, `psql -U atrilha -d atrilha -c "\dt"` deve listar `email_verification_token`; `\d email_verification_token` deve mostrar os dois índices (`idx_evt_account_active` parcial, `idx_evt_account_created_at` composto).
+3. Cadastro manual e fluxo feliz:
+   - Abrir `http://localhost:8084/comecar` → "Sou adolescente" → preencher form válido → submeter.
+   - Redireciona para `/verificar-email` mostrando o e-mail destacado e o card de reenvio.
+   - Abrir `http://localhost:8025` (Mailpit UI) → confirmar que o e-mail chegou; corpo HTML contém link `?token=...`.
+   - Clicar no link → tela "E-mail confirmado!" com CTA "Continuar".
+   - Voltar para `/` → **banner não aparece mais** (a conta agora tem `email_verified_at`).
+4. Reenvio com cooldown:
+   - Cadastrar uma nova conta; clicar "Reenviar link" → flash success "Reenviamos...".
+   - Clicar novamente em menos de 60s → flash rate_limited "espera alguns segundos...".
+5. Token inválido/expirado:
+   - Acessar `http://localhost:8084/verify-email?token=00000000-0000-0000-0000-000000000000` → tela "Esse link não tá mais valendo".
+   - Acessar com token malformado (`?token=foo`) → mesma tela (privacidade — não revela se o token existiu).
+6. Token já usado:
+   - Após verificar uma vez, clicar de novo no mesmo link do e-mail → tela "Esse e-mail já foi confirmado".
+7. Banner persistente:
+   - Cadastrar conta nova, **sem clicar no link** ainda. Navegar para `/`, `/comecar`, qualquer rota — banner âmbar aparece em todas, com link "Verificar agora" → `/verificar-email`. Banner **não** aparece em `/verificar-email` ou `/verify-email?token=...`.
+8. Garantir privacidade dos logs: durante o fluxo acima, o stdout do app **não** deve conter nenhum UUID de token nem corpo de e-mail. Cobertura automática: `JavaMailVerificationSenderLogTest`.
+
+### Gaps visuais / manuais (declarados pelo QA + Revisor)
+- **Validação visual das 4 telas + banner + e-mail** em viewport (mobile 360px, tablet 768px, desktop 1280px) fica como inspeção manual antes do merge: tela pendente, sucesso, expirado/inválido, já usado, banner âmbar no topo, e-mail HTML no Mailpit. Referência: `doc/UX/us-006-spec.md`.
+- **Provider SMTP de produção não decidido** (SES/Mailgun/Postmark/SendGrid). `application-prod.properties` está parametrizado por env vars (`MAIL_HOST`/`MAIL_USERNAME`/`MAIL_PASSWORD`/`MAIL_FROM`/`MAIL_PORT`); sem essas env vars o boot em prod falha cedo (preferível a falha silenciosa). Recomenda-se chore dedicada antes do M2 (Sprint 6, quando vinculação entra e e-mails passam a ser críticos para o fluxo).
+- **`@RequiresVerifiedEmail` plantado mas não aplicado a nenhum endpoint** nesta US. US-012 e US-014 (Sprint 5) anotam endpoints reais de vinculação. Comportamento do interceptor demonstrado por `RequiresVerifiedEmailInterceptorTest` com endpoints dummy.
+- **Decisão pós-SUCCESS: sem auto-redirect / sem recriação explícita do `Authentication`.** A UX spec §4 originalmente fala em recriar `Authentication` com authorities atualizadas para evitar novo login. A implementação faz mais simples: o `EmailVerificationBannerAdvice` consulta o `AccountReader` a cada request — quando `email_verified_at` muda no banco, o atributo `unverifiedEmail` passa a `false` automaticamente sem mexer no `SecurityContext`. Custo: 1 lookup por request enquanto o usuário está logado (mitigável por cache no advice em chore futura, se virar dor).
+- **Telemetria (US-069) não instrumentada nesta task** — eventos `email_verification_sent`/`clicked`/`resend_requested`/`resend_rate_limited` ficam para US-069 (Sprint 17); os pontos de extensão estão claros no service e no controller.
+- **Rate-limit em SQL é a escolha entregue** (não in-memory): atende dor sem precisar de Redis. Não é dívida técnica pendente — é melhoria deliberada sobre a sugestão original do plano.

@@ -1,8 +1,10 @@
 package dev.zayt.atrilha.accounts;
 
+import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
@@ -34,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "spring.flyway.locations=classpath:db/migration",
                 "spring.flyway.baseline-on-migrate=false"
         })
+@Import(RecordingEmailSenderTestConfig.class)
 @ActiveProfiles("test")
 @DirtiesContext
 class RegisterAdolescentServiceIT {

@@ -2,18 +2,67 @@
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout/base}">
-<head><title>Confirme seu e-mail</title></head>
+<head><title>Confirme teu e-mail</title></head>
 <body>
 <!--
-  Placeholder estático (US-001). A US-006 (próxima do Sprint 3) substitui
-  por um fluxo real de verificação por e-mail.
+  Tela "Confirme teu e-mail" — US-006 §3.
+  Estrutura segue UX spec: ilustração + título + e-mail destacado + texto
+  de apoio + botão "Reenviar link" + área aria-live para feedback de reenvio.
+  CSRF embutido via Spring Security/Thymeleaf no <form>.
 -->
 <section layout:fragment="content" class="verify-email">
-    <article class="card card--flat">
-        <h1>Confirmamos teu e-mail</h1>
-        <p>
-            Enviamos um link pra você. Em breve a verificação completa entra
-            no ar — por ora, sua conta está criada e você já está dentro.
+    <article class="card card--flat max-w-md mx-auto text-center">
+        <!-- Ilustração decorativa: SVG envelope simples, alt vazio (UX §3.5). -->
+        <div aria-hidden="true" class="mb-4">
+            <svg width="96" height="96" viewBox="0 0 24 24" fill="none"
+                 xmlns="http://www.w3.org/2000/svg" class="mx-auto text-slate-400">
+                <path d="M3 8L12 13L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z"
+                      stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+
+        <h1 class="text-2xl font-semibold mb-3">Confirme teu e-mail</h1>
+
+        <p class="text-base text-slate-700 mb-2">
+            Enviamos um link pra
+            <strong th:text="${email}" class="font-semibold">teu@e-mail.com</strong>
+        </p>
+        <p class="text-base text-slate-600 mb-6">
+            Clica nele e voltamos a falar. O link vale por 24 horas.
+        </p>
+
+        <!-- Feedback do reenvio (flash attribute do controller). -->
+        <div id="resend-status" role="status" aria-live="polite" class="mb-4">
+            <p th:if="${resendStatus == 'success'}"
+               class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-3"
+               data-testid="resend-status-success">
+                Reenviamos. Confere a tua caixa de entrada (e o spam).
+            </p>
+            <p th:if="${resendStatus == 'rate_limited'}"
+               class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-3"
+               data-testid="resend-status-rate-limited">
+                Ei, calma — espera alguns segundos antes do próximo reenvio.
+            </p>
+        </div>
+
+        <form th:action="@{/verificar-email/reenviar}" method="post" novalidate>
+            <!-- Token CSRF (Spring Security) -->
+            <input type="hidden" th:if="${_csrf}"
+                   th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="btn btn-secondary btn-md w-full">
+                Reenviar link
+            </button>
+        </form>
+
+        <div class="mt-3">
+            <a th:href="@{/}" class="btn btn-ghost btn-md w-full inline-block">
+                Continuar mesmo assim
+            </a>
+        </div>
+
+        <p class="text-sm text-slate-500 mt-6">
+            Trocou de e-mail?
+            <a th:href="@{/}" class="underline">Atualizar no perfil</a>
         </p>
     </article>
 </section>

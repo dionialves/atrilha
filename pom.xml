@@ -121,6 +121,16 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+            GreenMail — servidor SMTP em-memória usado em testes do
+            EmailVerificationMailer e do hook pós-cadastro (US-006).
+        -->
+        <dependency>
+            <groupId>com.icegreen</groupId>
+            <artifactId>greenmail-junit5</artifactId>
+            <version>2.1.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

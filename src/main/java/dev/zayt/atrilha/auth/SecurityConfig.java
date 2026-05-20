@@ -29,10 +29,15 @@ class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(authorize -> authorize
-                        // Single protected route in this US (placeholder a ser
-                        // substituído pela US-006). Demais rotas seguem
-                        // públicas para não quebrar 404 nem fluxo de cadastro.
-                        .requestMatchers("/verificar-email").authenticated()
+                        // /verify-email é o endpoint público do link do e-mail
+                        // (US-006). O token é a única credencial — qualquer
+                        // sessão (logada ou não) pode acessar a tela de
+                        // resultado.
+                        .requestMatchers("/verify-email").permitAll()
+                        // Tela "Confirme teu e-mail" + reenvio: precisam de
+                        // sessão autenticada para identificar o usuário.
+                        .requestMatchers("/verificar-email", "/verificar-email/reenviar").authenticated()
+                        // Demais rotas seguem públicas (cadastro, 404, etc.).
                         .anyRequest().permitAll()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)

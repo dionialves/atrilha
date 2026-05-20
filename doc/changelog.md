@@ -8,6 +8,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### User Stories
 - US-005 · Bloqueio de cadastro por idade fora da faixa ([#36](https://github.com/dionialves/atrilha/issues/36))
 - US-001 · Cadastro de adolescente por e-mail e senha ([#40](https://github.com/dionialves/atrilha/issues/40))
+- US-006 · Verificação de e-mail ([#39](https://github.com/dionialves/atrilha/issues/39))
 
 ### Chore
 - chore(chore-ux-009): substituir Tailwind Play CDN por build standalone do Tailwind v4 ([#43](https://github.com/dionialves/atrilha/issues/43))

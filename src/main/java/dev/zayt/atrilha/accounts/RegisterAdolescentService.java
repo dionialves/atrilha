@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.accounts;
 
+import dev.zayt.atrilha.auth.AccountRegisteredEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,17 +42,20 @@ class RegisterAdolescentService {
     private final PasswordEncoder passwordEncoder;
     private final AvatarStorage avatarStorage;
     private final HtmlSanitizer htmlSanitizer;
+    private final ApplicationEventPublisher eventPublisher;
 
     RegisterAdolescentService(AccountRepository accountRepository,
                               AdolescentProfileRepository profileRepository,
                               PasswordEncoder passwordEncoder,
                               AvatarStorage avatarStorage,
-                              HtmlSanitizer htmlSanitizer) {
+                              HtmlSanitizer htmlSanitizer,
+                              ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.avatarStorage = avatarStorage;
         this.htmlSanitizer = htmlSanitizer;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -83,6 +88,10 @@ class RegisterAdolescentService {
         }
 
         profileRepository.saveAndFlush(profile);
+
+        // Dispara o fluxo de verificação de e-mail (US-006). O listener
+        // escuta AFTER_COMMIT — se a transação cair, nenhum e-mail sai.
+        eventPublisher.publishEvent(new AccountRegisteredEvent(accountId));
 
         return new Outcome.Registered(accountId);
     }
