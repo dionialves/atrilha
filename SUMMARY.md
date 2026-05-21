@@ -1,60 +1,43 @@
-# Resumo de execução — Issue #57
+# Resumo de execução — Issue #58
 
-**Branch:** feat/57-feat-007-03-cria-stub-inmemory-login-account-query
+**Branch:** feat/58-feat-007-04-cria-servico-de-rate-limit-de-login
 **Estado:** working tree pronto para revisão (sem PR, sem push)
 **Testes:** Tests run: (ver log)
 **Warnings de compilação:** 0
 
 ## Arquivos alterados
 ```
-src/main/java/dev/zayt/atrilha/auth/login/InMemoryLoginAccountQuery.java
-src/main/resources/application.properties
-src/test/java/dev/zayt/atrilha/auth/login/InMemoryLoginAccountQueryTest.java
-src/test/resources/application-test.properties
+src/main/java/dev/zayt/atrilha/auth/config/LoginRateLimitProperties.java
+src/main/java/dev/zayt/atrilha/auth/login/LoginAttemptKey.java
+src/main/java/dev/zayt/atrilha/auth/login/LoginAttemptService.java
+src/test/java/dev/zayt/atrilha/auth/login/LoginAttemptServiceTest.java
 ```
 
 ## Diff (stat)
 ```
- .../auth/login/InMemoryLoginAccountQuery.java      | 113 ++++++++++++++++++++
- src/main/resources/application.properties          |   3 +
- .../auth/login/InMemoryLoginAccountQueryTest.java  | 114 +++++++++++++++++++++
- src/test/resources/application-test.properties     |   3 +
- 4 files changed, 233 insertions(+)
+ .../auth/config/LoginRateLimitProperties.java      |  39 +++
+ .../zayt/atrilha/auth/login/LoginAttemptKey.java   |  35 +++
+ .../atrilha/auth/login/LoginAttemptService.java    | 101 ++++++++
+ .../auth/login/LoginAttemptServiceTest.java        | 263 +++++++++++++++++++++
+ 4 files changed, 438 insertions(+)
 ```
 
 ## O que foi feito
+Implementa o mecanismo de rate-limit in-memory para proteção contra brute-force no form login (Issue #58 / US-007.04).
 
-Implementei o stub `InMemoryLoginAccountQuery` (US-007.03) como bean Spring
-`@Component` + `@ConfigurationProperties(prefix = "atrilha.auth.seed")`
-limitado ao perfil `!prod`. A classe lê 3 seeds (`teen`, `guardian-linked`,
-`guardian-unlinked`) das properties, codifica as senhas em claro para BCrypt
-no `@PostConstruct` via `PasswordEncoder`, e expõe `findForLogin(email)` com
-busca case-insensitive em um `Map<String, LoginAccount>` interno.
+**3 arquivos de produção + 1 de testes:**
+- `LoginAttemptKey` — record imutável com factory `of(email, ip)` que normaliza e-mail (`trim().toLowerCase(Locale.ROOT)`). Equals/hashCode baseados nos campos normalizados.
+- `LoginRateLimitProperties` — `@ConfigurationProperties(prefix = "atrilha.auth.login")` com 3 propriedades: `maxAttempts` (default 5), `attemptWindow` (default PT15M), `blockDuration` (default PT15M). Validação de defaults no initializer.
+- `LoginAttemptService` — `@Service` com `ConcurrentHashMap<LoginAttemptKey, AttemptState>` + `Clock` injetável (bean existente em `AgeEligibilityConfig`). API: `isBlocked(key)`, `registerFailure(key)`, `registerSuccess(key)`. Lógica: reinicia contagem quando janela expira; bloqueia ao atingir `maxAttempts`; desbloqueia após `blockDuration`.
 
-**Arquivos criados:**
-- `InMemoryLoginAccountQuery.java` — implementação stub com inner class
-  `SeedConfig` para binding das properties (sem Lombok, setters explícitos)
-- `InMemoryLoginAccountQueryTest.java` — 7 testes: carregamento das 3 seeds
-  (email lowercase, BCrypt válido, role, hasGuardianLink, displayName),
-  lookup case-insensitive (uppercase/mixedCase) e retorno empty para email
-  desconhecido.
+**12 testes unitários cobrindo:** normalização de chave, incremento progressivo até bloqueio, reset por sucesso, expiração de janela (Clock mutável), expiração de bloqueio (Clock mutável), isolamento por email/IP, noop em chave inexistente, e defaults de properties.
 
-**Arquivos alterados:**
-- `application.properties` — adicionei campo `role` para cada seed
-- `application-test.properties` — idem, com valores `.test`
+**Decisões:**
+- `Clock` reutiliza bean existente (`AgeEligibilityConfig.atrilhaClock()`), sem duplicação.
+- `LoginRateLimitProperties` é `public` (necessário porque `LoginAttemptService` está em package diferente).
+- Sem logs com dados sensíveis — nenhuma chamada de log no service.
 
-**Critérios de aceitação:**
-- [x] 3 seeds carregadas no perfil `test` (e `dev`, via application.properties)
-- [x] Bean não instanciado em `prod` (`@Profile("!prod")`)
-- [x] `findForLogin("ANA@TEST")` casa com seed (case-insensitive)
-- [x] `findForLogin("nao-existe@x")` retorna `Optional.empty()`
-- [x] Senhas armazenadas como BCrypt (`$2a$...`)
-- [x] `mvn test` verde (111/111, 0 warnings)
+**Critérios de aceitação:** todos [x] satisfeitos (ver testes).
 
 ## ⚠️ Checagem LGPD (atrilha)
-
-N/A — sem superfície de dados pessoais. A classe `InMemoryLoginAccountQuery`
-armazena apenas email, hash BCrypt de senha, role e flag `hasGuardianLink`
-em memória para lookup de login. Não há consentimento, compartilhamento,
-exposição de dados de menor (13–17), ou reflexão de menor tocada neste diff.
-Os ADRs 005/006/007 não se aplicam a esta mudança.
+N/A — sem superfície de dados pessoais exposta. O serviço usa IP + e-mail como chave interna (hashmap in-memory), **nunca loga dados sensíveis** (sem email/IP em texto plano). Não há consentimento, compartilhamento ou dados de menor envolvidos. ADR-005/006/007 não se aplicam diretamente a esta subtask.
