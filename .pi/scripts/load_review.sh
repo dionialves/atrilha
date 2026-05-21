@@ -33,7 +33,7 @@ echo "=== DOSSIÊ DE REVISÃO — Issue #${ISSUE} (${BRANCH}) ==="
 echo ""
 echo "--- 1. ISSUE ORIGINAL (plano + critérios de aceitação) ---"
 gh issue view "$ISSUE" --json number,title,body,labels \
-  | python3 -c 'import sys,json;d=json.load(sys.stdin);print(f"#{d[\"number\"]} · {d[\"title\"]}\nLabels: {\", \".join(l[\"name\"] for l in d[\"labels\"])}\n\n{d[\"body\"]}")'
+  --jq '"#\(.number) · \(.title)\nLabels: \([.labels[].name] | join(", "))\n\n\(.body)"'
 echo ""
 echo "--- 2. RESUMO DO CODIFICADOR (SUMMARY.md) ---"
 if [ -f "${WT_PATH}/SUMMARY.md" ]; then
