@@ -65,7 +65,7 @@ Baixe os dois modelos MLX (aba de busca do LM Studio):
 
 | Papel | Identifier LM Studio | Por quê |
 |-------|----------------------|---------|
-| **Codificador** | `qwen3.6-35b-a3b-mlx@4bit` | MoE (3B ativos) — rápido nos loops de tool call |
+| **Codificador** | `qwen3.6-35b-a3b-ud-mlx` | MoE (3B ativos) — rápido nos loops de tool call |
 | **Revisor** | `qwen3.6-27b-mlx` | Denso — mais lento, julgamento mais apurado; roda 1x por task |
 
 Settings recomendados (painel do modelo): `temperature=0.7, top_p=0.8, top_k=20,

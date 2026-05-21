@@ -21,7 +21,7 @@ dev:
 # sobe o pi já com o modelo do Codificador selecionado, se a flag existir nesta versão.
 # Se a flag --model não for aceita, use apenas `just dev` e troque com /model.
 coder:
-    pi --model "lmstudio/qwen3.6-35b-a3b-mlx@4bit" || pi
+    pi --model "lmstudio/qwen3.6-35b-a3b-ud-mlx" || pi
 
 # idem para o Revisor
 revisor:
