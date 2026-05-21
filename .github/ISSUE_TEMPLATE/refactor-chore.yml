@@ -1,0 +1,62 @@
+name: "Refactor / Chore (técnico)"
+description: "Melhoria interna sem mudança de comportamento, ou task operacional."
+title: "[REF] "
+labels: ["refactor"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Demanda técnica direta (CTO/Arquiteto). Troque a label para `chore` se for
+        task operacional (deps, infra, config) em vez de refactor de código.
+
+        **Regra de ouro do refactor:** comportamento observável NÃO muda. Os testes
+        existentes continuam verdes sem alteração. Se você precisa mudar um teste de
+        comportamento, não é refactor — é feature ou fix.
+
+  - type: textarea
+    id: motivacao
+    attributes:
+      label: "Motivação"
+      description: "Que dívida/risco/dor isto resolve."
+    validations:
+      required: true
+
+  - type: textarea
+    id: plano
+    attributes:
+      label: "Plano (ordem exata)"
+      value: |
+        1. <ex.: extrair lógica duplicada de X e Y para helper `Z`>
+        2. <ex.: substituir as duas ocorrências pela chamada ao helper>
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: "Critérios de aceitação"
+      value: |
+        | # | Critério |
+        |---|----------|
+        | 1 | Comportamento inalterado: suíte de testes existente passa sem mudanças |
+        | 2 | <ex.: duplicação eliminada — uma única fonte para a lógica Z> |
+    validations:
+      required: true
+
+  - type: textarea
+    id: fora-escopo
+    attributes:
+      label: "Fora do escopo"
+      value: |
+        - <delimite bem — refactor tende a crescer>
+
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: "Prioridade"
+      options:
+        - "baixa"
+        - "média"
+        - "alta"
+    validations:
+      required: true

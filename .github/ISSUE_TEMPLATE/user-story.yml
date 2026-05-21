@@ -1,0 +1,90 @@
+name: "User Story (funcionalidade)"
+description: "Nova funcionalidade. O Codificador implementa a partir deste plano."
+title: "[US] "
+labels: ["user-story"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Você (Dioni) atua como PO + CTO/Arquiteto + Designer ao preencher esta issue.
+        O **plano** e os **critérios de aceitação** abaixo são o contrato que o
+        Codificador executa e o Revisor audita. Seja específico — modelo local
+        não preenche lacuna sozinho com bom senso como o Opus.
+
+  - type: textarea
+    id: user-story
+    attributes:
+      label: "User Story"
+      description: "Quem precisa, do quê, e para quê."
+      value: |
+        **Como** <persona>,
+        **quero** <necessidade>,
+        **para que** <resultado / valor>.
+    validations:
+      required: true
+
+  - type: textarea
+    id: contexto
+    attributes:
+      label: "Contexto"
+      description: "Estado atual, por que mudar, restrições, dados envolvidos."
+    validations:
+      required: true
+
+  - type: textarea
+    id: plano
+    attributes:
+      label: "Plano de implementação (ordem exata)"
+      description: "Passos numerados que o Codificador segue na ordem. Cite módulos, entidades, endpoints, templates. Quanto mais concreto, menos o modelo improvisa."
+      value: |
+        1. <ex.: criar entidade `Inscricao` no módulo `accounts` com campos ...>
+        2. <ex.: migration Flyway `V__cria_inscricao.sql`>
+        3. <ex.: `InscricaoController` com GET form + POST processa>
+        4. <ex.: template `inscricao/form.html` estendendo layout base, com CSRF>
+        5. <ex.: validação Jakarta nos campos; sanitização Jsoup se HTML livre>
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: "Critérios de aceitação (observáveis)"
+      description: "Comportamento verificável do ponto de vista do usuário. O QA/Revisor testa contra isto. NÃO descreva implementação, descreva o que deve acontecer."
+      value: |
+        | # | Critério (observável) |
+        |---|------------------------|
+        | 1 | <ex.: ao enviar form válido, usuário vê confirmação e registro persiste> |
+        | 2 | <ex.: enviar sem campo obrigatório exibe erro inline, sem persistir> |
+        | 3 | <ex.: usuário 13–17 sem responsável vinculado é bloqueado com mensagem clara> |
+    validations:
+      required: true
+
+  - type: textarea
+    id: fora-escopo
+    attributes:
+      label: "Fora do escopo"
+      description: "O que esta task explicitamente NÃO faz (evita refactor oportunista do Codificador)."
+      value: |
+        - <item excluído>
+
+  - type: textarea
+    id: lgpd
+    attributes:
+      label: "Superfície de dados pessoais / LGPD"
+      description: "OBRIGATÓRIO se a task toca consentimento, compartilhamento, ou dados de menor (13–17). Aponte os ADRs aplicáveis. Se não toca, escreva 'N/A'."
+      value: |
+        <ex.: toca cadastro de menor → aplicar ADR-006 (responsável vinculado obrigatório).
+        Reflexão opt-in por item conforme ADR-005. OU: "N/A — sem dados pessoais.">
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: "Prioridade"
+      options:
+        - "média"
+        - "alta"
+        - "baixa"
+    validations:
+      required: true

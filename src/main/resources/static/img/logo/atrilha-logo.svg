@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <!-- fundo do marcador: quadrado coral com cantos arredondados -->
+  <rect x="16" y="16" width="480" height="480" rx="128" fill="#F25C54"/>
+  <!-- baixo-relevo sutil na base -->
+  <rect x="16" y="16" width="480" height="480" rx="128" fill="url(#shade)"/>
+  <!-- traço editorial em diagonal (o "A" / pico) + ponto, agrupados e centralizados -->
+  <g stroke="#FFFFFF" stroke-width="40" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M152 332 L256 164 L360 332"/>
+  </g>
+  <circle cx="256" cy="352" r="22" fill="#FFFFFF"/>
+  <defs>
+    <linearGradient id="shade" x1="256" y1="16" x2="256" y2="496" gradientUnits="userSpaceOnUse">
+      <stop offset="0.85" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,77 @@
+name: "Bug Fix (correção)"
+description: "Defeito funcional ou de código. Vai direto ao Codificador."
+title: "[FIX] "
+labels: ["bug-fix"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Demanda técnica/correção. O plano abaixo é o contrato do Codificador.
+
+  - type: textarea
+    id: problema
+    attributes:
+      label: "Problema"
+      description: "O que está errado, do ponto de vista observável."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducao
+    attributes:
+      label: "Como reproduzir"
+      value: |
+        1. <passo>
+        2. <passo>
+        **Esperado:** <comportamento correto>
+        **Atual:** <comportamento defeituoso>
+    validations:
+      required: true
+
+  - type: textarea
+    id: causa-raiz
+    attributes:
+      label: "Causa raiz (se conhecida)"
+      description: "Onde está o defeito. Se você não sabe, deixe o Codificador investigar — mas aponte a região suspeita."
+
+  - type: textarea
+    id: plano
+    attributes:
+      label: "Plano de correção"
+      value: |
+        1. <passo>
+        2. <passo de teste de regressão>
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: "Critérios de aceitação"
+      value: |
+        | # | Critério (observável) |
+        |---|------------------------|
+        | 1 | <o bug não ocorre mais sob a condição X> |
+        | 2 | <teste de regressão cobre o cenário> |
+    validations:
+      required: true
+
+  - type: textarea
+    id: lgpd
+    attributes:
+      label: "Superfície de dados pessoais / LGPD"
+      description: "Aponte ADR-005/006/007 se toca consentimento/compartilhamento/dados de menor. Senão, 'N/A'."
+      value: "N/A — sem dados pessoais."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: "Prioridade"
+      options:
+        - "alta"
+        - "média"
+        - "baixa"
+    validations:
+      required: true

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Discussão / dúvida (sem virar task)"
+    url: "https://github.com/SEU_USUARIO/atrilha/discussions"
+    about: "Para conversas que ainda não são uma task de desenvolvimento. Sem Issue → sem código."
