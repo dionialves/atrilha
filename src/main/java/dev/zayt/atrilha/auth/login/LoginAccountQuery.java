@@ -1,5 +1,6 @@
 package dev.zayt.atrilha.auth.login;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 /**
@@ -28,7 +29,7 @@ public interface LoginAccountQuery {
             String passwordHashBcrypt,
             dev.zayt.atrilha.auth.AccountRole role,
             boolean hasGuardianLink,
-            String displayName) {
+            String displayName) implements Serializable {
     }
 
 }

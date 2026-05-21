@@ -10,7 +10,8 @@ public enum PostLoginDestination {
 
     TRILHA("/trilha"),
     PAINEL("/painel"),
-    VINCULAR("/vincular");
+    VINCULAR("/vincular"),
+    ERROR("/login?error");
 
     private final String path;
 
@@ -21,6 +22,11 @@ public enum PostLoginDestination {
     /** Retorna o caminho de redirecionamento, sempre iniciado com {@code /}. */
     public String path() {
         return this.path;
+    }
+
+    /** Fábrica para o destino de erro (login?error). */
+    public static PostLoginDestination valueOfError() {
+        return ERROR;
     }
 
 }
