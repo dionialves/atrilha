@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
  * não for encontrada.</p>
  */
 @Service
-class LoginAccountUserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
+public class LoginAccountUserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
 
     private static final Logger log = LoggerFactory.getLogger(LoginAccountUserDetailsService.class);
 

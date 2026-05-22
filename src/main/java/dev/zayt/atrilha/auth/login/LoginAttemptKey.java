@@ -9,12 +9,12 @@ import java.util.Objects;
  * <p>Normaliza o e-mail (trim + lowercase) para que "Ana@X.com" e
  * "ana@x.com" sejam a mesma chave. O IP é preservado como recebido.</p>
  */
-record LoginAttemptKey(String emailNormalized, String ip) {
+public record LoginAttemptKey(String emailNormalized, String ip) {
 
     /**
      * Factory que normaliza o e-mail antes de criar a chave.
      */
-    static LoginAttemptKey of(String email, String ip) {
+    public static LoginAttemptKey of(String email, String ip) {
         return new LoginAttemptKey(
                 Objects.requireNonNull(email).trim().toLowerCase(Locale.ROOT),
                 Objects.requireNonNull(ip));
