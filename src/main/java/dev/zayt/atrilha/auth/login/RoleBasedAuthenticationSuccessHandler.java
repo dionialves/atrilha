@@ -34,7 +34,7 @@ import java.util.Locale;
  * <p>Registra sucesso no rate-limit service para limpar contadores.</p>
  */
 @Component
-class RoleBasedAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+public class RoleBasedAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private static final Logger log = LoggerFactory.getLogger(RoleBasedAuthenticationSuccessHandler.class);
     private static final String REDIRECT_ERROR = "/login?error";

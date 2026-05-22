@@ -29,7 +29,7 @@ import java.security.NoSuchAlgorithmException;
  * <p><strong>NUNCA</strong> loga e-mail em claro, senha ou token.</p>
  */
 @Component
-class RateLimitedAuthenticationFailureHandler implements AuthenticationFailureHandler {
+public class RateLimitedAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitedAuthenticationFailureHandler.class);
     private static final String REDIRECT_BLOCKED = "/login?blocked";
