@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}"
+      lang="pt-BR">
+<head>
+    <title>Tua trilha — atrilha</title>
+</head>
+<body>
+<section layout:fragment="content" class="placeholder placeholder--trilha">
+    <h1 th:text="|oi, ${displayName}|">oi, alguém</h1>
+    <p>Tua trilha da semana vem aqui. Por enquanto, isto é um placeholder.</p>
+
+    <form th:action="@{/logout}" method="post" class="placeholder__logout">
+        <input type="hidden" th:if="${_csrf}"
+               th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <button type="submit" class="btn btn-ghost btn-md">Sair</button>
+    </form>
+</section>
+</body>
+</html>

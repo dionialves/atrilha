@@ -41,6 +41,8 @@ services:
       DATABASE_URL: jdbc:postgresql://postgres:5432/atrilha
       DATABASE_USERNAME: atrilha
       DATABASE_PASSWORD: atrilha
+      MEDIA_UPLOAD_DIR: ./media
+      TZ: America/Sao_Paulo
     ports:
       - "8084:8084"
     networks:
