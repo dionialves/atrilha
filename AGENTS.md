@@ -35,6 +35,10 @@ Cada task vive em uma worktree física isolada em `../<repo>-worktrees/<tipo>-<n
 
 Modelo/provider em `~/.pi/agent/models.json` (copiar de `pi-global/models.json` — registra o LM Studio); papéis Codificador/Revisor descritos em `.pi/SYSTEM.md` (auto-carregado); modelos habilitados em `.pi/settings.json`. O agente assume um papel por sessão e troca de modelo com `/model`. Setup completo em `.pi/README.md`.
 
+### Configuração do OpenCode
+
+Mesmo fluxo, runner alternativo: `.opencode/agents/codificador.md` e `.opencode/agents/revisor.md` espelham os papéis (formato YAML frontmatter + prompt). **Os scripts foram copiados para `.opencode/scripts/`** (cópia idêntica de `.pi/scripts/`) — cada runner é autocontido; se evoluir um lado, sincronize o outro. Troca de papel via `/agent codificador|revisor`; troca de modelo via `/model`. Setup completo em `.opencode/README.md`.
+
 ### Tools dos agentes (`.pi/scripts/`)
 
 | Tool | Agente | Faz |
