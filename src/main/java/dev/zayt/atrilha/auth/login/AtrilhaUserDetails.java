@@ -19,13 +19,13 @@ import java.util.List;
  *   <li>{@code getAccount()} — a conta original para leitura no template</li>
  * </ul>
  */
-class AtrilhaUserDetails implements UserDetails {
+public class AtrilhaUserDetails implements UserDetails {
 
     private static final long serialVersionUID = 1L;
 
     private final LoginAccountQuery.LoginAccount account;
 
-    AtrilhaUserDetails(LoginAccountQuery.LoginAccount account) {
+    public AtrilhaUserDetails(LoginAccountQuery.LoginAccount account) {
         this.account = account;
     }
 
