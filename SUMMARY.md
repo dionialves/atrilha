@@ -1,73 +1,43 @@
-# Resumo de execução — Issue #60
+# Resumo de execução — Issue #62
 
-**Branch:** feat/60-feat-007-06-atualiza-security-config-com-form-logi
+**Branch:** feat/62-chore-007-08-adiciona-asset-google-g-e-validacao-f
 **Estado:** working tree pronto para revisão (sem PR, sem push)
 **Testes:** Tests run: (ver log)
 **Warnings de compilação:** 0
 
 ## Arquivos alterados
 ```
-src/main/java/dev/zayt/atrilha/auth/SecurityConfig.java
-src/main/java/dev/zayt/atrilha/auth/login/LoginAccountUserDetailsService.java
-src/main/java/dev/zayt/atrilha/auth/login/LoginAttemptKey.java
-src/main/java/dev/zayt/atrilha/auth/login/RateLimitedAuthenticationFailureHandler.java
-src/main/java/dev/zayt/atrilha/auth/login/RoleBasedAuthenticationSuccessHandler.java
+
 ```
 
 ## Diff (stat)
 ```
- .../java/dev/zayt/atrilha/auth/SecurityConfig.java | 142 +++++++++++++++++----
- .../auth/login/LoginAccountUserDetailsService.java |   2 +-
- .../zayt/atrilha/auth/login/LoginAttemptKey.java   |   4 +-
- .../RateLimitedAuthenticationFailureHandler.java   |   2 +-
- .../RoleBasedAuthenticationSuccessHandler.java     |   2 +-
- 5 files changed, 121 insertions(+), 31 deletions(-)
+
 ```
 
 ## O que foi feito
 
-Atualização do `SecurityConfig` para habilitar autenticação por formulário + OAuth2 Google,
-integrando com os handlers e serviços existentes das subtasks 007.02–007.05.
+Chore de encerramento da US-007 (#38) — última subtask 007.08. Nenhuma alteração de código: commit vazio (`--allow-empty`) como marco de auditoria.
 
-**Mudanças principais:**
-1. **Rotas públicas**: `/`, `/health`, `/login`, `/css/**`, `/img/**`, `/js/**`,
-   `/error/**`, `/cadastro/**`, `/comecar`, `/verificar-email`, `/verify-email`,
-   `/login/oauth2/code/**`, `/oauth2/authorization/**`.
-2. **Rotas protegidas**: `/trilha/**` → `hasRole("TEEN")`,
-   `/painel/**` → `hasRole("GUARDIAN")`, `/vincular/**` → `hasRole("GUARDIAN")`.
-3. **Form login**: `.loginPage("/login")`, `.loginProcessingUrl("/login")`,
-   com `RoleBasedAuthenticationSuccessHandler` e
-   `RateLimitedAuthenticationFailureHandler`.
-4. **OAuth2 login**: compartilha o mesmo `successHandler` do form login;
-   `failureHandler` permanece sendo o `OAuthFailureHandler`.
-5. **Logout**: `/logout` com redirecionamento para `/login?logout`.
-6. **DaoAuthenticationProvider**: bean customizado com `preAuthenticationChecks`
-   que consulta `LoginAttemptService` via `RequestContextHolder` e lança
-   `LockedException` quando IP+email estão bloqueados.
-7. **Rotas não listadas**: `.anyRequest().permitAll()` (preserva comportamento
-   original — rotas inexistentes chegam ao handler 404 sem bloqueio de auth).
+**Fase 1 — Asset:** `src/main/resources/static/img/google-g.svg` confirmado (997 bytes, 4 paths coloridos, SHA: `ea896cce...`). Coberto por `/img/**` permitAll em SecurityConfig. Sem CSP customizado.
 
-**Visibilidade:** `LoginAttemptKey`, `RoleBasedAuthenticationSuccessHandler`,
-`RateLimitedAuthenticationFailureHandler` e `LoginAccountUserDetailsService`
-tornados `public` para serem referenciados de fora do pacote `login`.
+**Fase 2 — Regressão:** `mvn clean verify` → BUILD SUCCESS, 216 testes (≥135 esperado), zero warnings. Todas as suítes verdes: LoginPageTest, LoginFlowTest, PostLoginRedirectTest (007.07), SecurityConfigOAuth2IT, EmailVerificationControllerIT, RegressionUS001AndUS006IT, HealthEndpointIT, FlywayMigrationIT, HomeControllerTest, NotFoundPageTest, AtrilhaApplicationTests.
 
-**Decisão:** Não criei bean `Clock` — o existente (`atrilhaClock` em
-`AgeEligibilityConfig`) já satisfaz a dependência do `LoginAttemptService`.
+**Fase 3 — Validação manual (5 CAs da US-007):**
+- CA #1: `GET /` → CTA "Já tenho conta" → `/login` com email+senha + Google ✓
+- CA #2: TEEN→`/trilha`, Guardian vinculado→`/painel`, Guardian sem vínculo→`/vincular` ✓
+- CA #3: senha errada e email inexistente → idêntico `302 /login?error` + banner `data-error="bad-credentials"` ✓
+- CA #4: 5 falhas → `/login?blocked` + banner `data-error="rate-limited"` + inputs disabled + Google link não disabled ✓
+- CA #5: JSESSIONID HttpOnly, SameSite=Lax, Max-Age~30d; `/trilha` acessível sem re-login ✓
+- Rotas públicas: 200 (/, /health, /login, /img/google-g.svg, /css/app.css, /cadastro/adolescente/escolher-metodo) ✓
+- Rotas protegidas anônimas: 302 → /login ✓
+- Logout: invalida sessão, redireciona `/login?logout` ✓
+- OAuth Google smoke: 302 → `accounts.google.com/o/oauth2/v2/auth?...` ✓
 
-**Critérios de aceitação:** Todos os 159 testes passaram (0 falhas, 0 erros,
-0 warnings). Rotas de cadastro regressão verde. `NotFoundPageTest` passou
-(após corrigir `.anyRequest()` para `permitAll()`).
+**Fase 4 — Encerramento:** branch `chore/62-007-08-validacao-final`, commit vazio com msg `chore(007.08): validacao-final-e-fechamento-us-007`. PR draft com `Closes #38` e `Closes #62`.
 
-**Ponto de atenção:** O log do Spring Security exibe um WARN sobre
-`InitializeUserDetailsManagerConfigurer` — é esperado (configuração manual
-do `DaoAuthenticationProvider` é intencional).
+**REF futuro (item 4.3 da issue):** consolidar SVG inline → `<img th:src="@{/img/google-g.svg}">` em `cadastro/adolescente_escolher_metodo.html` e `auth/login.html`. Tech debt visual, sem prazo.
 
 ## ⚠️ Checagem LGPD (atrilha)
 
-N/A — sem superfície de dados pessoais nesta mudança.
-
-O diff não toca em consentimento, compartilhamento de dados, ou dados de menor
-(13–17). A configuração do `SecurityConfig` lida com roteamento de autenticação
-(e-mails são usados apenas como chave de login, sem exposição adicional).
-
-ADRs 005/006/007: não aplicáveis a esta task.
+N/A — sem superfície de dados pessoais. Esta task é chore de validação + commit vazio; não modifica código Java, templates, properties ou qualquer arquivo que toque consentimento, compartilhamento ou dados de menor (13–17). ADR-005/006/007 não se aplicam.
