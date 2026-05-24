@@ -1,23 +1,21 @@
 package dev.zayt.atrilha.auth.login;
 
+import dev.zayt.atrilha.auth.AccountRole;
+import dev.zayt.atrilha.auth.AuthenticatedPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import dev.zayt.atrilha.auth.AccountRole;
-
 import java.io.IOException;
-import java.util.Locale;
 
 /**
  * {@link AuthenticationSuccessHandler} baseado em papel (US-007).
  *
- * <p>Resolve o destino pós-login conforme o tipo de autenticação:
+ * <p>Resolve o destino pós-login conforme o papel do principal autenticado:
  * <ul>
  *   <li><b>Form login</b> → {@link AtrilhaUserDetails} no principal:
  *       <ul>
@@ -26,9 +24,9 @@ import java.util.Locale;
  *         <li>GUARDIAN sem vínculo → {@code /vincular}</li>
  *       </ul>
  *   </li>
- *   <li><b>OAuth Google</b> → {@link OAuth2User} no principal:
- *       extrai email, consulta {@link LoginAccountQuery#findForLogin}, aplica mesma lógica acima.
- *       Se email não encontrado → {@code /login?error}.</li>
+ *   <li><b>OAuth Google</b> → {@link AtrilhaOAuth2User} no principal:
+ *       mesma lógica acima — authorities derivadas da conta no banco pelo
+ *       {@code GoogleOAuth2UserService}.</li>
  * </ul>
  *
  * <p>Registra sucesso no rate-limit service para limpar contadores.</p>
@@ -39,12 +37,9 @@ public class RoleBasedAuthenticationSuccessHandler implements AuthenticationSucc
     private static final Logger log = LoggerFactory.getLogger(RoleBasedAuthenticationSuccessHandler.class);
     private static final String REDIRECT_ERROR = "/login?error";
 
-    private final LoginAccountQuery loginAccountQuery;
     private final LoginAttemptService loginAttemptService;
 
-    RoleBasedAuthenticationSuccessHandler(LoginAccountQuery loginAccountQuery,
-                                          LoginAttemptService loginAttemptService) {
-        this.loginAccountQuery = loginAccountQuery;
+    RoleBasedAuthenticationSuccessHandler(LoginAttemptService loginAttemptService) {
         this.loginAttemptService = loginAttemptService;
     }
 
@@ -70,31 +65,15 @@ public class RoleBasedAuthenticationSuccessHandler implements AuthenticationSucc
 
     /**
      * Resolve o destino pós-login a partir do tipo de {@link Authentication}.
+     *
+     * <p>Após o FIX-014, todo principal de login (form ou OAuth) implementa
+     * {@link AuthenticatedPrincipal}, eliminando a necessidade de branch por tipo.</p>
      */
     PostLoginDestination resolveDestination(Authentication authentication) {
-        if (authentication.getPrincipal() instanceof AtrilhaUserDetails atrilha) {
-            // Form login — principal já é nosso UserDetails customizado
-            return resolveForRole(atrilha.getRole(), atrilha.hasGuardianLink());
+        if (authentication.getPrincipal() instanceof AuthenticatedPrincipal p) {
+            return resolveForRole(p.role(), p.hasGuardianLink());
         }
 
-        if (authentication.getPrincipal() instanceof OAuth2User oauth2) {
-            // OAuth Google — extrai email do atributo e consulta a conta
-            String rawEmail = (String) oauth2.getAttribute("email");
-            if (rawEmail == null || rawEmail.isBlank()) {
-                log.warn("auth.login.oauth_missing_email");
-                return PostLoginDestination.valueOfError(); // fallback — não existe
-            }
-
-            String email = rawEmail.trim().toLowerCase(Locale.ROOT);
-            return loginAccountQuery.findForLogin(email)
-                    .map(account -> resolveForRole(account.role(), account.hasGuardianLink()))
-                    .orElseGet(() -> {
-                        log.info("auth.login.oauth_unknown_email ip={}", hashIp(null));
-                        return PostLoginDestination.valueOfError(); // não encontrado
-                    });
-        }
-
-        // Tipo inesperado — erro genérico
         log.warn("auth.login.unexpected_principal_type={}", authentication.getPrincipal().getClass().getName());
         return PostLoginDestination.valueOfError();
     }
@@ -115,12 +94,8 @@ public class RoleBasedAuthenticationSuccessHandler implements AuthenticationSucc
 
     /** Extrai o username (email) da Authentication para rate-limit. */
     String extractUsername(Authentication authentication) {
-        if (authentication.getPrincipal() instanceof AtrilhaUserDetails atrilha) {
-            return atrilha.getUsername();
-        }
-        if (authentication.getPrincipal() instanceof OAuth2User oauth2) {
-            String email = (String) oauth2.getAttribute("email");
-            return email != null ? email.trim().toLowerCase(Locale.ROOT) : null;
+        if (authentication.getPrincipal() instanceof AuthenticatedPrincipal p) {
+            return p.getAccount().email();
         }
         return null;
     }

@@ -1,5 +1,6 @@
 package dev.zayt.atrilha.auth;
 
+import dev.zayt.atrilha.auth.login.LoginAccountQuery;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -9,9 +10,11 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import static org.springframework.security.core.authority.AuthorityUtils.createAuthorityList;
 
 /**
@@ -26,7 +29,8 @@ import static org.springframework.security.core.authority.AuthorityUtils.createA
 class GoogleOAuth2UserServiceEdgeCasesTest {
 
     private GoogleOAuth2UserService stubbedWith(OAuth2User upstream) {
-        return new GoogleOAuth2UserService() {
+        LoginAccountQuery loginAccountQuery = mock(LoginAccountQuery.class);
+        return new GoogleOAuth2UserService(loginAccountQuery) {
             @Override
             public OAuth2User loadUser(OAuth2UserRequest userRequest) {
                 Map<String, Object> a = upstream.getAttributes();
@@ -99,5 +103,90 @@ class GoogleOAuth2UserServiceEdgeCasesTest {
             return;
         }
         throw new AssertionError("expected OAuth2AuthenticationException");
+    }
+
+    @Test
+    void rejeitaEmailBlank() {
+        Map<String, Object> attrs = new HashMap<>();
+        attrs.put("sub", "blank");
+        attrs.put("email", "");
+        attrs.put("email_verified", Boolean.TRUE);
+
+        LoginAccountQuery loginAccountQuery = mock(LoginAccountQuery.class);
+        GoogleOAuth2UserService service = new GoogleOAuth2UserService(loginAccountQuery) {
+            @Override
+            public OAuth2User loadUser(OAuth2UserRequest userRequest) {
+                Map<String, Object> a = attrs;
+                if (!Boolean.TRUE.equals(a.get("email_verified"))) {
+                    throw new OAuth2AuthenticationException(
+                            new OAuth2Error("email_unverified",
+                                    "E-mail Google nao verificado", null));
+                }
+
+                String rawEmail = (String) a.get("email");
+                if (rawEmail == null || rawEmail.isBlank()) {
+                    throw new OAuth2AuthenticationException(
+                            new OAuth2Error("missing_email",
+                                    "E-mail Google nao fornecido", null));
+                }
+
+                String email = rawEmail.trim().toLowerCase(java.util.Locale.ROOT);
+                LoginAccountQuery.LoginAccount account = loginAccountQuery.findForLogin(email)
+                        .orElseThrow(() -> new OAuth2AuthenticationException(
+                                new OAuth2Error("account_not_found",
+                                        "Nenhuma conta encontrada para este e-mail Google", null)));
+
+                return new dev.zayt.atrilha.auth.login.AtrilhaOAuth2User(account, a);
+            }
+        };
+
+        assertThatThrownBy(() -> service.loadUser(null))
+                .isInstanceOf(OAuth2AuthenticationException.class)
+                .matches(ex -> ((OAuth2AuthenticationException) ex)
+                        .getError().getErrorCode().equals("missing_email"));
+    }
+
+    @Test
+    void normalizaEmailParaLowercase() {
+        Map<String, Object> attrs = new HashMap<>();
+        attrs.put("sub", "norm");
+        attrs.put("email", "  Julia@Example.COM  ");
+        attrs.put("email_verified", Boolean.TRUE);
+
+        LoginAccountQuery loginAccountQuery = mock(LoginAccountQuery.class);
+        LoginAccountQuery.LoginAccount account = new LoginAccountQuery.LoginAccount(
+                "julia@example.com", null, AccountRole.TEEN, false, "Julia");
+        org.mockito.Mockito.when(loginAccountQuery.findForLogin("julia@example.com")).thenReturn(Optional.of(account));
+
+        GoogleOAuth2UserService service = new GoogleOAuth2UserService(loginAccountQuery) {
+            @Override
+            public OAuth2User loadUser(OAuth2UserRequest userRequest) {
+                Map<String, Object> a = attrs;
+                if (!Boolean.TRUE.equals(a.get("email_verified"))) {
+                    throw new OAuth2AuthenticationException(
+                            new OAuth2Error("email_unverified",
+                                    "E-mail Google nao verificado", null));
+                }
+
+                String rawEmail = (String) a.get("email");
+                if (rawEmail == null || rawEmail.isBlank()) {
+                    throw new OAuth2AuthenticationException(
+                            new OAuth2Error("missing_email",
+                                    "E-mail Google nao fornecido", null));
+                }
+
+                String email = rawEmail.trim().toLowerCase(java.util.Locale.ROOT);
+                LoginAccountQuery.LoginAccount acct = loginAccountQuery.findForLogin(email)
+                        .orElseThrow(() -> new OAuth2AuthenticationException(
+                                new OAuth2Error("account_not_found",
+                                        "Nenhuma conta encontrada para este e-mail Google", null)));
+
+                return new dev.zayt.atrilha.auth.login.AtrilhaOAuth2User(acct, a);
+            }
+        };
+
+        OAuth2User result = service.loadUser(null);
+        assertThat(result).isInstanceOf(dev.zayt.atrilha.auth.login.AtrilhaOAuth2User.class);
+        org.mockito.Mockito.verify(loginAccountQuery).findForLogin("julia@example.com");
     }
 }
