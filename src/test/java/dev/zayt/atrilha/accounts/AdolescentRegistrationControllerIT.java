@@ -1,24 +1,25 @@
 package dev.zayt.atrilha.accounts;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.LocalDate;
+import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -68,6 +69,9 @@ class AdolescentRegistrationControllerIT {
 
     @Autowired
     WebApplicationContext ctx;
+
+    @Autowired
+    Clock clock;
 
     MockMvc mvc;
 
@@ -196,7 +200,7 @@ class AdolescentRegistrationControllerIT {
                         .param("email", "tooyoung@example.com")
                         .param("password", "supersecret1")
                         .param("nickname", "tooyoung")
-                        .param("birthDate", LocalDate.now().minusYears(10).toString()))
+                        .param("birthDate", LocalDate.now(clock).minusYears(10).toString()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("cadastro/adolescente_bloqueado"))
                 .andExpect(model().attribute("variant", "under-13"));
@@ -212,7 +216,7 @@ class AdolescentRegistrationControllerIT {
                         .param("email", "tooold@example.com")
                         .param("password", "supersecret1")
                         .param("nickname", "tooold")
-                        .param("birthDate", LocalDate.now().minusYears(25).toString()))
+                        .param("birthDate", LocalDate.now(clock).minusYears(25).toString()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("cadastro/adolescente_bloqueado"))
                 .andExpect(model().attribute("variant", "over-17"));

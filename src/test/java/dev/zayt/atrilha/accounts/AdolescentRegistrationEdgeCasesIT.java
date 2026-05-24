@@ -3,6 +3,10 @@ package dev.zayt.atrilha.accounts;
 import dev.zayt.atrilha.auth.AccountRole;
 import dev.zayt.atrilha.auth.AuthenticatedAccount;
 import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
+
+import java.time.Clock;
+import java.time.LocalDate;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +27,6 @@ import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -81,6 +83,9 @@ class AdolescentRegistrationEdgeCasesIT {
 
     @Autowired
     AccountRepository accountRepository;
+
+    @Autowired
+    Clock clock;
 
     MockMvc mvc;
 
@@ -139,7 +144,7 @@ class AdolescentRegistrationEdgeCasesIT {
                         .param("email", "not-an-email")
                         .param("password", "supersecret1")
                         .param("nickname", "mixed")
-                        .param("birthDate", LocalDate.now().minusYears(10).toString()))
+                        .param("birthDate", LocalDate.now(clock).minusYears(10).toString()))
                 .andExpect(status().isOk())
                 // Não pode ir para bloqueio quando há outros erros simultâneos
                 .andExpect(view().name("cadastro/adolescente"))
@@ -159,7 +164,7 @@ class AdolescentRegistrationEdgeCasesIT {
                         .param("email", "young@example.com")
                         .param("password", "abc12")
                         .param("nickname", "kept")
-                        .param("birthDate", LocalDate.now().minusYears(10).toString()))
+                        .param("birthDate", LocalDate.now(clock).minusYears(10).toString()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("cadastro/adolescente"))
                 .andExpect(model().attributeHasFieldErrors("form", "password"))

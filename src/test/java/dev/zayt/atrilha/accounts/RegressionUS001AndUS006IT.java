@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -55,6 +56,9 @@ class RegressionUS001AndUS006IT {
 
     @Autowired
     RecordingEmailSender mailer;
+
+    @Autowired
+    Clock clock;
 
     MockMvc mvc;
 
@@ -249,7 +253,7 @@ class RegressionUS001AndUS006IT {
                         .session(session)
                         .with(csrf())
                         .param("nickname", "ca4")
-                        .param("birthDate", java.time.LocalDate.now().minusYears(10).toString())
+                        .param("birthDate", java.time.LocalDate.now(clock).minusYears(10).toString())
                         .param("photoSource", "NONE"))
                 .andExpect(status().isOk());
 
