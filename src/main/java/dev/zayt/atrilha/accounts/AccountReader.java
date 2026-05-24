@@ -36,4 +36,11 @@ public interface AccountReader {
      * em sessao.
      */
     boolean existsByEmailIgnoreCase(String email);
+
+    /**
+     * Busca conta nao soft-deletada por e-mail (case-insensitive).
+     * Usada por {@code JpaLoginAccountQuery} (FIX-013) para servir o
+     * {@code UserDetailsService} do Spring Security.
+     */
+    java.util.Optional<Account> findByEmailIgnoreCase(String email);
 }
