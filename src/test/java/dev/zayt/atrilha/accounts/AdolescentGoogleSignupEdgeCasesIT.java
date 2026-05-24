@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -58,6 +59,9 @@ class AdolescentGoogleSignupEdgeCasesIT {
 
     @Autowired
     AdolescentProfileRepository profileRepository;
+
+    @Autowired
+    Clock clock;
 
     MockMvc mvc;
 
@@ -124,7 +128,7 @@ class AdolescentGoogleSignupEdgeCasesIT {
     void postComplementarIdadeExatamente13EhAceito() throws Exception {
         var p = pending("limite13@gmail.com");
         // Nasceu ha exatamente 13 anos hoje → idade = 13.
-        LocalDate birth = LocalDate.now().minusYears(13);
+        LocalDate birth = LocalDate.now(clock).minusYears(13);
         mvc.perform(post("/cadastro/adolescente/complementar")
                         .session(sessionWithPending(p))
                         .with(csrf())
@@ -142,7 +146,8 @@ class AdolescentGoogleSignupEdgeCasesIT {
     @Test
     void postComplementarIdadeExatamente17EhAceito() throws Exception {
         var p = pending("limite17@gmail.com");
-        LocalDate birth = LocalDate.now().minusYears(17);
+        // Nasceu ha exatamente 17 anos hoje → idade = 17.
+        LocalDate birth = LocalDate.now(clock).minusYears(17);
         mvc.perform(post("/cadastro/adolescente/complementar")
                         .session(sessionWithPending(p))
                         .with(csrf())
@@ -161,7 +166,7 @@ class AdolescentGoogleSignupEdgeCasesIT {
     void postComplementarIdadeExatamente12EhBloqueada() throws Exception {
         var p = pending("limite12@gmail.com");
         // Nasceu ha 12 anos + 1 dia (= idade 12 incompleta) → under-13.
-        LocalDate birth = LocalDate.now().minusYears(12).minusDays(1);
+        LocalDate birth = LocalDate.now(clock).minusYears(12).minusDays(1);
         long before = accountRepository.count();
 
         mvc.perform(post("/cadastro/adolescente/complementar")
@@ -182,7 +187,8 @@ class AdolescentGoogleSignupEdgeCasesIT {
     @Test
     void postComplementarIdadeExatamente18EhBloqueada() throws Exception {
         var p = pending("limite18@gmail.com");
-        LocalDate birth = LocalDate.now().minusYears(18);
+        // Nasceu ha exatamente 18 anos hoje → idade = 18.
+        LocalDate birth = LocalDate.now(clock).minusYears(18);
         long before = accountRepository.count();
 
         mvc.perform(post("/cadastro/adolescente/complementar")
@@ -206,7 +212,7 @@ class AdolescentGoogleSignupEdgeCasesIT {
         // Data futura → EligibleAgeValidator trata como TEEN_TOO_YOUNG.
         // Como rejectedValue eh LocalDate futura, Period.between(...).getYears()
         // retorna numero negativo → age < 13 → variant under-13.
-        LocalDate birth = LocalDate.now().plusDays(10);
+        LocalDate birth = LocalDate.now(clock).plusDays(10);
         long before = accountRepository.count();
 
         mvc.perform(post("/cadastro/adolescente/complementar")

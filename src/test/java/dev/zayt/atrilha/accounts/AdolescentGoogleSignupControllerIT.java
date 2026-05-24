@@ -24,6 +24,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -86,6 +87,9 @@ class AdolescentGoogleSignupControllerIT {
 
     @Autowired
     AccountRepository accountRepository;
+
+    @Autowired
+    Clock clock;
 
     MockMvc mvc;
 
@@ -210,7 +214,7 @@ class AdolescentGoogleSignupControllerIT {
                         .session(session)
                         .with(csrf())
                         .param("nickname", "kidd")
-                        .param("birthDate", LocalDate.now().minusYears(10).toString())
+                        .param("birthDate", LocalDate.now(clock).minusYears(10).toString())
                         .param("photoSource", "NONE"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("cadastro/adolescente_bloqueado"))
@@ -233,7 +237,7 @@ class AdolescentGoogleSignupControllerIT {
                         .session(session)
                         .with(csrf())
                         .param("nickname", "older")
-                        .param("birthDate", LocalDate.now().minusYears(25).toString())
+                        .param("birthDate", LocalDate.now(clock).minusYears(25).toString())
                         .param("photoSource", "NONE"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("cadastro/adolescente_bloqueado"))

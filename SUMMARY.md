@@ -1,43 +1,58 @@
-# Resumo de execução — Issue #62
+# Resumo de execução — Issue #70
 
-**Branch:** feat/62-chore-007-08-adiciona-asset-google-g-e-validacao-f
+**Branch:** fix/70-fix-012-testes-integracao-usam-localdate-now-emvez
 **Estado:** working tree pronto para revisão (sem PR, sem push)
-**Testes:** Tests run: (ver log)
+**Testes:** 187 testes, 0 falhas, 0 erros
 **Warnings de compilação:** 0
 
 ## Arquivos alterados
 ```
-
+REVIEW.md
+SUMMARY.md
+src/test/java/dev/zayt/atrilha/accounts/AdolescentGoogleSignupControllerIT.java
+src/test/java/dev/zayt/atrilha/accounts/AdolescentGoogleSignupEdgeCasesIT.java
+src/test/java/dev/zayt/atrilha/accounts/AdolescentRegistrationControllerIT.java
+src/test/java/dev/zayt/atrilha/accounts/AdolescentRegistrationEdgeCasesIT.java
+src/test/java/dev/zayt/atrilha/accounts/RegressionUS001AndUS006IT.java
 ```
 
 ## Diff (stat)
 ```
-
+ REVIEW.md                                          |  7 +++
+ SUMMARY.md                                         | 50 ++++++++++++----------
+ .../AdolescentGoogleSignupControllerIT.java        |  8 +++-
+ .../AdolescentGoogleSignupEdgeCasesIT.java         | 16 ++++---
+ .../AdolescentRegistrationControllerIT.java        | 16 ++++---
+ .../AdolescentRegistrationEdgeCasesIT.java         | 13 ++++--
+ .../accounts/RegressionUS001AndUS006IT.java        |  6 ++-
+ 7 files changed, 76 insertions(+), 40 deletions(-)
 ```
 
 ## O que foi feito
 
-Chore de encerramento da US-007 (#38) — última subtask 007.08. Nenhuma alteração de código: commit vazio (`--allow-empty`) como marco de auditoria.
+Fix de teste-integração: substituição de `LocalDate.now()` por `LocalDate.now(clock)` em 5 classes IT do pacote `accounts`, injetando `Clock clock` via `@Autowired` em cada uma.
 
-**Fase 1 — Asset:** `src/main/resources/static/img/google-g.svg` confirmado (997 bytes, 4 paths coloridos, SHA: `ea896cce...`). Coberto por `/img/**` permitAll em SecurityConfig. Sem CSP customizado.
+**Causa:** CI do GitHub Actions (timezone UTC) falhava em bordas de idade (13 e 18 anos) porque `LocalDate.now()` do teste retornava "hoje" em UTC, enquanto `AgeEligibilityChecker` usa `Clock.system(America/Sao_Paulo)`. Divergência de 1 dia invertia o veredito de elegibilidade.
 
-**Fase 2 — Regressão:** `mvn clean verify` → BUILD SUCCESS, 216 testes (≥135 esperado), zero warnings. Todas as suítes verdes: LoginPageTest, LoginFlowTest, PostLoginRedirectTest (007.07), SecurityConfigOAuth2IT, EmailVerificationControllerIT, RegressionUS001AndUS006IT, HealthEndpointIT, FlywayMigrationIT, HomeControllerTest, NotFoundPageTest, AtrilhaApplicationTests.
+**Alterações:**
+- `AdolescentGoogleSignupEdgeCasesIT`: 5 substituições (bordas exatas: 12, 13, 17, 18 anos + data futura)
+- `AdolescentGoogleSignupControllerIT`: 2 substituições (idades 10 e 25 anos)
+- `AdolescentRegistrationControllerIT`: 2 substituições (idades 10 e 25 anos)
+- `AdolescentRegistrationEdgeCasesIT`: 2 substituições (idades 10 anos com erros simultâneos)
+- `RegressionUS001AndUS006IT`: 1 substituição (idade 10 anos)
 
-**Fase 3 — Validação manual (5 CAs da US-007):**
-- CA #1: `GET /` → CTA "Já tenho conta" → `/login` com email+senha + Google ✓
-- CA #2: TEEN→`/trilha`, Guardian vinculado→`/painel`, Guardian sem vínculo→`/vincular` ✓
-- CA #3: senha errada e email inexistente → idêntico `302 /login?error` + banner `data-error="bad-credentials"` ✓
-- CA #4: 5 falhas → `/login?blocked` + banner `data-error="rate-limited"` + inputs disabled + Google link não disabled ✓
-- CA #5: JSESSIONID HttpOnly, SameSite=Lax, Max-Age~30d; `/trilha` acessível sem re-login ✓
-- Rotas públicas: 200 (/, /health, /login, /img/google-g.svg, /css/app.css, /cadastro/adolescente/escolher-metodo) ✓
-- Rotas protegidas anônimas: 302 → /login ✓
-- Logout: invalida sessão, redireciona `/login?logout` ✓
-- OAuth Google smoke: 302 → `accounts.google.com/o/oauth2/v2/auth?...` ✓
+**Decisões:**
+- Reutilização do bean `atrilhaClock` (America/Sao_Paulo) já existente em `AgeEligibilityConfig` — sem novo bean, sem configuração extra.
+- O perfil `test` (`@ActiveProfiles("test")`) já carrega o contexto completo, incluindo `AgeEligibilityConfig`, então `@Autowired Clock clock` resolve sem `@Import`.
+- Reorganização incidental de imports em 3 arquivos (static → third-party → project) — efeito colateral do editor, sem impacto funcional.
 
-**Fase 4 — Encerramento:** branch `chore/62-007-08-validacao-final`, commit vazio com msg `chore(007.08): validacao-final-e-fechamento-us-007`. PR draft com `Closes #38` e `Closes #62`.
-
-**REF futuro (item 4.3 da issue):** consolidar SVG inline → `<img th:src="@{/img/google-g.svg}">` em `cadastro/adolescente_escolher_metodo.html` e `auth/login.html`. Tech debt visual, sem prazo.
+**Autoavaliação dos critérios de aceitação:**
+- ✅ Zero `LocalDate.now()` sem clock nos 5 arquivos listados (12/12 substituições)
+- ✅ Cada IT injeta `Clock clock` via `@Autowired`
+- ✅ `mvn test` → 187 testes verdes, zero warnings
+- ✅ Bordas 13 e 18 agora usam mesmo timezone do `AgeEligibilityChecker`
+- ✅ Nenhum teste unitário (`AgeEligibilityCheckerTest`, `EligibleAgeValidatorTest`) modificado
 
 ## ⚠️ Checagem LGPD (atrilha)
 
-N/A — sem superfície de dados pessoais. Esta task é chore de validação + commit vazio; não modifica código Java, templates, properties ou qualquer arquivo que toque consentimento, compartilhamento ou dados de menor (13–17). ADR-005/006/007 não se aplicam.
+N/A — sem superfície de dados pessoais. Alteração exclusiva em código de teste (substituição de `LocalDate.now()` por `LocalDate.now(clock)`). Não toca consentimento, compartilhamento ou dados de menor (13–17). ADR-005/006/007 não se aplicam.
