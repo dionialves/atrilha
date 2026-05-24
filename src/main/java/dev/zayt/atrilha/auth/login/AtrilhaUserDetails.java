@@ -1,6 +1,7 @@
 package dev.zayt.atrilha.auth.login;
 
 import dev.zayt.atrilha.auth.AccountRole;
+import dev.zayt.atrilha.auth.AuthenticatedPrincipal;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,7 +20,7 @@ import java.util.List;
  *   <li>{@code getAccount()} — a conta original para leitura no template</li>
  * </ul>
  */
-public class AtrilhaUserDetails implements UserDetails {
+public class AtrilhaUserDetails implements UserDetails, AuthenticatedPrincipal {
 
     private static final long serialVersionUID = 1L;
 
@@ -32,6 +33,18 @@ public class AtrilhaUserDetails implements UserDetails {
     /** Retorna o papel da conta (TEEN ou GUARDIAN). */
     public AccountRole getRole() {
         return account.role();
+    }
+
+    // ---- AuthenticatedPrincipal ----
+
+    @Override
+    public AccountRole role() {
+        return getRole();
+    }
+
+    @Override
+    public String displayName() {
+        return account.displayName();
     }
 
     /** Retorna true se o responsável tem ao menos um filho vinculado. */

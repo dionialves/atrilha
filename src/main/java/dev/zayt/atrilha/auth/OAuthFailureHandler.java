@@ -21,6 +21,9 @@ import java.io.IOException;
  *   <li>{@code email_unverified} (lancado por
  *       {@link GoogleOAuth2UserService}) → {@code ?error=email_unverified}
  *       (toast warning — Julia precisa verificar e-mail no Google)</li>
+ *   <li>{@code account_not_found} (lancado por
+ *       {@link GoogleOAuth2UserService}) → {@code ?error=no_account}
+ *       (toast info — Julia precisa criar uma conta nova)</li>
  *   <li>Qualquer outro erro → {@code ?error=oauth} (toast generico)</li>
  * </ul>
  * </p>
@@ -49,6 +52,9 @@ class OAuthFailureHandler implements AuthenticationFailureHandler {
             }
             if ("email_unverified".equals(errCode)) {
                 return "email_unverified";
+            }
+            if ("account_not_found".equals(errCode)) {
+                return "no_account";
             }
         }
         return "oauth";

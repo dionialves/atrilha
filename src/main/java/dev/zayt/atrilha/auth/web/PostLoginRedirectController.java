@@ -1,6 +1,6 @@
 package dev.zayt.atrilha.auth.web;
 
-import dev.zayt.atrilha.auth.login.AtrilhaUserDetails;
+import dev.zayt.atrilha.auth.AuthenticatedPrincipal;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 class PostLoginRedirectController {
 
     @GetMapping("/trilha")
-    String trilha(@AuthenticationPrincipal AtrilhaUserDetails principal, Model model) {
-        model.addAttribute("displayName", principal.getAccount().displayName());
+    String trilha(@AuthenticationPrincipal AuthenticatedPrincipal principal, Model model) {
+        model.addAttribute("displayName", principal.displayName());
         return "trilha/placeholder";
     }
 
@@ -21,7 +21,7 @@ class PostLoginRedirectController {
     }
 
     @GetMapping("/vincular")
-    String vincular(@AuthenticationPrincipal AtrilhaUserDetails principal) {
+    String vincular(@AuthenticationPrincipal AuthenticatedPrincipal principal) {
         if (principal.hasGuardianLink()) {
             return "redirect:/painel";
         }

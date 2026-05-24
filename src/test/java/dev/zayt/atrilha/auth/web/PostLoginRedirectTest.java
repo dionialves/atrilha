@@ -2,6 +2,7 @@ package dev.zayt.atrilha.auth.web;
 
 import dev.zayt.atrilha.AtrilhaApplication;
 import dev.zayt.atrilha.auth.AccountRole;
+import dev.zayt.atrilha.auth.login.AtrilhaOAuth2User;
 import dev.zayt.atrilha.auth.login.AtrilhaUserDetails;
 import dev.zayt.atrilha.auth.login.LoginAccountQuery;
 import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
@@ -194,5 +195,69 @@ class PostLoginRedirectTest {
 
         assertThat(content).contains("Já tenho conta");
         assertThat(content).contains("href=\"/login\"");
+    }
+
+    // ---- /trilha com principal OAuth (AtrilhaOAuth2User) ----
+
+    @Test
+    void getTrilhaAutenticadoComoOAuth2UserTeenRetorna200() throws Exception {
+        LoginAccountQuery.LoginAccount teenAccount = new LoginAccountQuery.LoginAccount(
+                "oauth@atrilha.test", null, AccountRole.TEEN, false, "OAuthUser");
+        AtrilhaOAuth2User oauthPrincipal = new AtrilhaOAuth2User(teenAccount,
+                java.util.Map.of("email", "oauth@atrilha.test"));
+
+        Authentication auth = UsernamePasswordAuthenticationToken.authenticated(
+                oauthPrincipal, null, oauthPrincipal.getAuthorities());
+        org.springframework.security.core.context.SecurityContext sc =
+                SecurityContextHolder.createEmptyContext();
+        sc.setAuthentication(auth);
+
+        mvc.perform(get("/trilha").sessionAttr(
+                        HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                        sc))
+                .andExpect(status().isOk())
+                .andExpect(view().name("trilha/placeholder"))
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .contains("OAuthUser"));
+    }
+
+    @Test
+    void getVincularAutenticadoComoOAuth2UserGuardianSemVinculoRetorna200() throws Exception {
+        LoginAccountQuery.LoginAccount guardianAccount = new LoginAccountQuery.LoginAccount(
+                "oauth-guardian@atrilha.test", null, AccountRole.GUARDIAN, false, "GuardianOAuth");
+        AtrilhaOAuth2User oauthPrincipal = new AtrilhaOAuth2User(guardianAccount,
+                java.util.Map.of("email", "oauth-guardian@atrilha.test"));
+
+        Authentication auth = UsernamePasswordAuthenticationToken.authenticated(
+                oauthPrincipal, null, oauthPrincipal.getAuthorities());
+        org.springframework.security.core.context.SecurityContext sc =
+                SecurityContextHolder.createEmptyContext();
+        sc.setAuthentication(auth);
+
+        mvc.perform(get("/vincular").sessionAttr(
+                        HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                        sc))
+                .andExpect(status().isOk())
+                .andExpect(view().name("vinculacao/inserir-codigo-placeholder"));
+    }
+
+    @Test
+    void getVincularAutenticadoComoOAuth2UserGuardianVinculadoRedirecionaParaPainel() throws Exception {
+        LoginAccountQuery.LoginAccount guardianAccount = new LoginAccountQuery.LoginAccount(
+                "oauth-guardian-linked@atrilha.test", null, AccountRole.GUARDIAN, true, "LinkedGuardian");
+        AtrilhaOAuth2User oauthPrincipal = new AtrilhaOAuth2User(guardianAccount,
+                java.util.Map.of("email", "oauth-guardian-linked@atrilha.test"));
+
+        Authentication auth = UsernamePasswordAuthenticationToken.authenticated(
+                oauthPrincipal, null, oauthPrincipal.getAuthorities());
+        org.springframework.security.core.context.SecurityContext sc =
+                SecurityContextHolder.createEmptyContext();
+        sc.setAuthentication(auth);
+
+        mvc.perform(get("/vincular").sessionAttr(
+                        HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                        sc))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/painel"));
     }
 }

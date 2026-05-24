@@ -51,7 +51,7 @@ class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         // Rotas públicas — estáticos, health, erro
                         .requestMatchers("/", "/health", "/login",
-                                "/css/**", "/img/**", "/js/**", "/error/**")
+                                "/css/**", "/img/**", "/js/**", "/error", "/error/**")
                                 .permitAll()
                         // Fluxo de cadastro (US-001/002) — permanece público
                         .requestMatchers("/cadastro/**", "/comecar").permitAll()
