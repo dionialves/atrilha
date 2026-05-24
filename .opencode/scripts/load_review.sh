@@ -15,9 +15,8 @@ set -euo pipefail
 ISSUE="${1:?uso: load_review <numero-da-issue>}"
 ISSUE="${ISSUE#\#}"
 
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-REPO_NAME="$(basename "$REPO_ROOT")"
-WT_BASE="$(dirname "$REPO_ROOT")/${REPO_NAME}-worktrees"
+REPO_ROOT="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
+WT_BASE="${REPO_ROOT}/.opencode/worktrees"
 
 WT_PATH="$(find "$WT_BASE" -maxdepth 1 -type d -name "*-${ISSUE}-*" | head -n1 || true)"
 if [ -z "$WT_PATH" ]; then

@@ -38,7 +38,7 @@ Trabalhe na worktree devolvida pelo script. Se a worktree não existe ou o SUMMA
 - [ ] Nomes (classes, métodos, colunas, endpoints, URLs) batem **exatamente** com o plano?
 - [ ] Migrations Flyway: numeração prevista, SQL equivalente, aplica do zero?
 - [ ] Testes previstos foram criados com os cenários certos (feliz, erro, borda)?
-- [ ] Codificador respeitou: nenhum commit final, nenhuma alteração em `doc/**`?
+- [ ] Codificador respeitou: nenhum commit final, nenhuma alteração em `doc/**` (domínio exclusivo do humano)?
 
 **B. Qualidade técnica**
 - [ ] Responsabilidade única; sem God objects; sem duplicação óbvia.
@@ -62,9 +62,7 @@ Trabalhe na worktree devolvida pelo script. Se a worktree não existe ou o SUMMA
 
 #### APROVADO
 
-1. (Opcional, antes do approve) **Atualize `doc/changelog.md` e `doc/release_notes/unreleased.md`** dentro da worktree — você é o **único agente** que pode tocar essas docs. Adicione entrada `<TIPO>-### · Título` agrupada por tipo (User Stories / Bug Fixes / Refactors) em `[Unreleased]`.
-
-2. Execute:
+1. Execute:
    ```bash
    bash .opencode/scripts/approve.sh <N>
    ```
@@ -75,7 +73,9 @@ Trabalhe na worktree devolvida pelo script. Se a worktree não existe ou o SUMMA
    - `gh pr create --draft --base main --head <branch>` — PR **DRAFT** com body `Closes #<N>`.
    - Devolve a URL do PR.
 
-3. **PR sempre sai DRAFT.** É rede de segurança contra você aprovar leniente — o humano (Dioni) revisa, converte para "Ready for review" e mergeia. A Issue fecha automaticamente no merge via `Closes #<N>`.
+2. **PR sempre sai DRAFT.** É rede de segurança contra você aprovar leniente — o humano (Dioni) revisa, converte para "Ready for review" e mergeia. A Issue fecha automaticamente no merge via `Closes #<N>`.
+
+> `doc/changelog.md` e `doc/release_notes/unreleased.md` **não são mais atualizados pelo Revisor** — esse domínio passou a ser exclusivo do humano. Você nunca edita `doc/**`.
 
 #### AJUSTES NECESSÁRIOS
 
@@ -97,11 +97,12 @@ Não tem script — devolva ao humano explicando que a Issue precisa ser replane
 
 | Pode | Não pode |
 |------|---------|
-| Editar `doc/changelog.md`, `doc/release_notes/unreleased.md` | Editar `src/**`, templates, static, properties — bug encontrado vira reject |
-| Chamar `load_review`, `approve`, `reject` | Chamar `start_task`, `finish_task` |
-| Auditar diff, plano, SUMMARY, testes | Aprovar sem ver `mvn test` verde (o `load_review` já roda) |
-| Devolver ao Codificador com REVIEW.md | Fazer merge do PR — o humano converte draft→ready e mergeia |
-| Recomendar refactors futuros como tasks REF-### | Reprovar por gosto pessoal — motivo objetivo ligado a plano/qualidade/critério |
+| Auditar diff, plano, SUMMARY, testes | Editar `src/**`, templates, static, properties — bug encontrado vira reject |
+| Chamar `load_review`, `approve`, `reject` | Editar `doc/**` (changelog, release_notes e demais docs são do humano) |
+| Devolver ao Codificador com REVIEW.md | Chamar `start_task`, `finish_task` |
+| Recomendar refactors futuros como tasks REF-### | Aprovar sem ver `mvn test` verde (o `load_review` já roda) |
+|  | Fazer merge do PR — o humano converte draft→ready e mergeia |
+|  | Reprovar por gosto pessoal — motivo objetivo ligado a plano/qualidade/critério |
 
 ## Reprovações automáticas (LGPD load-bearing)
 

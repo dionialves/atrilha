@@ -27,7 +27,7 @@ bash .opencode/scripts/start_task.sh <N>
 O script:
 - Valida que a Issue `#<N>` existe no GitHub e está OPEN.
 - Deriva tipo (`feat|fix|refactor|chore`), slug e nome de branch (`<tipo>/<N>-<slug>`) a partir das labels e do título — determinístico.
-- Cria a worktree em `../atrilha-worktrees/<tipo>-<N>-<slug>/` já com a branch criada a partir de `origin/main`.
+- Cria a worktree em `.opencode/worktrees/<tipo>-<N>-<slug>/` (dentro do próprio repo, gitignorada) já com a branch criada a partir de `origin/main`.
 - Devolve no stdout: `Worktree: <caminho>` + corpo completo da Issue (plano + critérios de aceitação).
 
 **Trabalhe DENTRO desse caminho até o fim.** Não retorne ao repositório principal nem mude de branch manualmente.
@@ -36,7 +36,7 @@ O script:
 
 - Leia o corpo da Issue de cabo a rabo: contexto, abordagem, passo-a-passo, testes, critérios de aceitação, riscos.
 - Edite apenas `src/**`, `pom.xml`, templates, static, properties.
-- **NUNCA toque em `doc/**`** — esse domínio é do humano (PO/Designer) e do Revisor (changelog/release_notes).
+- **NUNCA toque em `doc/**`** — esse domínio é do humano (PO/Designer).
 - Faça commits WIP livremente dentro da worktree — eles serão squashados depois pelo Revisor.
 - Após grupos coerentes de mudança, rode `./mvnw compile` (ou `mvn compile`) para falhar rápido.
 

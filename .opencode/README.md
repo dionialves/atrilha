@@ -120,7 +120,7 @@ opencode
 # /model lmstudio/qwen3.6-35b-a3b-mlx     (ou sonnet, etc.)
 # "Inicie a implementação da issue #61."
 #   → o agente roda: bash .opencode/scripts/start_task.sh 61
-#   → trabalha DENTRO da worktree ../atrilha-worktrees/feat-61-...
+#   → trabalha DENTRO da worktree .opencode/worktrees/feat-61-...
 #   → "finalize" → bash .opencode/scripts/finish_task.sh 61
 #   → edita SUMMARY.md (narrativa + LGPD)
 ```
@@ -147,7 +147,7 @@ opencode
 4. Issue fecha automaticamente via `Closes #<N>` no body.
 5. Limpar:
    ```bash
-   git worktree remove ../atrilha-worktrees/<dir>
+   git worktree remove .opencode/worktrees/<dir>
    git branch -D <branch>     # opcional, ramo local
    ```
 

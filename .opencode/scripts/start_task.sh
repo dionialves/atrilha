@@ -14,10 +14,9 @@ set -euo pipefail
 ISSUE="${1:?uso: start_task <numero-da-issue>}"
 ISSUE="${ISSUE#\#}"  # remove # se vier "#42"
 
-# --- localizar raiz do repo ---
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-REPO_NAME="$(basename "$REPO_ROOT")"
-WT_BASE="$(dirname "$REPO_ROOT")/${REPO_NAME}-worktrees"
+# --- localizar raiz do repo principal (funciona mesmo se chamado de dentro de uma worktree) ---
+REPO_ROOT="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
+WT_BASE="${REPO_ROOT}/.opencode/worktrees"
 
 # --- validar issue e puxar dados em JSON ---
 if ! command -v gh >/dev/null 2>&1; then

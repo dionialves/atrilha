@@ -5,9 +5,8 @@
 # Executa a parte mecânica do fechamento (workflow.md §3.4 passo 6):
 #   1. Re-valida testes verdes (trava de segurança)
 #   2. Squash dos commits da branch em um único commit limpo
-#   3. Atualiza doc/changelog.md e doc/release_notes/unreleased.md
-#   4. Push da branch
-#   5. Cria PR como DRAFT via gh, com "Closes #<N>" no body
+#   3. Push da branch
+#   4. Cria PR como DRAFT via gh, com "Closes #<N>" no body
 #
 # O PR sai como DRAFT de propósito: o humano (Dioni) revisa, converte
 # para ready e faz o merge. Modelo local aprova leniente demais.
@@ -16,9 +15,8 @@ set -euo pipefail
 ISSUE="${1:?uso: approve <numero-da-issue>}"
 ISSUE="${ISSUE#\#}"
 
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-REPO_NAME="$(basename "$REPO_ROOT")"
-WT_BASE="$(dirname "$REPO_ROOT")/${REPO_NAME}-worktrees"
+REPO_ROOT="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
+WT_BASE="${REPO_ROOT}/.opencode/worktrees"
 
 WT_PATH="$(find "$WT_BASE" -maxdepth 1 -type d -name "*-${ISSUE}-*" | head -n1 || true)"
 [ -n "$WT_PATH" ] || { echo "ERRO: worktree da issue #${ISSUE} não encontrada." >&2; exit 1; }
@@ -55,15 +53,6 @@ COMMIT_MSG="${TYPE}(${CODE_PREFIX}-${ISSUE}): ${TITLE_SLUG}"
 git reset --soft "$(git merge-base origin/main HEAD)"
 git add -A
 git commit -m "$COMMIT_MSG" --quiet
-
-# --- atualizar docs (Revisor é o único que toca changelog/release_notes) ---
-# NOTA: as docs vivem na worktree; o agente Revisor preenche o conteúdo
-# detalhado de release_notes via edição de arquivo ANTES de chamar approve.
-# Aqui apenas garantimos que as entradas mínimas existam e recommitamos.
-DOC_CHANGELOG="${WT_PATH}/doc/changelog.md"
-if [ -f "$DOC_CHANGELOG" ] && ! git diff --cached --quiet -- "$DOC_CHANGELOG" 2>/dev/null; then
-  : # já incluído no commit acima
-fi
 
 # --- push ---
 git push -u origin "$BRANCH" --quiet
