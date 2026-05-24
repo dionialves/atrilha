@@ -4,8 +4,8 @@
 package dev.zayt.atrilha.auth.login;
 
 import dev.zayt.atrilha.auth.AccountRole;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -18,13 +18,16 @@ import java.util.Optional;
  * Implementação stub de {@link LoginAccountQuery} que carrega contas-semente
  * a partir das properties (prefixo {@code atrilha.auth.seed}).
  *
- * <p>Até a US-001/002/003/004 entregarem persistência JPA real, esta classe
- * serve como mock para desenvolvimento e testes. <strong>Não roda em produção</strong>
- * (perfil {@code !prod}).</p>
+ * <p>Este bean só é carregado quando a propriedade
+ * {@code atrilha.auth.seed.enabled=true} está explicitamente definida.
+ * Em produção (default), {@link JpaLoginAccountQuery} é o bean ativo.</p>
+ *
+ * <p>Útil em dev local quando se quer popular contas-fantasma sem ir pelo
+ * cadastro real, ou em testes unitários que dependem de seeds determinísticas.</p>
  */
 @Component
 @ConfigurationProperties(prefix = "atrilha.auth.seed")
-@Profile("!prod")
+@ConditionalOnProperty(name = "atrilha.auth.seed.enabled", havingValue = "true", matchIfMissing = false)
 public class InMemoryLoginAccountQuery implements LoginAccountQuery {
 
     private SeedConfig teen;
