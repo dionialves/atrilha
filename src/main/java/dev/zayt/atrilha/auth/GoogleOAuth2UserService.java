@@ -20,9 +20,10 @@ import java.util.Map;
  *
  * <p>Se {@code email_verified} nao for verdadeiro, lanca
  * {@link OAuth2AuthenticationException} com codigo {@code email_unverified}.
- * Se o e-mail nao corresponde a nenhuma conta cadastrada, lanca com codigo
- * {@code account_not_found}. O {@code OAuthFailureHandler} traduz ambos para
- * redirects amigaveis.</p>
+ * Se o e-mail nao corresponde a nenhuma conta cadastrada, devolve um
+ * {@link AtrilhaOAuth2User} em estado {@code PENDING_SIGNUP} (sem role efetiva,
+ * {@code account == null}). O dispatcher no success handler identifica esse
+ * estado e encaminha para o fluxo de cadastro novo ({@code /cadastro/adolescente/complementar}).</p>
  *
  * <p>O {@link AtrilhaOAuth2User} retornado implementa {@link AuthenticatedPrincipal},
  * garantindo que o principal no SecurityContext tenha a authority correta
@@ -65,15 +66,9 @@ class GoogleOAuth2UserService extends DefaultOAuth2UserService {
         }
         String email = rawEmail.trim().toLowerCase(Locale.ROOT);
 
-        // 3. Consultar conta no banco
-        LoginAccountQuery.LoginAccount account = loginAccountQuery.findForLogin(email)
-                .orElseThrow(() -> new OAuth2AuthenticationException(
-                        new OAuth2Error(
-                                "account_not_found",
-                                "Nenhuma conta encontrada para este e-mail Google",
-                                null)));
-
-        // 4. Retornar AtrilhaOAuth2User com authorities corretas
-        return new AtrilhaOAuth2User(account, attrs);
+        // 3. Consultar conta no banco — se nao existe, devolve principal PENDING_SIGNUP
+        return loginAccountQuery.findForLogin(email)
+                .map(account -> (OAuth2User) new AtrilhaOAuth2User(account, attrs))
+                .orElseGet(() -> (OAuth2User) AtrilhaOAuth2User.pendingSignup(email, attrs));
     }
 }

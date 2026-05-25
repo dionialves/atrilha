@@ -1,6 +1,7 @@
 package dev.zayt.atrilha.auth;
 
 import dev.zayt.atrilha.accounts.AccountReader;
+import dev.zayt.atrilha.auth.login.AtrilhaOAuth2User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -64,10 +65,19 @@ class OAuthSuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
-        // Cast restritivo: este handler so trata o chain oauth2Login do Spring Security.
-        // Outras Authentications nunca devem chegar aqui (defesa em profundidade).
-        OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
-        Map<String, Object> attrs = token.getPrincipal().getAttributes();
+        // Extrai atributos OAuth do principal (AtrilhaOAuth2User em PENDING_SIGNUP)
+        // ou do token original. O dispatcher garante que so OAuth2AuthenticationToken
+        // chegue aqui com principal AtrilhaOAuth2User pendente.
+        Map<String, Object> attrs;
+        if (authentication.getPrincipal() instanceof AtrilhaOAuth2User user && user.isPendingSignup()) {
+            attrs = user.getAttributes();
+        } else if (authentication instanceof OAuth2AuthenticationToken token) {
+            attrs = token.getPrincipal().getAttributes();
+        } else {
+            throw new ClassCastException(
+                    "OAuthSuccessHandler invocado com principal inesperado: "
+                            + authentication.getPrincipal().getClass().getName());
+        }
 
         String rawEmail = (String) attrs.get("email");
         if (rawEmail == null) {

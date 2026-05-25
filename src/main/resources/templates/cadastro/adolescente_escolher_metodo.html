@@ -15,6 +15,9 @@
         <div th:if="${error == 'email_unverified'}" role="alert" class="alert alert--warning">
             <p>A conta Google que você usou ainda não tem e-mail confirmado. Confirma lá no Google e volta aqui.</p>
         </div>
+        <div th:if="${error == 'no_account'}" role="status" class="alert alert--info">
+            <p>Não encontrei essa conta Google por aqui. Quer criar uma agora?</p>
+        </div>
         <div th:if="${error == 'account_exists'}" role="status" class="alert alert--info">
             <p>Essa conta Google já tem cadastro no atrilha. Quer entrar?</p>
             <p><a th:href="@{/}">Voltar pro início</a></p>

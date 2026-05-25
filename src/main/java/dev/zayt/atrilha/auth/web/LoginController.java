@@ -1,7 +1,8 @@
 package dev.zayt.atrilha.auth.web;
 
 import dev.zayt.atrilha.auth.AccountRole;
-import dev.zayt.atrilha.auth.login.AtrilhaUserDetails;
+import dev.zayt.atrilha.auth.AuthenticatedPrincipal;
+import dev.zayt.atrilha.auth.login.AtrilhaOAuth2User;
 import dev.zayt.atrilha.auth.login.PostLoginDestination;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
@@ -20,8 +21,9 @@ class LoginController {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated()
-                && auth.getPrincipal() instanceof AtrilhaUserDetails atrilha) {
-            return "redirect:" + resolveDestination(atrilha).path();
+                && auth.getPrincipal() instanceof AuthenticatedPrincipal principal
+                && !(principal instanceof AtrilhaOAuth2User u && u.isPendingSignup())) {
+            return "redirect:" + resolveDestinationFrom(principal).path();
         }
 
         // Spring Security redireciona para /login?error e /login?logout sem
@@ -41,11 +43,11 @@ class LoginController {
         return VIEW_LOGIN;
     }
 
-    private PostLoginDestination resolveDestination(AtrilhaUserDetails atrilha) {
-        if (atrilha.getRole() == AccountRole.TEEN) {
+    private PostLoginDestination resolveDestinationFrom(AuthenticatedPrincipal principal) {
+        if (principal.role() == AccountRole.TEEN) {
             return PostLoginDestination.TRILHA;
         }
-        return atrilha.hasGuardianLink()
+        return principal.hasGuardianLink()
                 ? PostLoginDestination.PAINEL
                 : PostLoginDestination.VINCULAR;
     }

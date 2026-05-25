@@ -45,6 +45,7 @@ class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http,
                                     GoogleOAuth2UserService googleOAuth2UserService,
                                     OAuthFailureHandler oauthFailureHandler,
+                                    OAuthDispatcherSuccessHandler oauthDispatcherSuccessHandler,
                                     RoleBasedAuthenticationSuccessHandler roleBasedSuccessHandler,
                                     RateLimitedAuthenticationFailureHandler rateLimitedFailureHandler) throws Exception {
         return http
@@ -93,12 +94,12 @@ class SecurityConfig {
                         .successHandler(roleBasedSuccessHandler)
                         .failureHandler(rateLimitedFailureHandler)
                 )
-                // US-002: OAuth2 login (cadastro Google). Compartilha o mesmo
-                // successHandler do form login — resolve destino por papel.
+                // US-002: OAuth2 login (cadastro Google). Dispatcher decide se e
+                // login (conta existente) ou cadastro novo (sem conta no banco).
                 .oauth2Login(oauth -> oauth
                         .loginPage("/login")
                         .userInfoEndpoint(ui -> ui.userService(googleOAuth2UserService))
-                        .successHandler(roleBasedSuccessHandler)
+                        .successHandler(oauthDispatcherSuccessHandler)
                         .failureHandler(oauthFailureHandler))
                 // Logout
                 .logout(logout -> logout

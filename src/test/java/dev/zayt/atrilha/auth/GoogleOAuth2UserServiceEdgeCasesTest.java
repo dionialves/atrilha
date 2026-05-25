@@ -131,12 +131,10 @@ class GoogleOAuth2UserServiceEdgeCasesTest {
                 }
 
                 String email = rawEmail.trim().toLowerCase(java.util.Locale.ROOT);
-                LoginAccountQuery.LoginAccount account = loginAccountQuery.findForLogin(email)
-                        .orElseThrow(() -> new OAuth2AuthenticationException(
-                                new OAuth2Error("account_not_found",
-                                        "Nenhuma conta encontrada para este e-mail Google", null)));
-
-                return new dev.zayt.atrilha.auth.login.AtrilhaOAuth2User(account, a);
+                // Novo contrato: pending signup em vez de excecao
+                return loginAccountQuery.findForLogin(email)
+                        .map(account -> (OAuth2User) new dev.zayt.atrilha.auth.login.AtrilhaOAuth2User(account, a))
+                        .orElseGet(() -> (OAuth2User) dev.zayt.atrilha.auth.login.AtrilhaOAuth2User.pendingSignup(email, a));
             }
         };
 
@@ -176,12 +174,9 @@ class GoogleOAuth2UserServiceEdgeCasesTest {
                 }
 
                 String email = rawEmail.trim().toLowerCase(java.util.Locale.ROOT);
-                LoginAccountQuery.LoginAccount acct = loginAccountQuery.findForLogin(email)
-                        .orElseThrow(() -> new OAuth2AuthenticationException(
-                                new OAuth2Error("account_not_found",
-                                        "Nenhuma conta encontrada para este e-mail Google", null)));
-
-                return new dev.zayt.atrilha.auth.login.AtrilhaOAuth2User(acct, a);
+                return loginAccountQuery.findForLogin(email)
+                        .map(account -> (OAuth2User) new dev.zayt.atrilha.auth.login.AtrilhaOAuth2User(account, a))
+                        .orElseGet(() -> (OAuth2User) dev.zayt.atrilha.auth.login.AtrilhaOAuth2User.pendingSignup(email, a));
             }
         };
 

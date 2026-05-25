@@ -2,6 +2,7 @@ package dev.zayt.atrilha.auth.web;
 
 import dev.zayt.atrilha.AtrilhaApplication;
 import dev.zayt.atrilha.auth.AccountRole;
+import dev.zayt.atrilha.auth.login.AtrilhaOAuth2User;
 import dev.zayt.atrilha.auth.login.AtrilhaUserDetails;
 import dev.zayt.atrilha.auth.login.LoginAccountQuery;
 import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
@@ -13,6 +14,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -174,5 +176,30 @@ class LoginPageTest {
                         createSecurityContext(userDetails)))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/vincular"));
+    }
+
+    @Test
+    void getLoginGoogleAutenticadoRedirecionaParaTrilha() throws Exception {
+        LoginAccountQuery.LoginAccount teenAccount = new LoginAccountQuery.LoginAccount(
+                "teen-oauth@atrilha.test", null, AccountRole.TEEN, false, "Teen");
+        AtrilhaOAuth2User oauthPrincipal = new AtrilhaOAuth2User(teenAccount,
+                java.util.Map.of("email", "teen-oauth@atrilha.test"));
+
+        Authentication auth = new OAuth2AuthenticationToken(oauthPrincipal,
+                oauthPrincipal.getAuthorities(), "google");
+
+        mvc.perform(get("/login").sessionAttr(
+                        HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                createOAuth2SecurityContext(auth)))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/trilha"));
+    }
+
+    private org.springframework.security.core.context.SecurityContext createOAuth2SecurityContext(
+            Authentication authentication) {
+        org.springframework.security.core.context.SecurityContext sc =
+                SecurityContextHolder.createEmptyContext();
+        sc.setAuthentication(authentication);
+        return sc;
     }
 }

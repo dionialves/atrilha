@@ -68,9 +68,17 @@ public class RoleBasedAuthenticationSuccessHandler implements AuthenticationSucc
      *
      * <p>Após o FIX-014, todo principal de login (form ou OAuth) implementa
      * {@link AuthenticatedPrincipal}, eliminando a necessidade de branch por tipo.</p>
+     *
+     * <p>Se o principal for um {@code AtrilhaOAuth2User} em estado PENDING_SIGNUP,
+     * retorna {@code ERROR} — o dispatcher deve impedir que esse caso chegue aqui.</p>
      */
     PostLoginDestination resolveDestination(Authentication authentication) {
         if (authentication.getPrincipal() instanceof AuthenticatedPrincipal p) {
+            // Defesa: pending signup nunca deve chegar aqui (dispatcher encaminha para OAuthSuccessHandler)
+            if (p instanceof dev.zayt.atrilha.auth.login.AtrilhaOAuth2User u && u.isPendingSignup()) {
+                log.warn("auth.login.pending_signup_reached_role_based_handler — dispatcher falhou");
+                return PostLoginDestination.ERROR;
+            }
             return resolveForRole(p.role(), p.hasGuardianLink());
         }
 

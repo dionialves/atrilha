@@ -86,7 +86,7 @@ class GoogleOAuth2UserServiceTest {
     }
 
     @Test
-    void loadUserLancaOAuth2AuthenticationExceptionQuandoEmailNaoTemConta() {
+    void loadUserDevolveAtrilhaOAuth2UserPendingSignupQuandoEmailNaoTemConta() {
         OAuth2User stubbed = new DefaultOAuth2User(
                 List.of(),
                 Map.of(
@@ -100,10 +100,12 @@ class GoogleOAuth2UserServiceTest {
 
         GoogleOAuth2UserService service = stubbedWith(stubbed, loginAccountQuery);
 
-        assertThatThrownBy(() -> service.loadUser(null))
-                .isInstanceOf(OAuth2AuthenticationException.class)
-                .matches(ex -> ((OAuth2AuthenticationException) ex)
-                        .getError().getErrorCode().equals("account_not_found"));
+        OAuth2User result = service.loadUser(null);
+
+        assertThat(result).isInstanceOf(AtrilhaOAuth2User.class);
+        AtrilhaOAuth2User atrilha = (AtrilhaOAuth2User) result;
+        assertThat(atrilha.isPendingSignup()).isTrue();
+        assertThat(atrilha.getAttributes().get("email")).isEqualTo("semconta@example.com");
     }
 
     @Test
@@ -194,14 +196,10 @@ class GoogleOAuth2UserServiceTest {
                 }
                 String email = rawEmail.trim().toLowerCase(java.util.Locale.ROOT);
 
-                LoginAccountQuery.LoginAccount account = loginAccountQuery.findForLogin(email)
-                        .orElseThrow(() -> new OAuth2AuthenticationException(
-                                new org.springframework.security.oauth2.core.OAuth2Error(
-                                        "account_not_found",
-                                        "Nenhuma conta encontrada para este e-mail Google",
-                                        null)));
-
-                return new AtrilhaOAuth2User(account, a);
+                // Se nao existe conta, devolve pending signup (novo contrato)
+                return loginAccountQuery.findForLogin(email)
+                        .map(account -> (OAuth2User) new AtrilhaOAuth2User(account, a))
+                        .orElseGet(() -> (OAuth2User) AtrilhaOAuth2User.pendingSignup(email, a));
             }
         };
     }

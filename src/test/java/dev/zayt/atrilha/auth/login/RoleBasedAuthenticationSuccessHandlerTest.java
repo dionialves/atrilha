@@ -1,6 +1,7 @@
 package dev.zayt.atrilha.auth.login;
 
 import dev.zayt.atrilha.auth.AccountRole;
+import dev.zayt.atrilha.auth.login.AtrilhaOAuth2User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -125,6 +126,24 @@ class RoleBasedAuthenticationSuccessHandlerTest {
 
         PostLoginDestination destination = handler.resolveDestination(authentication);
 
+        assertEquals(PostLoginDestination.ERROR, destination);
+    }
+
+    // ---- AtrilhaOAuth2User em PENDING_SIGNUP → ERROR (defesa do dispatcher) ----
+
+    @Test
+    @DisplayName("principalAtrilhaOAuth2UserEmPendingSignupNaoChamaRoleBasedSuccess")
+    void principalAtrilhaOAuth2UserEmPendingSignupNaoChamaRoleBasedSuccess() {
+        AtrilhaOAuth2User pendingUser = AtrilhaOAuth2User.pendingSignup(
+                "pending@test.com", java.util.Map.of("email", "pending@test.com"));
+
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(pendingUser);
+
+        PostLoginDestination destination = handler.resolveDestination(authentication);
+
+        // O dispatcher deve impedir que pending signup chegue aqui;
+        // como defesa, o handler retorna ERROR.
         assertEquals(PostLoginDestination.ERROR, destination);
     }
 

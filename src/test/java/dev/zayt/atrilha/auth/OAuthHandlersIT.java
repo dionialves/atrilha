@@ -44,6 +44,10 @@ import static org.springframework.security.core.authority.AuthorityUtils.createA
  * {@link EntityManager} (caminho ja estabelecido pelo
  * {@code AccountRegisteredEventListenerIT}, que tambem nao pode chamar o
  * package-private {@code RegisterAdolescentService}).</p>
+ *
+ * <p>ATENCAO: este teste invoca os handlers diretamente, sem passar pela
+ * chain do Spring Security. Para validacao end-to-end do callback,
+ * ver OAuth2GoogleSignupChainIT.</p>
  */
 @Testcontainers
 @SpringBootTest(classes = AtrilhaApplication.class,
