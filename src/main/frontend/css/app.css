@@ -18,6 +18,61 @@
 
 @import "tailwindcss";
 
+/* =============================================================================
+ * Self-host das fontes da marca (chore-ux-001 §4.1, CHORE-016)
+ *
+ * Bricolage Grotesque (display, 600 + 700) e Inter (texto, 400 + 500 + 600)
+ * servidas a partir de /fonts/*.woff2 (src/main/resources/static/fonts/).
+ * `font-display: swap` evita FOIT — em queda de rede o sistema renderiza
+ * com o fallback system-ui (chore-ux-001 §4.1 "Fallback stack") e troca
+ * quando a fonte chega. Sem requisição a fonts.googleapis.com em runtime.
+ *
+ * Os arquivos WOFF2 (subset latin) cobrem pt-BR (acentos comuns) e ficam
+ * abaixo de ~100KB no total (orçamento de tipografia chore-ux-001 §4.1).
+ *
+ * Posicionamento: declarado depois de `@import "tailwindcss"` (exigência do
+ * Tailwind v4) e antes de qualquer estilo de página — equivalente ao "topo"
+ * pedido pela issue CHORE-016. Os tokens `--font-display` e `--font-sans`
+ * declarados em `@theme` abaixo apontam para estas famílias com fallback
+ * system-ui, então se um arquivo .woff2 não existir, o navegador usa o
+ * fallback silenciosamente.
+ * ============================================================================= */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/bricolage-grotesque-latin-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/bricolage-grotesque-latin-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/inter-latin-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/inter-latin-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/inter-latin-600.woff2") format("woff2");
+}
+
 /* Scope explícito de scan (Tailwind v4 CSS-first). Caminho relativo a este
  * arquivo CSS de entrada. Substitui o `content: [...]` do antigo
  * `tailwind.config.js`, removido em chore-ux-010. */
@@ -638,3 +693,450 @@ a { color: var(--color-text-link); }
 .cadastro-concluido__lead { color: var(--color-text-muted); margin: var(--space-3) 0 var(--space-8); }
 .cadastro-concluido__next { margin: var(--space-6) auto; text-align: left; }
 .cadastro-concluido__cta  { margin-top: var(--space-6); }
+
+/* =============================================================================
+ * Telas públicas (CHORE-016) — home, comecar, login
+ *
+ * Aplicam os protótipos aprovados em doc/UX/prototypes/{home,comecar,login}.html
+ * sobre o sistema de componentes já existente. Reaproveitam .btn, .btn-primary,
+ * .btn-lg, .btn-md, .btn-ghost, .btn-google, .input-field, .input-group,
+ * .input-label, .card, .card--interactive, .overline, .alert, .brand,
+ * .brand-mark, .brand-wordmark. Nenhum hex é redeclarado — tokens vêm de var().
+ * ============================================================================= */
+
+/* ----- Shell público (layout/public.html) -----
+ * O <body> usa .public-shell para garantir altura mínima total e layout em
+ * coluna nas telas que precisam empurrar o rodapé legal para o fim (home).
+ */
+.public-shell {
+  background: var(--color-bg);
+  color: var(--color-text-body);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* =============================================================================
+ * Home (GET /) — protótipo home.html
+ * ============================================================================= */
+
+/* Sobrescreve a regra antiga `.home { max-width: 38rem }` para o layout
+ * do hero, mais estreito (30rem) e em coluna vertical com flex. */
+.home {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin: 0 auto;
+  max-width: 30rem;
+  padding: var(--space-4) var(--space-4) var(--space-8);
+  width: 100%;
+}
+
+.home__topbar {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4) var(--space-2);
+}
+.home__topbar .brand {
+  font-size: var(--text-lg);
+  min-height: var(--space-11);
+  padding: var(--space-2) var(--space-1);
+}
+.home__topbar .brand-mark {
+  height: 32px;
+  width: 32px;
+}
+.home__topbar .brand-mark svg {
+  height: 18px;
+  width: 18px;
+}
+
+.home__hero {
+  align-items: flex-start;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-5);
+  justify-content: center;
+  padding: var(--space-8) 0;
+}
+.home__art {
+  align-self: center;
+  height: auto;
+  max-width: 240px;
+  width: 100%;
+}
+
+.home__title {
+  color: var(--color-text-display);
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.05;
+  margin: 0;
+}
+.home__title-accent { color: var(--color-primary); }
+
+/* Sobrescreve a regra antiga `.home__lead` para ficar maior e em corpo (body)
+ * — o protótipo trata o lead como "body-lg" sobre fundo claro, não como
+ * legenda silenciada. */
+.home__lead {
+  color: var(--color-text-body);
+  font-size: var(--text-lg);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 24rem;
+}
+
+.home__actions {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+/* Sobrescreve a regra antiga `.home__cta` (margem) — agora é só wrapper do CTA. */
+.home__cta { margin: 0; }
+.home__cta .btn-lg svg {
+  height: 16px;
+  width: 16px;
+}
+.home__cta-secondary { margin: 0; text-align: center; }
+.home__cta-secondary .btn-ghost { width: 100%; }
+.home__cta-strong {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.home__legal {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 30rem;
+  padding: var(--space-4) var(--space-4) var(--space-6);
+  text-align: center;
+}
+.home__legal a { color: var(--color-text-link); }
+
+/* =============================================================================
+ * Comecar (GET /comecar) — protótipo comecar.html
+ * ============================================================================= */
+
+/* Sobrescreve a regra antiga `.comecar { max-width: 38rem }` — protótipo
+ * quer 32rem e padding vertical próprio. */
+.comecar {
+  margin: 0 auto;
+  max-width: 32rem;
+  padding: var(--space-8) var(--space-4) var(--space-10);
+}
+
+.comecar__header {
+  align-items: center;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-divider);
+  display: flex;
+  gap: var(--space-2);
+  min-height: 56px;
+  padding: var(--space-2) var(--space-3);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+.comecar__back,
+.login__back {
+  align-items: center;
+  border-radius: var(--radius-md);
+  color: var(--color-text-body);
+  display: inline-grid;
+  flex-shrink: 0;
+  min-height: var(--space-11);
+  min-width: var(--space-11);
+  place-items: center;
+  transition: background-color var(--duration-fast) var(--ease-out-soft);
+}
+.comecar__back:hover,
+.login__back:hover { background: var(--color-surface-muted); }
+.comecar__back svg,
+.login__back svg {
+  display: block;
+  height: 20px;
+  width: 20px;
+}
+
+/* Marca dentro do header expanded das telas públicas — wordmark visível. */
+.comecar__header .brand,
+.login__header .brand {
+  font-size: var(--text-base);
+}
+.comecar__header .brand-mark,
+.login__header .brand-mark {
+  height: 26px;
+  width: 26px;
+}
+.comecar__header .brand-mark svg,
+.login__header .brand-mark svg {
+  height: 15px;
+  width: 15px;
+}
+
+.comecar__intro { margin-bottom: var(--space-10); }
+.comecar__intro .overline { margin-bottom: var(--space-2); }
+.comecar__intro h1 { margin: 0 0 var(--space-3); }
+/* Sobrescreve `.comecar__lead` antiga para alinhar com protótipo (body sobre
+ * fundo claro — não muted). */
+.comecar__lead {
+  color: var(--color-text-body);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* `.comecar__paths` já é `display: grid; gap: var(--space-4)` na regra antiga;
+ * só zeramos a margem-top (intro já controla o espaço acima). */
+.comecar__paths { margin-top: 0; }
+
+/* Cartão de papel — composição sobre .card.card--interactive (já existente),
+ * adicionando layout horizontal interno. */
+.comecar__role-card {
+  align-items: flex-start;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  gap: var(--space-4);
+  min-height: var(--space-11);
+}
+.comecar__role-card:hover {
+  border-color: var(--color-border-strong);
+}
+.comecar__role-icon {
+  align-items: center;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+.comecar__role-icon svg {
+  height: 26px;
+  width: 26px;
+}
+.comecar__role-icon--teen {
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+}
+.comecar__role-icon--guard {
+  background: var(--color-info-100);
+  color: var(--color-info-700);
+}
+.comecar__role-text { flex: 1; min-width: 0; }
+.comecar__role-text h2 {
+  color: var(--color-text-display);
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--space-1);
+}
+.comecar__role-text p {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  margin: 0;
+}
+.comecar__role-age {
+  color: var(--color-text-muted);
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-overline);
+  margin-bottom: var(--space-2);
+  text-transform: uppercase;
+}
+.comecar__role-arrow {
+  align-self: center;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: color var(--duration-base) var(--ease-out-soft),
+              transform var(--duration-base) var(--ease-out-soft);
+}
+.comecar__role-card:hover .comecar__role-arrow {
+  color: var(--color-primary);
+  transform: translateX(3px);
+}
+.comecar__role-arrow svg {
+  display: block;
+  height: 20px;
+  width: 20px;
+}
+
+.comecar__note {
+  background: var(--color-info-100);
+  border-radius: var(--radius-lg);
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+  padding: var(--space-4);
+}
+.comecar__note svg {
+  color: var(--color-info-700);
+  flex-shrink: 0;
+  height: 20px;
+  width: 20px;
+}
+.comecar__note p {
+  color: var(--color-text-body);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.comecar__login-hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-top: var(--space-8);
+  text-align: center;
+}
+.comecar__login-link {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comecar__role-arrow { transition: none; }
+  .comecar__role-card:hover .comecar__role-arrow { transform: none; }
+}
+
+/* =============================================================================
+ * Login (GET /login) — protótipo login.html
+ *
+ * Preserva o contrato funcional intacto: form action="/login" POST, CSRF
+ * hidden, name="username"/"password", banners data-error/data-state, toggle
+ * de senha em Alpine, botão Google disabled (REF-003) com
+ * data-test="cta-google-disabled".
+ * ============================================================================= */
+
+.login {
+  margin: 0 auto;
+  max-width: 26rem;
+  padding: var(--space-8) var(--space-4) var(--space-10);
+}
+
+.login__header {
+  align-items: center;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-divider);
+  display: flex;
+  gap: var(--space-2);
+  min-height: 56px;
+  padding: var(--space-2) var(--space-3);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+.login__intro { margin-bottom: var(--space-6); }
+.login__intro .overline { margin-bottom: var(--space-2); }
+.login__intro h1 { margin: 0 0 var(--space-2); }
+.login__lead {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+/* Alert com ícone à esquerda (variantes .alert--error/.alert--warning/.alert--info
+ * já existem em app.css; aqui só ajustamos espaçamento para o protótipo). */
+.login__alert {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-3);
+  line-height: 1.45;
+  margin-bottom: var(--space-5);
+}
+.login__alert svg {
+  flex-shrink: 0;
+  height: 18px;
+  margin-top: 1px;
+  width: 18px;
+}
+
+/* Form em coluna com gap padrão (5). */
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+/* Zera o margin-bottom padrão do .input-group dentro do login (gap do form
+ * controla o espaço entre campos). */
+.login__form .input-group { margin-bottom: 0; }
+
+/* Campo de senha com botão "mostrar/esconder" embutido. */
+.login__password-row {
+  display: flex;
+  position: relative;
+}
+.login__password-input { padding-right: 5.5rem; }
+.login__password-toggle {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-link);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  min-height: var(--space-11);
+  padding: 0 var(--space-3);
+  position: absolute;
+  right: var(--space-1);
+  top: 50%;
+  transform: translateY(-50%);
+}
+.login__password-toggle:hover { background: var(--color-surface-muted); }
+
+/* Divisor "ou" entre form e botão Google. */
+.login__divider {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: flex;
+  font-size: var(--text-sm);
+  gap: var(--space-3);
+  margin: var(--space-6) 0;
+}
+.login__divider::before,
+.login__divider::after {
+  background: var(--color-divider);
+  content: "";
+  flex: 1;
+  height: 1px;
+}
+/* Suprime a borda em volta dos elementos do divisor para que ele fique limpo. */
+.login__divider span {
+  font-size: var(--text-sm);
+  padding: 0 var(--space-2);
+}
+
+/* Botão Google ocupa largura total dentro da tela login (mesmo padrão do
+ * protótipo). `.btn-google` base já tem width:100% até 640px. */
+.login__google { width: 100%; }
+
+/* Links de apoio em coluna, centralizados. */
+.login__links {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+.login__link {
+  align-items: center;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  font-size: var(--text-sm);
+  min-height: var(--space-11);
+  padding: var(--space-2) var(--space-3);
+}
+.login__link--muted { color: var(--color-text-muted); }
+.login__link-strong {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}

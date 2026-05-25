@@ -1,20 +1,99 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}">
+      layout:decorate="~{layout/public}"
+      lang="pt-BR">
 <head><title>Início</title></head>
 <body>
-<section layout:fragment="content" class="home">
-    <h1>Bem-vindo à atrilha</h1>
-    <p class="home__lead">
-        Trilhe a Lição da Escola Sabatina Juvenil em 10 minutos por dia.
+<th:block layout:fragment="content">
+
+    <!-- Topbar — apenas a marca centrada (tela pública, sem nav nem footer do app). -->
+    <div class="home__topbar">
+        <a class="brand" th:href="@{/}" aria-label="atrilha — página inicial">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12 L8 4 L13 12"/>
+                    <circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/>
+                </svg>
+            </span>
+            <span class="brand-wordmark">atrilha</span>
+        </a>
+    </div>
+
+    <!-- Main — hero de boas-vindas. aria-label preserva "Bem-vindo à atrilha"
+         (contrato com HomeControllerTest sem inflar o markup visível). -->
+    <main class="home" aria-label="Bem-vindo à atrilha">
+        <section class="home__hero">
+
+            <!-- Ilustração editorial: trilha de marcadores chevron+ponto,
+                 ecoando a marca gráfica (identidade §3.2, §5.8). -->
+            <svg class="home__art" viewBox="0 0 240 150" fill="none"
+                 xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M28 122 C 70 122, 70 70, 118 70 S 170 30, 212 30"
+                      stroke="var(--color-neutral-200)" stroke-width="3"
+                      stroke-linecap="round" stroke-dasharray="2 9"/>
+                <g transform="translate(28 122)">
+                    <circle r="14" fill="var(--color-secondary-300)"/>
+                    <path d="M-5 9 L0 -1 L5 9" stroke="var(--color-neutral-900)"
+                          stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <circle cx="0" cy="10" r="1.4" fill="var(--color-neutral-900)"/>
+                </g>
+                <g transform="translate(118 70)">
+                    <circle r="14" fill="var(--color-info-500)"/>
+                    <path d="M-5 9 L0 -1 L5 9" stroke="var(--color-neutral-900)"
+                          stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <circle cx="0" cy="10" r="1.4" fill="var(--color-neutral-900)"/>
+                </g>
+                <g transform="translate(212 30)">
+                    <circle r="20" fill="var(--color-primary)"/>
+                    <circle r="20" fill="none" stroke="var(--color-primary-100)" stroke-width="6" opacity="0.55"/>
+                    <path d="M-7 12 L0 -2 L7 12" stroke="var(--color-on-primary)"
+                          stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <circle cx="0" cy="14" r="2" fill="var(--color-on-primary)"/>
+                </g>
+            </svg>
+
+            <p class="overline">Fé no seu ritmo</p>
+
+            <h1 class="home__title">
+                Sua fé,<br>
+                um <span class="home__title-accent">caminho</span><br>
+                por dia.
+            </h1>
+
+            <p class="home__lead">
+                atrilha conduz você por uma reflexão diária sobre a Bíblia em
+                sessões de até 10 minutos. No seu tempo, do seu jeito.
+            </p>
+        </section>
+
+        <!-- Bloco de ações: 1 CTA primário + 1 link secundário (identidade §5.2). -->
+        <section class="home__actions" aria-label="Entrar ou criar conta">
+            <p class="home__cta">
+                <a class="w-full btn btn-primary btn-lg" th:href="@{/comecar}">
+                    Começar
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 8h10M9 4l4 4-4 4"/>
+                    </svg>
+                </a>
+            </p>
+            <p class="home__cta-secondary">
+                <a class="btn btn-ghost btn-md" th:href="@{/login}">
+                    Já tenho conta. <span class="home__cta-strong">Entrar</span>
+                </a>
+            </p>
+        </section>
+    </main>
+
+    <!-- Rodapé legal — discreto, não tem footer do app. -->
+    <p class="home__legal">
+        Ao continuar, você concorda com os
+        <a th:href="@{/termos}">Termos de uso</a> e a
+        <a th:href="@{/privacidade}">Política de privacidade</a>.
     </p>
-    <p class="home__cta">
-        <a th:href="@{/comecar}" class="btn btn-primary btn-lg">Começar</a>
-    </p>
-    <p class="home__cta-secondary">
-        <a th:href="@{/login}" class="btn btn-ghost btn-md">Já tenho conta</a>
-    </p>
-</section>
+
+</th:block>
 </body>
 </html>

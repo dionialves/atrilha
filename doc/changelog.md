@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Chores
+
+- **chore-016 · aplicar-prototipos-telas-publicas** ([#79](https://github.com/dionialves/atrilha/issues/79)) — Aplicação dos protótipos aprovados nas três telas públicas (`GET /`, `GET /comecar`, `GET /login`) preservando 100% do comportamento (rotas, form de login, CSRF, banners `data-error`/`data-state`, toggle de senha). Novo decorator enxuto `layout/public.html` separa o shell das telas públicas do `layout/base.html` (intocado). Fontes Bricolage Grotesque (600/700) e Inter (400/500/600) passam a ser servidas self-hosted via `@font-face` com `font-display: swap` — sem requisição a `fonts.googleapis.com`. CSS de página adicionado a `app.css` reaproveitando classes do design system (`.btn`, `.card`, `.input-field`, `.alert`, `.brand`, etc.), sem hex duplicado nem `@theme` redeclarado. Botão Google permanece `disabled` (consistente com REF-003 / PR #83).
+
 ### Bug Fixes
 
 - **fix-014 · login-google-em-producao-retorna-403-white** (#76) — Login OAuth Google retornava 403 (Whitelabel) porque o principal `OAuth2User` não recebia `ROLE_TEEN`/`ROLE_GUARDIAN`. Introduzida interface `AuthenticatedPrincipal` comum a `AtrilhaUserDetails` e nova classe `AtrilhaOAuth2User`, que injeta `LoginAccountQuery` para resolver authorities a partir da conta no banco. Página 403 amigável adicionada.

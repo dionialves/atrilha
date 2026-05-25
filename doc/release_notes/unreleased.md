@@ -2,6 +2,57 @@
 
 ## [Unreleased]
 
+### Chores
+
+## CHORE · Aplicar protótipos aprovados às telas públicas (#79)
+
+**Tipo:** Chore (CHORE-016)
+**Issue:** [#79](https://github.com/dionialves/atrilha/issues/79)
+**Branch:** chore/79-aplicar-prototipos-telas-publicas
+**Data de conclusão:** 2026-05-25
+
+### O que foi feito
+
+- Novo decorator `templates/layout/public.html`: shell enxuto para telas públicas (`<head>` com mesmos assets do `base.html`, `<body class="public-shell">` expondo apenas `layout:fragment="content"`). `layout/base.html` permanece **intocado** — telas internas continuam usando o shell completo (header com nav do app, email-verification-banner, footer).
+- `templates/home.html` reescrito conforme protótipo `doc/UX/prototypes/home.html`: topbar com marca centrada, hero (overline + display-xl com palavra-acento + lead), SVG decorativo de trilha (chevrons sobre dashed path), CTA primário full-width "Começar" → `/comecar`, link secundário "Entrar" → `/login`, rodapé legal discreto. `aria-label="Bem-vindo à atrilha"` preserva o contrato com `HomeControllerTest`.
+- `templates/comecar.html` reescrito conforme protótipo `comecar.html`: header com botão voltar (→ `/`) + marca, intro (overline + h1 + lead), dois cards `.card--interactive` de papel (adolescente / responsável) com ícone, faixa etária, seta animada e destinos `@{/cadastro/adolescente/escolher-metodo}` / `@{/cadastro/responsavel}`, callout informativo sobre vinculação, link "Entrar" no rodapé.
+- `templates/auth/login.html` reescrito conforme protótipo `login.html` **preservando o contrato funcional intacto**: `<form th:action="@{/login}" method="post">`, CSRF hidden, `name="username"` / `name="password"`, banners server-side com `data-error="bad-credentials"`, `data-error="rate-limited"`, `data-state="logged-out"`, disable de campos em rate-limited, toggle "mostrar senha" via Alpine, botão Google `<button disabled aria-disabled="true" data-test="cta-google-disabled">` (consistente com REF-003 / PR #83).
+- `frontend/css/app.css` ganhou bloco "Telas públicas (CHORE-016)" no final: `.public-shell`, `.home__*`, `.comecar__*`, `.login__*` — reaproveitando `.btn`, `.btn-primary`, `.btn-lg`, `.btn-ghost`, `.btn-google`, `.input-field`, `.input-group`, `.card`, `.card--interactive`, `.overline`, `.alert`, `.brand`, `.brand-mark`, `.brand-wordmark` do design system. Tokens vêm de `var(--token)`; **nenhum hex** redeclarado fora de `@theme`; `@theme` declarado uma única vez.
+- Self-host das fontes da marca: 5 arquivos WOFF2 (subset latin) em `src/main/resources/static/fonts/` — `bricolage-grotesque-latin-600.woff2`, `bricolage-grotesque-latin-700.woff2`, `inter-latin-400.woff2`, `inter-latin-500.woff2`, `inter-latin-600.woff2` (~117KB total). `@font-face` declarados no topo de `app.css` com `font-display: swap`; tokens `--font-display` / `--font-sans` apontam para essas famílias com fallback `system-ui`. **Sem requisição a `fonts.googleapis.com` em runtime.**
+- Regras de acessibilidade preservadas: `prefers-reduced-motion: reduce` aplicado a `.card--interactive` e a animação da seta dos role-cards; `:focus-visible` mantido em todos os botões/links de ação.
+
+### Decisões tomadas
+
+- **Botão Google permanece `disabled`** — a §5.6 da issue dizia "Google nunca disabled", mas foi escrita antes do REF-003 (PR #83, merge 2026-05-25) ter removido o Google OAuth. Os testes `LoginPageTest` e `OAuthRoutesRemovedIT` exigem `data-test="cta-google-disabled"` + `disabled` + `aria-disabled="true"` + sem `href`. Decisão do cliente: manter inerte por enquanto.
+- **Orçamento de fontes** — total ~117KB, ligeiramente acima dos ~100KB sugeridos pela identidade §4.1. Margem pequena, aceitável; revisitar se for necessário subsetar mais agressivamente.
+- **Decorator separado em vez de flags no `base.html`** — `public.html` enxuto isola a superfície pública do shell logado, evita flags de modelo e mantém o `base.html` intocado.
+
+### Impacto
+
+- Arquivos novos: `src/main/resources/templates/layout/public.html`, `src/main/resources/static/fonts/{bricolage-grotesque-latin-600,bricolage-grotesque-latin-700,inter-latin-400,inter-latin-500,inter-latin-600}.woff2`.
+- Arquivos editados: `src/main/resources/templates/home.html`, `src/main/resources/templates/comecar.html`, `src/main/resources/templates/auth/login.html`, `src/main/frontend/css/app.css`.
+- `layout/base.html` **não foi tocado** (diff vazio vs `main`).
+- `./mvnw test` verde: **163 testes**, 0 falhas, 0 erros, 0 skipped. Contratos `LoginPageTest`, `HomeControllerTest`, `StaticAssetsCssIT`, `OAuthRoutesRemovedIT` e `CadastroELoginIT` continuam passando.
+
+### Como testar
+
+1. Subir o app em dev: `./mvnw spring-boot:run`.
+2. Abrir `http://localhost:8084/` — confirmar layout da home (topbar com marca, hero com SVG, CTA "Começar" full-width, link "Entrar"); confere viewport 320–1280px sem scroll horizontal.
+3. Abrir `http://localhost:8084/comecar` — confirmar header com botão voltar, dois cartões de papel com hover (sombra + seta translada), callout informativo.
+4. Abrir `http://localhost:8084/login` — confirmar header com botão voltar, alerts (recarregar com `?error`, `?blocked`, `?logout` para cada banner), toggle "Mostrar/Esconder" senha, botão Google visível porém inerte (`disabled`, sem cursor `pointer`).
+5. Submeter login com credenciais inválidas → banner `bad-credentials`; abusar de tentativas → banner `rate-limited` com campos desabilitados.
+6. Verificar Network: zero requisição a `fonts.googleapis.com` / `fonts.gstatic.com`; fontes carregam de `/fonts/*.woff2`.
+
+### Gaps visuais / manuais
+
+- **Validação visual mobile↔desktop**: como esta é uma task de aplicação de protótipo, comparação pixel-a-pixel com `doc/UX/prototypes/{home,comecar,login}.html` deve ser feita manualmente no navegador (mobile real ou DevTools responsive). Não há teste automatizado de layout (proibido pelo workflow).
+
+### Follow-ups (não bloqueantes deste PR)
+
+- **Rotas `/termos`, `/privacidade`, `/esqueci-senha`** — `th:href` apontam para essas URLs mas elas ainda não têm controllers. Decisão de produto pendente; criar issues separadas (CHORE-???) quando definidas.
+- **Botão Google** — revisitar quando o produto decidir remover o cartão visual ou substituir por outro provedor; hoje preservado por decisão explícita do cliente.
+- **Testes adicionais sugeridos** — testes Jsoup leves de smoke (presença de `.public-shell` no body, ausência de `header.app-nav` nas três telas públicas, presença de `<link rel="stylesheet" href="/css/app.css">`) podem ser adicionados em task futura se houver risco de regressão de decorator.
+
 ### Bug Fixes
 
 - **fix-014 · login-google-em-producao-retorna-403-white** (#76) — Login OAuth Google retornava 403 (Whitelabel Error Page) em produção porque o principal `OAuth2User` carregava apenas `[OAUTH2_USER, SCOPE_*]`, sem `ROLE_TEEN`. O AuthorizationManager barrava `/trilha` com 403. Agora `GoogleOAuth2UserService` consulta a conta no banco via `LoginAccountQuery` e retorna `AtrilhaOAuth2User` com `[ROLE_TEEN]` ou `[ROLE_GUARDIAN]`. Página 403 amigável substitui o Whitelabel.
