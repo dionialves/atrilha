@@ -83,7 +83,7 @@ class JpaLoginAccountQueryIT {
         String email = "julia1@exemplo.com";
         String hashed = passwordEncoder.encode("umaSenhaForte");
 
-        insertAccount(accountId, "ADOLESCENT", email, hashed, null);
+        insertAccount(accountId, "ADOLESCENT", email, hashed);
         insertAdolescentProfile(accountId, "Julia");
 
         Optional<LoginAccountQuery.LoginAccount> result = loginAccountQuery.findForLogin(email);
@@ -98,27 +98,7 @@ class JpaLoginAccountQueryIT {
     }
 
     /**
-     * Teste 2: findForLogin retorna conta Google com passwordHash null.
-     */
-    @Test
-    @DisplayName("findForLoginRetornaContaGoogleComPasswordHashNull")
-    void findForLogin_retornaContaGoogleComPasswordHashNull() {
-        UUID accountId = UUID.randomUUID();
-        String email = "google@exemplo.com";
-
-        insertAccount(accountId, "ADOLESCENT", email, null, "google");
-
-        Optional<LoginAccountQuery.LoginAccount> result = loginAccountQuery.findForLogin(email);
-
-        assertThat(result).isPresent();
-        var la = result.get();
-        assertThat(la.email()).isEqualTo(email);
-        assertThat(la.passwordHashBcrypt()).isNull();
-        assertThat(la.role()).isEqualTo(dev.zayt.atrilha.auth.AccountRole.TEEN);
-    }
-
-    /**
-     * Teste 3: findForLogin case-insensitive.
+     * Teste 2: findForLogin case-insensitive.
      */
     @Test
     @DisplayName("findForLoginCaseInsensitive")
@@ -126,7 +106,7 @@ class JpaLoginAccountQueryIT {
         UUID accountId = UUID.randomUUID();
         String email = "julia2@exemplo.com";
 
-        insertAccount(accountId, "ADOLESCENT", email, passwordEncoder.encode("senha"), null);
+        insertAccount(accountId, "ADOLESCENT", email, passwordEncoder.encode("senha"));
 
         Optional<LoginAccountQuery.LoginAccount> result = loginAccountQuery.findForLogin("JULIA2@Exemplo.COM");
 
@@ -135,7 +115,7 @@ class JpaLoginAccountQueryIT {
     }
 
     /**
-     * Teste 4: findForLogin ignora conta soft-deletada.
+     * Teste 3: findForLogin ignora conta soft-deletada.
      */
     @Test
     @DisplayName("findForLoginIgnoraContaSoftDeletada")
@@ -143,7 +123,7 @@ class JpaLoginAccountQueryIT {
         UUID accountId = UUID.randomUUID();
         String email = "deleted@exemplo.com";
 
-        insertAccount(accountId, "ADOLESCENT", email, passwordEncoder.encode("senha"), null);
+        insertAccount(accountId, "ADOLESCENT", email, passwordEncoder.encode("senha"));
         jdbcTemplate.update(
                 "UPDATE accounts SET deleted_at = ? WHERE id = ?",
                 OffsetDateTime.now().minusDays(1), accountId);
@@ -154,7 +134,7 @@ class JpaLoginAccountQueryIT {
     }
 
     /**
-     * Teste 5: findForLogin retorna empty para email inexistente.
+     * Teste 4: findForLogin retorna empty para email inexistente.
      */
     @Test
     @DisplayName("findForLoginRetornaEmptyParaEmailInexistente")
@@ -165,7 +145,7 @@ class JpaLoginAccountQueryIT {
     }
 
     /**
-     * Teste 6: findForLogin guardian retorna hasGuardianLink false (Sprint 3).
+     * Teste 5: findForLogin guardian retorna hasGuardianLink false (Sprint 3).
      */
     @Test
     @DisplayName("findForLoginGuardianRetornaHasGuardianLinkFalse")
@@ -173,7 +153,7 @@ class JpaLoginAccountQueryIT {
         UUID accountId = UUID.randomUUID();
         String email = "guardiao@exemplo.com";
 
-        insertAccount(accountId, "GUARDIAN", email, passwordEncoder.encode("senha"), null);
+        insertAccount(accountId, "GUARDIAN", email, passwordEncoder.encode("senha"));
 
         Optional<LoginAccountQuery.LoginAccount> result = loginAccountQuery.findForLogin(email);
 
@@ -184,7 +164,7 @@ class JpaLoginAccountQueryIT {
     }
 
     /**
-     * Teste 7: findForLogin adolescente sem profile usa prefixo email como displayName.
+     * Teste 6: findForLogin adolescente sem profile usa prefixo email como displayName.
      */
     @Test
     @DisplayName("findForLoginAdolescenteSemProfileUsaPrefixoEmailComoDisplayName")
@@ -192,7 +172,7 @@ class JpaLoginAccountQueryIT {
         UUID accountId = UUID.randomUUID();
         String email = "semnick@exemplo.com";
 
-        insertAccount(accountId, "ADOLESCENT", email, passwordEncoder.encode("senha"), null);
+        insertAccount(accountId, "ADOLESCENT", email, passwordEncoder.encode("senha"));
         // N&atilde;o cria adolescent_profile — cen&a;rio defensivo.
 
         Optional<LoginAccountQuery.LoginAccount> result = loginAccountQuery.findForLogin(email);
@@ -203,7 +183,7 @@ class JpaLoginAccountQueryIT {
     }
 
     /**
-     * Teste 8: findForLogin null/blank retorna empty.
+     * Teste 7: findForLogin null/blank retorna empty.
      */
     @Test
     @DisplayName("findForLoginNullERetornaEmpty")
@@ -215,14 +195,13 @@ class JpaLoginAccountQueryIT {
 
     // ---- Helpers ----
 
-    private void insertAccount(UUID id, String type, String email,
-                               String passwordHash, String oauthProvider) {
+    private void insertAccount(UUID id, String type, String email, String passwordHash) {
         jdbcTemplate.update(
                 """
-                        INSERT INTO accounts (id, type, email, password_hash, oauth_provider, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT INTO accounts (id, type, email, password_hash, created_at)
+                        VALUES (?, ?, ?, ?, ?)
                         """,
-                id, type, email, passwordHash, oauthProvider, OffsetDateTime.now());
+                id, type, email, passwordHash, OffsetDateTime.now());
     }
 
     private void insertAdolescentProfile(UUID accountId, String nickname) {

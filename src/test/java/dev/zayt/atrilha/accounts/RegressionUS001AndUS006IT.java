@@ -15,7 +15,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -52,13 +51,7 @@ class RegressionUS001AndUS006IT {
     WebApplicationContext ctx;
 
     @Autowired
-    AccountRepository accountRepository;
-
-    @Autowired
     RecordingEmailSender mailer;
-
-    @Autowired
-    Clock clock;
 
     MockMvc mvc;
 
@@ -111,44 +104,7 @@ class RegressionUS001AndUS006IT {
     }
 
     // ============================================================
-    // Contraste: o fluxo Google NAO dispara evento. Esse teste
-    // existe no RegisterAdolescentServiceGoogleIT do plano (no.8);
-    // mas aqui o ponto eh confirmar que o controle de "quem dispara
-    // e quem nao" eh feito ao nivel do service correto — e nao
-    // acidentalmente desabilitado para AMBOS.
-    // ============================================================
-
-    @Test
-    void contrastFluxoGoogleNaoDisparaEventoMasFluxoEmailDispara() throws Exception {
-        // 1) Cadastra email/senha — deve disparar evento.
-        mvc.perform(post("/cadastro/adolescente")
-                        .with(csrf())
-                        .param("email", "contrast.email@example.com")
-                        .param("password", "supersecret1")
-                        .param("nickname", "contr1")
-                        .param("birthDate", "2010-05-01"))
-                .andExpect(status().is3xxRedirection());
-
-        awaitEmailSent(1, 3);
-        int countAfterEmail = mailer.recorded().size();
-        assertThat(countAfterEmail)
-                .as("fluxo email deve disparar evento")
-                .isEqualTo(1);
-
-        // 2) Conta criada deve estar persistida com password_hash.
-        Account a = accountRepository
-                .findByEmailIgnoreCaseAndDeletedAtIsNull("contrast.email@example.com")
-                .orElseThrow();
-        assertThat(a.getPasswordHash())
-                .as("fluxo email salva password_hash, nunca oauth_provider")
-                .isNotNull();
-        assertThat(a.getOauthProvider()).isNull();
-    }
-
-    // ============================================================
-    // /health continua publico e responde 200. Garante que
-    // .oauth2Login(...) e os novos handlers nao prendem o endpoint
-    // por engano.
+    // /health continua publico e responde 200.
     // ============================================================
 
     @Test
@@ -168,8 +124,7 @@ class RegressionUS001AndUS006IT {
         mvc.perform(get("/cadastro/adolescente"))
                 .andExpect(status().isOk());
         // view name e contrato existente — o teste de regressao apenas
-        // confirma que a rota nao foi mascarada pelo @RequestMapping
-        // novo de AdolescentGoogleSignupController.
+        // confirma que a rota /cadastro/adolescente continua respondendo.
     }
 
     @Test
@@ -181,11 +136,8 @@ class RegressionUS001AndUS006IT {
     }
 
     // ============================================================
-    // CSRF continua bloqueando POST sem token mesmo apos adicao do
-    // .oauth2Login(). O callback OAuth eh tratado pelo proprio
-    // Spring Security (fora do CSRF check), mas os POSTs do app
-    // (form email/senha, form complementar) ainda devem exigir
-    // token.
+    // CSRF continua bloqueando POST sem token. Os POSTs do app
+    // (form email/senha) ainda devem exigir token.
     // ============================================================
 
     @Test
@@ -196,69 +148,5 @@ class RegressionUS001AndUS006IT {
                         .param("nickname", "noctk")
                         .param("birthDate", "2010-05-01"))
                 .andExpect(status().isForbidden());
-    }
-
-    // ============================================================
-    // Conta criada por fluxo Google deve ser localizavel via o
-    // mesmo finder usado pelo fluxo email/senha
-    // (findByEmailIgnoreCaseAndDeletedAtIsNull). Garante coexistencia
-    // — alguem nao criou um silo separado pra contas Google.
-    // ============================================================
-
-    @Test
-    void contaCriadaPorGoogleEhLocalizavelPeloMesmoFinderDeEmailSenha() throws Exception {
-        // Cria via fluxo Google (via controller POST complementar).
-        var session = new org.springframework.mock.web.MockHttpSession();
-        session.setAttribute("pendingGoogleSignup",
-                new dev.zayt.atrilha.auth.PendingGoogleSignup(
-                        "google.unifiedfinder@gmail.com",
-                        java.time.OffsetDateTime.of(2026, 5, 20, 10, 0, 0, 0, java.time.ZoneOffset.UTC),
-                        "Unified", null,
-                        java.time.Instant.parse("2026-05-20T10:00:00Z")));
-
-        mvc.perform(post("/cadastro/adolescente/complementar")
-                        .session(session)
-                        .with(csrf())
-                        .param("nickname", "unified")
-                        .param("birthDate", "2010-05-01")
-                        .param("photoSource", "NONE"))
-                .andExpect(status().is3xxRedirection());
-
-        var found = accountRepository
-                .findByEmailIgnoreCaseAndDeletedAtIsNull("google.unifiedfinder@gmail.com");
-        assertThat(found)
-                .as("conta Google deve ser encontrada pelo finder universal de email")
-                .isPresent();
-        assertThat(found.get().getOauthProvider()).isEqualTo("google");
-        assertThat(found.get().getPasswordHash()).isNull();
-    }
-
-    // ============================================================
-    // CA-4 US-002 (defesa-em-profundidade): para o fluxo Google,
-    // contagem de Account NAO muda quando idade invalida bloqueia.
-    // ============================================================
-
-    @Test
-    void ca4UsCadastroGoogleComIdadeInvalidaNaoIncrementaContagemDeContas() throws Exception {
-        long before = accountRepository.count();
-        var session = new org.springframework.mock.web.MockHttpSession();
-        session.setAttribute("pendingGoogleSignup",
-                new dev.zayt.atrilha.auth.PendingGoogleSignup(
-                        "ca4.google@gmail.com",
-                        java.time.OffsetDateTime.of(2026, 5, 20, 10, 0, 0, 0, java.time.ZoneOffset.UTC),
-                        "Ca4", null,
-                        java.time.Instant.parse("2026-05-20T10:00:00Z")));
-
-        mvc.perform(post("/cadastro/adolescente/complementar")
-                        .session(session)
-                        .with(csrf())
-                        .param("nickname", "ca4")
-                        .param("birthDate", java.time.LocalDate.now(clock).minusYears(10).toString())
-                        .param("photoSource", "NONE"))
-                .andExpect(status().isOk());
-
-        assertThat(accountRepository.count())
-                .as("CA-4 explicito: bloqueio nao deve persistir conta")
-                .isEqualTo(before);
     }
 }

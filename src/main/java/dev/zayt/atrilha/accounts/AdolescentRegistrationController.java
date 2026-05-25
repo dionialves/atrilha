@@ -68,6 +68,18 @@ class AdolescentRegistrationController {
         return FORM_VIEW;
     }
 
+    /**
+     * REF-003: serve a tela de escolha de metodo. Apos a remocao do
+     * {@code AdolescentGoogleSignupController}, o botao Google fica visivel
+     * mas inerte (REF-003) e o caminho de e-mail/senha continua funcionando.
+     * A rota e mantida para preservar bookmarks e o contrato observavel pelos
+     * testes de regressao da US-002.
+     */
+    @GetMapping("/escolher-metodo")
+    String renderEscolherMetodo() {
+        return "cadastro/adolescente_escolher_metodo";
+    }
+
     @PostMapping
     String submit(@Valid @ModelAttribute("form") RegisterAdolescentForm form,
                   BindingResult bindingResult,
@@ -99,9 +111,6 @@ class AdolescentRegistrationController {
                         "Esse e-mail já tem conta. Quer entrar?");
                 yield FORM_VIEW;
             }
-            case RegisterAdolescentService.Outcome.GoogleRegistered ignored ->
-                throw new IllegalStateException(
-                        "register(...) (US-001) nunca devolve GoogleRegistered — esse outcome e exclusivo de registerFromGoogle (US-002)");
         };
     }
 

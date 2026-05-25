@@ -79,42 +79,6 @@ class RoleBasedAuthenticationSuccessHandlerTest {
         assertEquals(PostLoginDestination.VINCULAR, destination);
     }
 
-    // ---- OAuth principal (AtrilhaOAuth2User) com match TEEN → /trilha ----
-
-    @Test
-    @DisplayName("oauthPrincipalComMatchTeenRetornaTrilha")
-    void oauthPrincipalComMatchTeenRetornaTrilha() {
-        LoginAccountQuery.LoginAccount teenAccount = new LoginAccountQuery.LoginAccount(
-                "teen-oauth@test.com", null, AccountRole.TEEN, false, "Juca");
-        AtrilhaOAuth2User oauthPrincipal = new AtrilhaOAuth2User(teenAccount,
-                java.util.Map.of("email", "teen-oauth@test.com"));
-
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getPrincipal()).thenReturn(oauthPrincipal);
-
-        PostLoginDestination destination = handler.resolveDestination(authentication);
-
-        assertEquals(PostLoginDestination.TRILHA, destination);
-    }
-
-    // ---- OAuth principal (AtrilhaOAuth2User) com match GUARDIAN vinculado → /painel ----
-
-    @Test
-    @DisplayName("oauthPrincipalComMatchGuardianVinculadoRetornaPainel")
-    void oauthPrincipalComMatchGuardianVinculadoRetornaPainel() {
-        LoginAccountQuery.LoginAccount guardianAccount = new LoginAccountQuery.LoginAccount(
-                "guardian-oauth@test.com", null, AccountRole.GUARDIAN, true, "Maria");
-        AtrilhaOAuth2User oauthPrincipal = new AtrilhaOAuth2User(guardianAccount,
-                java.util.Map.of("email", "guardian-oauth@test.com"));
-
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getPrincipal()).thenReturn(oauthPrincipal);
-
-        PostLoginDestination destination = handler.resolveDestination(authentication);
-
-        assertEquals(PostLoginDestination.PAINEL, destination);
-    }
-
     // ---- Principal desconhecido → /login?error ----
 
     @Test
@@ -219,22 +183,6 @@ class RoleBasedAuthenticationSuccessHandlerTest {
         when(authentication.getPrincipal()).thenReturn(userDetails);
 
         assertEquals("user@test.com", handler.extractUsername(authentication));
-    }
-
-    // ---- extractUsername para OAuth (AtrilhaOAuth2User) ----
-
-    @Test
-    @DisplayName("extractUsernameParaOAuth")
-    void extractUsernameParaOAuth() {
-        LoginAccountQuery.LoginAccount account = new LoginAccountQuery.LoginAccount(
-                "OAuth@TEST.COM", null, AccountRole.TEEN, false, "OUser");
-        AtrilhaOAuth2User oauthPrincipal = new AtrilhaOAuth2User(account,
-                java.util.Map.of("email", "OAuth@TEST.COM"));
-
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getPrincipal()).thenReturn(oauthPrincipal);
-
-        assertEquals("OAuth@TEST.COM", handler.extractUsername(authentication));
     }
 
     // ---- extractUsername para principal desconhecido ----

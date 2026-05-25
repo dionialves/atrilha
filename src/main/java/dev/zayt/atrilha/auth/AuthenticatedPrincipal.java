@@ -3,15 +3,14 @@ package dev.zayt.atrilha.auth;
 import dev.zayt.atrilha.auth.login.LoginAccountQuery;
 
 /**
- * Interface comum a {@link dev.zayt.atrilha.auth.login.AtrilhaUserDetails}
- * (form login) e {@link dev.zayt.atrilha.auth.login.AtrilhaOAuth2User}
- * (OAuth login), permitindo que controllers protegidos por papel leiam dados
- * do usuário sem se importar com a origem da autenticação.
+ * Interface comum aos principals de form login (atualmente
+ * {@link dev.zayt.atrilha.auth.login.AtrilhaUserDetails}), permitindo que
+ * controllers protegidos por papel leiam dados do usuário sem se importar
+ * com a origem da autenticação.
  *
- * <p>Implementada por ambos os tipos de principal que o app injeta no
- * {@code SecurityContext} — form login e OAuth2 Google. O Spring Security
- * resolve automaticamente via {@code @AuthenticationPrincipal} quando o tipo
- * do parâmetro é esta interface.</p>
+ * <p>O Spring Security resolve automaticamente via
+ * {@code @AuthenticationPrincipal} quando o tipo do parâmetro é esta
+ * interface.</p>
  */
 public interface AuthenticatedPrincipal {
 

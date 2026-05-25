@@ -30,14 +30,6 @@ public interface AccountReader {
     void markEmailVerifiedAt(UUID accountId, OffsetDateTime when);
 
     /**
-     * Indica se existe uma conta nao soft-deletada com o e-mail dado,
-     * case-insensitive. Usada pelo {@code OAuthSuccessHandler} (US-002) para
-     * detectar conflito antes de criar {@link dev.zayt.atrilha.auth.PendingGoogleSignup}
-     * em sessao.
-     */
-    boolean existsByEmailIgnoreCase(String email);
-
-    /**
      * Busca conta nao soft-deletada por e-mail (case-insensitive).
      * Usada por {@code JpaLoginAccountQuery} (FIX-013) para servir o
      * {@code UserDetailsService} do Spring Security.

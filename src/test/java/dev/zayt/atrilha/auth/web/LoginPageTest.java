@@ -91,7 +91,9 @@ class LoginPageTest {
                 .andExpect(result -> assertThat(result.getResponse().getContentAsString())
                         .contains("type=\"submit\""))
                 .andExpect(result -> assertThat(result.getResponse().getContentAsString())
-                        .contains("href=\"/oauth2/authorization/google\""))
+                        .contains("data-test=\"cta-google-disabled\""))
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .containsPattern("<button[^>]*disabled[^>]*data-test=\"cta-google-disabled\""))
                 .andExpect(result -> assertThat(result.getResponse().getContentAsString())
                         .contains("name=\"_csrf\""));
     }
@@ -130,8 +132,9 @@ class LoginPageTest {
         assertThat(content).contains("data-error=\"rate-limited\"");
         // Inputs username e password ficam disabled
         assertThat(content).containsPattern("name=\"username\"[^>]*disabled");
-        // Google button NUNCA disabled
-        assertThat(content).contains("href=\"/oauth2/authorization/google\"");
+        // Bot&atilde;o Google &eacute; desabilitado permanentemente (REF-003).
+        assertThat(content).contains("data-test=\"cta-google-disabled\"");
+        assertThat(content).containsPattern("<button[^>]*disabled[^>]*data-test=\"cta-google-disabled\"");
     }
 
     @Test

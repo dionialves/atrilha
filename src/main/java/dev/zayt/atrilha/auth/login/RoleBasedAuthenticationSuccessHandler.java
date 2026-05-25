@@ -15,18 +15,12 @@ import java.io.IOException;
 /**
  * {@link AuthenticationSuccessHandler} baseado em papel (US-007).
  *
- * <p>Resolve o destino pós-login conforme o papel do principal autenticado:
+ * <p>Resolve o destino pós-login conforme o papel do principal autenticado
+ * (form login com {@link AtrilhaUserDetails}):
  * <ul>
- *   <li><b>Form login</b> → {@link AtrilhaUserDetails} no principal:
- *       <ul>
- *         <li>TEEN → {@code /trilha}</li>
- *         <li>GUARDIAN com vínculo → {@code /painel}</li>
- *         <li>GUARDIAN sem vínculo → {@code /vincular}</li>
- *       </ul>
- *   </li>
- *   <li><b>OAuth Google</b> → {@link AtrilhaOAuth2User} no principal:
- *       mesma lógica acima — authorities derivadas da conta no banco pelo
- *       {@code GoogleOAuth2UserService}.</li>
+ *   <li>TEEN → {@code /trilha}</li>
+ *   <li>GUARDIAN com vínculo → {@code /painel}</li>
+ *   <li>GUARDIAN sem vínculo → {@code /vincular}</li>
  * </ul>
  *
  * <p>Registra sucesso no rate-limit service para limpar contadores.</p>
@@ -66,8 +60,8 @@ public class RoleBasedAuthenticationSuccessHandler implements AuthenticationSucc
     /**
      * Resolve o destino pós-login a partir do tipo de {@link Authentication}.
      *
-     * <p>Após o FIX-014, todo principal de login (form ou OAuth) implementa
-     * {@link AuthenticatedPrincipal}, eliminando a necessidade de branch por tipo.</p>
+     * <p>O principal de form login implementa {@link AuthenticatedPrincipal},
+     * permitindo extrair papel e estado de vínculo sem branch por tipo.</p>
      */
     PostLoginDestination resolveDestination(Authentication authentication) {
         if (authentication.getPrincipal() instanceof AuthenticatedPrincipal p) {

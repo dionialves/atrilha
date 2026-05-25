@@ -52,7 +52,7 @@ class JpaLoginAccountQuery implements LoginAccountQuery {
 
         return new LoginAccount(
                 account.getEmail().toLowerCase(Locale.ROOT),
-                account.getPasswordHash(),     // pode ser null para contas OAuth-only (Google)
+                account.getPasswordHash(),
                 role,
                 false,                          // Sprint 3 — sem vinculo persistido ainda
                 displayName);
