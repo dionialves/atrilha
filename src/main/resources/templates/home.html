@@ -1,20 +1,100 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}">
-<head><title>Início</title></head>
+      layout:decorate="~{layout/public}"
+      lang="pt-BR">
+<head>
+    <title>Início — atrilha</title>
+</head>
 <body>
+
 <section layout:fragment="content" class="home">
-    <h1>Bem-vindo à atrilha</h1>
-    <p class="home__lead">
-        Trilhe a Lição da Escola Sabatina Juvenil em 10 minutos por dia.
+
+    <!-- Topbar — só a marca centrada -->
+    <div class="home__topbar">
+        <a class="brand" th:href="@{/}" aria-label="atrilha — página inicial">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12 L8 4 L13 12"/>
+                    <circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/>
+                </svg>
+            </span>
+            <span class="brand-wordmark">atrilha</span>
+        </a>
+    </div>
+
+    <!-- Main — hero -->
+    <main class="home__main">
+        <section class="home__hero">
+
+            <!-- Ilustração decorativa: trilha de marcadores chevron+ponto -->
+            <svg class="home__hero-art" viewBox="0 0 240 150" fill="none"
+                 xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <!-- fio da trilha -->
+                <path d="M28 122 C 70 122, 70 70, 118 70 S 170 30, 212 30"
+                      stroke="var(--color-neutral-200)" stroke-width="3"
+                      stroke-linecap="round" stroke-dasharray="2 9"/>
+                <!-- marcador 1 (percorrido) -->
+                <g transform="translate(28 122)">
+                    <circle r="14" fill="var(--color-secondary-300)"/>
+                    <path d="M-5 9 L0 -1 L5 9" stroke="var(--color-neutral-900)"
+                          stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <circle cx="0" cy="10" r="1.4" fill="var(--color-neutral-900)"/>
+                </g>
+                <!-- marcador 2 (percorrido) -->
+                <g transform="translate(118 70)">
+                    <circle r="14" fill="var(--color-info-500)"/>
+                    <path d="M-5 9 L0 -1 L5 9" stroke="var(--color-neutral-900)"
+                          stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <circle cx="0" cy="10" r="1.4" fill="var(--color-neutral-900)"/>
+                </g>
+                <!-- marcador 3 (atual — coral, maior) -->
+                <g transform="translate(212 30)">
+                    <circle r="20" fill="var(--color-primary)"/>
+                    <circle r="20" fill="none" stroke="var(--color-primary-100)" stroke-width="6" opacity="0.55"/>
+                    <path d="M-7 12 L0 -2 L7 12" stroke="var(--color-on-primary)"
+                          stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <circle cx="0" cy="14" r="2" fill="var(--color-on-primary)"/>
+                </g>
+            </svg>
+
+            <p class="overline">Fé no seu ritmo</p>
+
+            <h1 class="home__hero-title">
+                Sua fé,<br/>
+                um <span class="accent">caminho</span><br/>
+                por dia.
+            </h1>
+
+            <p class="home__hero-lead">
+                atrilha conduz você por uma reflexão diária sobre a Bíblia em
+                sessões de até 10 minutos. No seu tempo, do seu jeito.
+            </p>
+        </section>
+
+        <!-- Bloco de ações: 1 CTA primário + 1 link secundário -->
+        <section class="home__actions" aria-label="Entrar ou criar conta">
+            <a class="btn btn-primary btn-lg" th:href="@{/comecar}">
+                Começar
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 8h10M9 4l4 4-4 4"/>
+                </svg>
+            </a>
+            <a class="btn btn-ghost btn-md" th:href="@{/login}">
+                Já tenho conta. <span class="link-strong">Entrar</span>
+            </a>
+        </section>
+    </main>
+
+    <!-- Rodapé legal -->
+    <p class="home__legal">
+        Ao continuar, você concorda com os
+        <a href="#">Termos de uso</a> e a <a href="#">Política de privacidade</a>.
     </p>
-    <p class="home__cta">
-        <a th:href="@{/comecar}" class="btn btn-primary btn-lg">Começar</a>
-    </p>
-    <p class="home__cta-secondary">
-        <a th:href="@{/login}" class="btn btn-ghost btn-md">Já tenho conta</a>
-    </p>
+
 </section>
+
 </body>
 </html>

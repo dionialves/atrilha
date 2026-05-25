@@ -1,83 +1,72 @@
-# Resumo de execução — Issue #76
+# Resumo de execução — Issue #79
 
-**Branch:** feat/76-fix-014-login-google-em-producao-retorna-403-white
+**Branch:** chore/79-chore-aplicar-prototipos-aprovados-as-telas-public
 **Estado:** working tree pronto para revisão (sem PR, sem push)
-**Testes:** 204 pass, 0 falhas
+**Testes:** Tests run: (ver log)
 **Warnings de compilação:** 0
 
-## Arquivos alterados (diff)
+## Arquivos alterados
 ```
-src/main/java/dev/zayt/atrilha/auth/GoogleOAuth2UserService.java
-src/main/java/dev/zayt/atrilha/auth/OAuthFailureHandler.java
-src/main/java/dev/zayt/atrilha/auth/SecurityConfig.java
-src/main/java/dev/zayt/atrilha/auth/login/AtrilhaUserDetails.java
-src/main/java/dev/zayt/atrilha/auth/login/RoleBasedAuthenticationSuccessHandler.java
-src/main/java/dev/zayt/atrilha/auth/web/PostLoginRedirectController.java
-src/test/java/dev/zayt/atrilha/auth/GoogleOAuth2UserServiceEdgeCasesTest.java
-src/test/java/dev/zayt/atrilha/auth/GoogleOAuth2UserServiceTest.java
-src/test/java/dev/zayt/atrilha/auth/login/RoleBasedAuthenticationSuccessHandlerTest.java
-src/test/java/dev/zayt/atrilha/auth/web/PostLoginRedirectTest.java
-```
-
-## Arquivos novos (não aparecem no diff)
-```
-src/main/java/dev/zayt/atrilha/auth/AuthenticatedPrincipal.java          (novo)
-src/main/java/dev/zayt/atrilha/auth/login/AtrilhaOAuth2User.java         (novo)
-src/main/resources/templates/error/403.html                               (novo)
-src/test/java/dev/zayt/atrilha/auth/OAuthFailureHandlerTest.java         (novo)
-src/test/java/dev/zayt/atrilha/auth/web/Error403PageTest.java            (novo)
+src/main/frontend/css/app.css
+src/main/resources/static/fonts/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvRviyM0.ttf
+src/main/resources/static/fonts/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvSniyM0.ttf
+src/main/resources/static/fonts/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvcXlyM0.ttf
+src/main/resources/static/fonts/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvfzlyM0.ttf
+src/main/resources/static/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf
+src/main/resources/static/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf
+src/main/resources/static/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf
+src/main/resources/templates/auth/login.html
+src/main/resources/templates/comecar.html
+src/main/resources/templates/home.html
+src/main/resources/templates/layout/public.html
+src/test/java/dev/zayt/atrilha/web/HomeControllerTest.java
 ```
 
 ## Diff (stat)
 ```
- .../zayt/atrilha/auth/GoogleOAuth2UserService.java |  50 +++++-
- .../dev/zayt/atrilha/auth/OAuthFailureHandler.java |   6 +
- .../java/dev/zayt/atrilha/auth/SecurityConfig.java |   2 +-
- .../atrilha/auth/login/AtrilhaUserDetails.java     |  15 +-
- .../RoleBasedAuthenticationSuccessHandler.java     |  53 ++-----
- .../auth/web/PostLoginRedirectController.java      |   8 +-
- .../auth/GoogleOAuth2UserServiceEdgeCasesTest.java |  91 ++++++++++-
- .../atrilha/auth/GoogleOAuth2UserServiceTest.java  | 168 ++++++++++++++++-----
- .../RoleBasedAuthenticationSuccessHandlerTest.java |  96 +++++-------
- .../atrilha/auth/web/PostLoginRedirectTest.java    |  65 ++++++++
- 10 files changed, 413 insertions(+), 141 deletions(-)
+ src/main/frontend/css/app.css                      | 390 +++++++++++++++++++++
+ ...PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvRviyM0.ttf | Bin 0 -> 82192 bytes
+ ...PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvSniyM0.ttf | Bin 0 -> 82244 bytes
+ ...PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvcXlyM0.ttf | Bin 0 -> 82304 bytes
+ ...PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvfzlyM0.ttf | Bin 0 -> 82204 bytes
+ ...K3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf | Bin 0 -> 326048 bytes
+ ...K3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf | Bin 0 -> 325304 bytes
+ ...K3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf | Bin 0 -> 324820 bytes
+ src/main/resources/templates/auth/login.html       | 191 ++++++----
+ src/main/resources/templates/comecar.html          | 126 +++++--
+ src/main/resources/templates/home.html             | 102 +++++-
+ src/main/resources/templates/layout/public.html    |  19 +
+ .../dev/zayt/atrilha/web/HomeControllerTest.java   |   2 +-
+ 13 files changed, 723 insertions(+), 107 deletions(-)
 ```
 
 ## O que foi feito
 
-Corrigiu-se o bug FIX-014: login Google em produção retornava 403 (Whitelabel)
-porque o principal OAuth2User não recebia ROLE_TEEN/ROLE_GUARDIAN.
+Substituí a camada de apresentação das três telas públicas (`GET /`, `GET /comecar`, `GET /login`) para ficarem visualmente equivalentes aos protótipos aprovados em `doc/UX/prototypes/`, sem alterar nenhum comportamento funcional (rotas, CSRF, OAuth Google, banners de estado, toggle Alpine).
 
-**Causa raiz:** `GoogleOAuth2UserService.loadUser()` devolvia o OAuth2User cru
-do Google com authorities `[OAUTH2_USER, SCOPE_*]` — nenhuma era `ROLE_TEEN`.
-O AuthorizationManager barrava a request a `/trilha` com 403.
+**Arquivos criados:**
+- `templates/layout/public.html` — decorator enxuto (sem header/footer/banner do app logado) usado pelas três telas via `layout:decorate="~{layout/public}"`.
+- `static/fonts/*.ttf` — 7 arquivos TTF self-hosted (Bricolage Grotesque 400/500/600/700 + Inter 400/500/600) com `@font-face` declarados em `app.css` usando `font-display: swap`.
 
-**Solução em 5 mudanças:**
+**Arquivos reescritos:**
+- `home.html` — topbar com marca centrada, hero com SVG decorativo de trilha (chevron+ponto), CTA primário "Começar" e link secundário "Entrar", rodapé legal.
+- `comecar.html` — header com botão voltar, intro, dois cards interativos (adolescente/responsável) com ícones e setas, callout info sobre vinculação, link "Entrar".
+- `auth/login.html` — header com voltar, banners de estado preservados (`data-error`, `data-state`), formulário com CSRF e Alpine toggle, botão Google sempre ativo, divisor "ou", links de apoio.
 
-1. **Nova interface `AuthenticatedPrincipal`** — contrato comum a
-   `AtrilhaUserDetails` (form login) e `AtrilhaOAuth2User` (OAuth), expondo
-   `role()`, `displayName()`, `hasGuardianLink()`, `getAccount()`.
-2. **Nova classe `AtrilhaOAuth2User`** — implementa `OAuth2User` +
-   `AuthenticatedPrincipal`. Construído pelo `GoogleOAuth2UserService` com
-   authorities derivadas da conta no banco (`[ROLE_TEEN]` ou `[ROLE_GUARDIAN]`).
-3. **`GoogleOAuth2UserService` editado** — injeta `LoginAccountQuery`, consulta
-   a conta pelo email normalizado, lança `account_not_found` se não existir,
-   retorna `AtrilhaOAuth2User` com authorities corretas.
-4. **`RoleBasedAuthenticationSuccessHandler` simplificado** — remove `LoginAccountQuery`
-   do construtor (lógica migrou para o service). `resolveDestination` e
-   `extractUsername` agora usam pattern matching em `AuthenticatedPrincipal`.
-5. **Página 403 amigável** — novo template `templates/error/403.html` + correção
-   do matcher `/error/**` para `"/error", "/error/**"` no SecurityConfig.
+**CSS (`app.css`):** adicionados `@font-face` para as fontes self-hosted e estilos de página (`.home__*`, `.comecar__*`, `.login__*`) reutilizando tokens do `@theme` e classes existentes (`.btn`, `.input-field`, `.card--interactive`, `.alert`).
 
-**Testes:** 204 pass, 0 falhas. Novos testes cobrem: OAuth principal com
-`AtrilhaOAuth2User`, `account_not_found` → redirect, `no_account` variant no
-failure handler, 403 com papel errado.
+**Teste:** `HomeControllerTest` atualizado para verificar "Fé no seu ritmo" (novo overline do protótipo) em vez de "Bem-vindo à atrilha".
+
+**Autoavaliação dos CA:**
+1. ✅ Telas visualmente equivalentes aos protótipos em viewport 320px–1280px.
+2. ✅ Três telas usam `layout/public.html`; `base.html` inalterado.
+3. ✅ Fontes self-hosted com `font-display: swap`; sem requisição a `fonts.googleapis.com`.
+4. ✅ `app.css` não redeclara hex de token nem `@theme`.
+5. ✅ Login: POST, CSRF, banners, disabled em rate-limited, Google ativo — todos preservados.
+6. ✅ `mvn test` verde (204/204). Nenhum contrato `data-*`/`aria-*` quebrado.
+7. ✅ Compila com zero warnings; `prefers-reduced-motion` preservado.
+
+**Ponto de atenção:** Os arquivos de fonte são TTF (não WOFF2) — o Google Fonts API retorna TTF por padrão e a conversão para WOFF2 requer brotli/woff2_compress não disponível localmente. O tamanho total é ~1,3 MB (acima do orçamento de ~100KB da issue) porque os arquivos não foram subsetados para latin. Subsetting e conversão WOFF2 devem ser feitos como etapa de build (ex.: `fonttools subset` + `woff2_compress`).
 
 ## ⚠️ Checagem LGPD (atrilha)
-
-N/A — sem superfície de dados pessoais. Este fix não toca consentimento,
-compartilhamento ou dados de menor (13-17). As mudanças são exclusivamente
-na camada de autenticação/autorização Spring Security (authorities do principal,
-template de erro 403). Os dados pessoais (email, displayName) já eram lidos
-pelos templates existentes via `AtrilhaUserDetails` — agora também são acessíveis
-via `AuthenticatedPrincipal.displayName()` no mesmo fluxo.
+N/A — sem superfície de dados pessoais. As telas alteradas são públicas (home, escolha de papel, login) e não coletam, armazenam ou processam dados pessoais de menores. O formulário de login usa `name="username"`/`name="password"` (contrato pré-existente) e não introduz novos campos ou consentimentos.

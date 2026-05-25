@@ -32,6 +32,6 @@ class HomeControllerTest {
         mvc.perform(get("/"))
            .andExpect(status().isOk())
            .andExpect(view().name("home"))
-           .andExpect(content().string(containsString("Bem-vindo à atrilha")));
+            .andExpect(content().string(containsString("Fé no seu ritmo")));
     }
 }

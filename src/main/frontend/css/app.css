@@ -16,6 +16,67 @@
  * externo via `var(--token)`.
  * ============================================================================= */
 
+/* =============================================================================
+ * Fontes self-hosted — Bricolage Grotesque (display) + Inter (texto).
+ * Subset latin, pesos 400/500/600/700. font-display: swap para evitar FOIT.
+ * ============================================================================= */
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvcXlyM0.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvfzlyM0.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvRviyM0.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvSniyM0.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf") format("truetype");
+}
+
 @import "tailwindcss";
 
 /* Scope explícito de scan (Tailwind v4 CSS-first). Caminho relativo a este
@@ -638,3 +699,332 @@ a { color: var(--color-text-link); }
 .cadastro-concluido__lead { color: var(--color-text-muted); margin: var(--space-3) 0 var(--space-8); }
 .cadastro-concluido__next { margin: var(--space-6) auto; text-align: left; }
 .cadastro-concluido__cta  { margin-top: var(--space-6); }
+
+/* =============================================================================
+ * Telas públicas — home, comecar, login (chore-79)
+ * ============================================================================= */
+
+/* ----- Home (/) ----- */
+
+.home__topbar {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4) var(--space-2);
+}
+
+.home__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4) var(--space-4) var(--space-8);
+  max-width: 30rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.home__hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-8) 0;
+}
+
+.home__hero-art {
+  align-self: center;
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+}
+
+.home__hero-title {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--text-display);
+  line-height: 1.05;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-display);
+}
+
+.home__hero-title .accent { color: var(--color-primary); }
+
+.home__hero-lead {
+  font-size: var(--text-lg);
+  line-height: 1.5;
+  color: var(--color-text-body);
+  max-width: 24rem;
+}
+
+.home__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.home__legal {
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  padding: var(--space-4) var(--space-4) var(--space-6);
+  max-width: 30rem;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ----- Comecar (/comecar) ----- */
+
+.comecar__header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-divider);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  min-height: 56px;
+}
+
+.comecar__icon-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--space-11);
+  min-height: var(--space-11);
+  border-radius: var(--radius-md);
+  color: var(--color-text-body);
+  transition: background-color var(--duration-fast) var(--ease-out-soft);
+  flex-shrink: 0;
+}
+
+.comecar__icon-button:hover { background: var(--color-neutral-100); }
+
+.comecar__header-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-display);
+  font-size: var(--text-base);
+}
+
+.comecar__main {
+  padding: var(--space-8) var(--space-4) var(--space-10);
+  max-width: 32rem;
+  margin: 0 auto;
+}
+
+.comecar__intro { margin-bottom: var(--space-10); }
+
+.comecar__paths {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.comecar__role-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  min-height: var(--space-11);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--duration-base) var(--ease-out-soft),
+              border-color var(--duration-base) var(--ease-out-soft),
+              transform var(--duration-base) var(--ease-out-soft);
+  color: inherit;
+  text-decoration: none;
+}
+
+.comecar__role-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-strong);
+}
+
+.comecar__role-card:active { box-shadow: var(--shadow-sm); }
+
+.comecar__role-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+}
+
+.comecar__role-icon svg { width: 26px; height: 26px; }
+
+.comecar__role-icon--teen {
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+}
+
+.comecar__role-icon--guard {
+  background: var(--color-info-100);
+  color: var(--color-info-700);
+}
+
+.comecar__role-text { flex: 1; min-width: 0; }
+
+.comecar__role-text h2 {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-lg);
+  color: var(--color-text-display);
+  margin-bottom: var(--space-1);
+}
+
+.comecar__role-age {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.comecar__role-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.comecar__role-arrow {
+  align-self: center;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform var(--duration-base) var(--ease-out-soft),
+              color var(--duration-base) var(--ease-out-soft);
+}
+
+.comecar__role-card:hover .comecar__role-arrow {
+  transform: translateX(3px);
+  color: var(--color-primary);
+}
+
+.comecar__note {
+  margin-top: var(--space-8);
+  display: flex;
+  gap: var(--space-3);
+  background: var(--color-info-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.comecar__note svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--color-info-700); }
+
+.comecar__login-hint {
+  margin-top: var(--space-8);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.comecar__login-hint a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ----- Login (/login) ----- */
+
+.login__header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-divider);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  min-height: 56px;
+}
+
+.login__main {
+  padding: var(--space-8) var(--space-4) var(--space-10);
+  max-width: 26rem;
+  margin: 0 auto;
+}
+
+.login__intro { margin-bottom: var(--space-6); }
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Linha de senha com botão "mostrar" embutido */
+.login__input-row { position: relative; display: flex; }
+
+.login__input-row .input-field { padding-right: 5.5rem; }
+
+.login__input-toggle {
+  position: absolute;
+  right: var(--space-1);
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: var(--space-11);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-link);
+  border-radius: var(--radius-md);
+}
+
+.login__input-toggle:hover { background: var(--color-surface-muted); }
+
+/* Divisor "ou" */
+.login__divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-6) 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.login__divider::before,
+.login__divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-divider);
+}
+
+/* Links de apoio do formulário */
+.login__form-links {
+  margin-top: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.login__form-link {
+  min-height: var(--space-11);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.login__form-link--muted { color: var(--color-text-muted); }
+
+/* ----- Input-group com linha (senha) — usado por login.html ----- */
+.input-group__row { display: flex; }
+
+/* =============================================================================
+ * prefers-reduced-motion — preservado (já existe no base, reforçar aqui)
+ * ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .comecar__role-card,
+  .comecar__role-arrow { transition: none; }
+}

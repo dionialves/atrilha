@@ -1,104 +1,145 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}"
+      layout:decorate="~{layout/public}"
       lang="pt-BR">
 <head>
     <title>Entrar — atrilha</title>
 </head>
 <body>
+
 <section layout:fragment="content" class="login">
 
-    <!-- Banners (contrato testável: data-error / data-state) -->
+    <!-- Banners de estado (contrato testável: data-error / data-state) -->
     <div th:if="${errorState == 'bad-credentials'}"
-         role="alert"
-         data-error="bad-credentials"
-         class="alert alert--error">
-        E-mail ou senha incorretos.
+         role="alert" data-error="bad-credentials" class="alert alert--error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/>
+            <circle cx="12" cy="16.5" r="0.6" fill="currentColor"/>
+        </svg>
+        <span>E-mail ou senha incorretos. Confira e tente de novo.</span>
     </div>
     <div th:if="${errorState == 'rate-limited'}"
-         role="alert"
-         data-error="rate-limited"
-         class="alert alert--warning">
-        Muitas tentativas em pouco tempo. Espera alguns minutos e tenta de novo.
+         role="alert" data-error="rate-limited" class="alert alert--warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+        </svg>
+        <span>Muitas tentativas em pouco tempo. Espera alguns minutos e tenta de novo.</span>
     </div>
     <div th:if="${infoState == 'logged-out'}"
-         role="status"
-         data-state="logged-out"
-         class="alert alert--info">
-        Você saiu. Volta quando quiser.
+         role="status" data-state="logged-out" class="alert alert--info">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 12h11M16 8l4 4-4 4"/>
+            <path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/>
+        </svg>
+        <span>Você saiu. Volta quando quiser.</span>
     </div>
 
-    <header class="login__intro">
-        <p class="overline">Bem-vinda de volta</p>
-        <h1>Entrar</h1>
-        <p class="login__lead">Use o método que escolheu no cadastro.</p>
+    <!-- Header — botão voltar + marca -->
+    <header class="login__header" role="banner">
+        <a class="comecar__icon-button" th:href="@{/}" aria-label="Voltar para o início">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6"/>
+            </svg>
+        </a>
+        <span class="comecar__header-brand">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12 L8 4 L13 12"/>
+                    <circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/>
+                </svg>
+            </span>
+            atrilha
+        </span>
     </header>
 
-    <form th:action="@{/login}" method="post" class="login__form" novalidate
-          x-data="{ showPassword: false }">
+    <!-- Main — formulário de login -->
+    <main class="login__main">
 
-        <!-- Token CSRF -->
-        <input type="hidden" th:if="${_csrf}"
-               th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-
-        <!-- E-mail -->
-        <div class="input-group">
-            <label for="username" class="input-label">E-mail</label>
-            <input id="username" type="email" name="username"
-                   autocomplete="email" required maxlength="255"
-                   th:attr="disabled=${errorState == 'rate-limited' ? 'disabled' : null}"
-                   class="input-field"/>
+        <div class="login__intro">
+            <p class="overline">Bem-vinda de volta</p>
+            <h1>Entrar</h1>
+            <p class="login__lead">Use o mesmo método que escolheu no cadastro.</p>
         </div>
 
-        <!-- Senha (com toggle "mostrar senha" via Alpine) -->
-        <div class="input-group">
-            <label for="password" class="input-label">Senha</label>
-            <div class="input-group__row">
-                <input id="password" name="password"
-                       :type="showPassword ? 'text' : 'password'"
-                       autocomplete="current-password" required minlength="8" maxlength="72"
-                       th:attr="disabled=${errorState == 'rate-limited' ? 'disabled' : null}"
-                       class="input-field"/>
-                <button type="button" class="input-group__toggle"
-                        @click="showPassword = !showPassword"
-                        :aria-label="showPassword ? 'Esconder senha' : 'Mostrar senha'"
-                        :aria-pressed="showPassword.toString()">
-                    <span x-show="!showPassword">Mostrar</span>
-                    <span x-show="showPassword" x-cloak>Esconder</span>
-                </button>
+        <!-- Formulário e-mail + senha -->
+        <form class="login__form" th:action="@{/login}" method="post" novalidate
+              x-data="{ showPassword: false }">
+
+            <!-- Token CSRF -->
+            <input type="hidden" th:if="${_csrf}"
+                   th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+            <!-- E-mail -->
+            <div class="input-group">
+                <label for="username" class="input-label">E-mail</label>
+                <input id="username" name="username" type="email" inputmode="email"
+                       autocomplete="email" required maxlength="255"
+                       placeholder="voce@exemplo.com"
+                       class="input-field"
+                       th:attr="aria-invalid=${errorState == 'bad-credentials' ? 'true' : null},
+                                disabled=${errorState == 'rate-limited' ? 'disabled' : null}"/>
             </div>
-        </div>
 
-        <button type="submit" class="btn btn-primary btn-lg w-full"
-                th:attr="disabled=${errorState == 'rate-limited' ? 'disabled' : null}">
-            Entrar
-        </button>
-    </form>
+            <!-- Senha (com toggle "mostrar senha" via Alpine) -->
+            <div class="input-group">
+                <label for="password" class="input-label">Senha</label>
+                <div class="login__input-row">
+                    <input id="password" name="password"
+                           :type="showPassword ? 'text' : 'password'"
+                           autocomplete="current-password" required minlength="8" maxlength="72"
+                           placeholder="Sua senha"
+                           class="input-field"
+                           th:attr="aria-invalid=${errorState == 'bad-credentials' ? 'true' : null},
+                                    disabled=${errorState == 'rate-limited' ? 'disabled' : null}"/>
+                    <button type="button" class="login__input-toggle"
+                            @click="showPassword = !showPassword"
+                            :aria-label="showPassword ? 'Esconder senha' : 'Mostrar senha'"
+                            :aria-pressed="showPassword.toString()">
+                        <span x-show="!showPassword">Mostrar</span>
+                        <span x-show="showPassword" x-cloak>Esconder</span>
+                    </button>
+                </div>
+            </div>
 
-    <div class="login__divider" aria-hidden="true"><span>ou</span></div>
+            <button type="submit" class="btn btn-primary btn-lg"
+                    th:attr="disabled=${errorState == 'rate-limited' ? 'disabled' : null}">
+                Entrar
+            </button>
+        </form>
 
-    <!-- Botao Google: NUNCA disabled, mesmo em rate-limit -->
-    <a th:href="@{/oauth2/authorization/google}"
-       class="btn-google"
-       data-test="cta-google">
-        <svg class="btn-google__logo" aria-hidden="true" focusable="false"
-             xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20">
-            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
-            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
-            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
-            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
-        </svg>
-        <span>Continuar com Google</span>
-    </a>
+        <!-- Divisor -->
+        <div class="login__divider" aria-hidden="true">ou</div>
 
-    <p class="login__forgot">
-        <a th:href="@{/esqueci-senha}">Esqueci minha senha</a>
-    </p>
+        <!-- Google OAuth — nunca desabilitado, mesmo em rate-limit -->
+        <a class="btn-google" th:href="@{/oauth2/authorization/google}"
+           data-test="cta-google">
+            <svg aria-hidden="true" focusable="false"
+                 xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+            </svg>
+            <span>Continuar com Google</span>
+        </a>
 
-    <p class="login__back">
-        <a th:href="@{/}">Voltar pro início</a>
-    </p>
+        <!-- Links de apoio -->
+        <nav class="login__form-links" aria-label="Mais opções">
+            <a class="login__form-link login__form-link--muted" th:href="@{/esqueci-senha}">Esqueci minha senha</a>
+            <a class="login__form-link" th:href="@{/comecar}">
+                Ainda não tem conta? <span class="link-strong">Criar conta</span>
+            </a>
+        </nav>
+
+    </main>
+
 </section>
+
 </body>
 </html>
