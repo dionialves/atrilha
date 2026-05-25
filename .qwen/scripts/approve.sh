@@ -18,7 +18,7 @@ ISSUE="${ISSUE#\#}"
 REPO_ROOT="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
 WT_BASE="${REPO_ROOT}/.qwen/worktrees"
 
-WT_PATH="$(find "$WT_BASE" -maxdepth 1 -type d -name "*-${ISSUE}-*" | head -n1 || true)"
+WT_PATH="$(find -L "$WT_BASE" -maxdepth 1 -type d -name "*-${ISSUE}-*" | head -n1 || true)"
 [ -n "$WT_PATH" ] || { echo "ERRO: worktree da issue #${ISSUE} não encontrada." >&2; exit 1; }
 
 cd "$WT_PATH"
