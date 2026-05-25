@@ -1,5 +1,9 @@
 package dev.zayt.atrilha.accounts;
 
+import dev.zayt.atrilha.accounts.domain.Account;
+import dev.zayt.atrilha.accounts.domain.AdolescentProfile;
+import dev.zayt.atrilha.accounts.repository.AccountRepository;
+import dev.zayt.atrilha.accounts.repository.AdolescentProfileRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

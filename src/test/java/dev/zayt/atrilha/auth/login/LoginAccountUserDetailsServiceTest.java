@@ -1,6 +1,6 @@
 package dev.zayt.atrilha.auth.login;
 
-import dev.zayt.atrilha.auth.AccountRole;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.UserDetails;

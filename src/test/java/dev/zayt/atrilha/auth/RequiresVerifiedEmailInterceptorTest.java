@@ -1,7 +1,11 @@
 package dev.zayt.atrilha.auth;
 
-import dev.zayt.atrilha.accounts.Account;
-import dev.zayt.atrilha.accounts.AccountReader;
+import dev.zayt.atrilha.accounts.domain.Account;
+import dev.zayt.atrilha.accounts.repository.AccountReader;
+import dev.zayt.atrilha.auth.domain.AuthenticatedAccount;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
+import dev.zayt.atrilha.auth.verification.RequiresVerifiedEmail;
+import dev.zayt.atrilha.auth.verification.RequiresVerifiedEmailInterceptor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,7 +1,10 @@
 package dev.zayt.atrilha.auth;
 
-import dev.zayt.atrilha.accounts.Account;
-import dev.zayt.atrilha.accounts.AccountReader;
+import dev.zayt.atrilha.accounts.domain.Account;
+import dev.zayt.atrilha.accounts.repository.AccountReader;
+import dev.zayt.atrilha.auth.domain.AuthenticatedAccount;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
+import dev.zayt.atrilha.auth.web.EmailVerificationBannerAdvice;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;

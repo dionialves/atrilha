@@ -1,10 +1,13 @@
 package dev.zayt.atrilha.auth;
 
 import dev.zayt.atrilha.AtrilhaApplication;
-import dev.zayt.atrilha.accounts.Account;
 import dev.zayt.atrilha.accounts.AccountTestFactory;
-import dev.zayt.atrilha.accounts.EmailVerificationToken;
-import dev.zayt.atrilha.accounts.EmailVerificationTokenRepository;
+import dev.zayt.atrilha.accounts.domain.Account;
+import dev.zayt.atrilha.auth.verification.EmailVerificationToken;
+import dev.zayt.atrilha.auth.verification.EmailVerificationTokenRepository;
+import dev.zayt.atrilha.auth.verification.EmailVerificationService;
+import dev.zayt.atrilha.auth.exception.EmailResendRateLimitedException;
+import dev.zayt.atrilha.auth.domain.VerificationResult;
 import dev.zayt.atrilha.notifications.RecordingEmailSender;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
