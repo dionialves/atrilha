@@ -1,21 +1,32 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}"
+      layout:decorate="~{layout/public}"
       lang="pt-BR">
 <head>
     <title>Tua trilha — atrilha</title>
 </head>
 <body>
-<section layout:fragment="content" class="placeholder placeholder--trilha">
-    <h1 th:text="|oi, ${displayName}|">oi, alguém</h1>
-    <p>Tua trilha da semana vem aqui. Por enquanto, isto é um placeholder.</p>
+<th:block layout:fragment="content">
 
-    <form th:action="@{/logout}" method="post" class="placeholder__logout">
-        <input type="hidden" th:if="${_csrf}"
-               th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        <button type="submit" class="btn btn-ghost btn-md">Sair</button>
-    </form>
-</section>
+    <!-- Header — apenas a marca (área autenticada, sem destino de "voltar"). -->
+    <header th:replace="~{layout/fragments/public-header :: public-header-brand}"></header>
+
+    <main class="placeholder placeholder--trilha">
+        <p class="overline">Tua trilha</p>
+        <h1 th:text="|oi, ${displayName}|">oi, alguém</h1>
+        <p class="placeholder__lead">
+            Esta parte da trilha ainda não foi criada — ela chega no próximo
+            passo da plataforma.
+        </p>
+
+        <form th:action="@{/logout}" method="post" class="placeholder__logout">
+            <input type="hidden" th:if="${_csrf}"
+                   th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="btn btn-ghost btn-md">Sair</button>
+        </form>
+    </main>
+
+</th:block>
 </body>
 </html>

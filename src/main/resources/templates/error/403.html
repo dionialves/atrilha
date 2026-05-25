@@ -1,18 +1,24 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}">
+      layout:decorate="~{layout/public}"
+      lang="pt-BR">
 <head><title>Sem permissão</title></head>
 <body>
-<section layout:fragment="content" class="text-center py-16">
-    <p class="text-6xl font-semibold text-slate-300">403</p>
-    <h1 class="mt-4 text-2xl font-semibold">Sem permissão</h1>
-    <p class="mt-2 text-slate-600">Voce nao tem permissao para acessar esta pagina. Volte ao inicio.</p>
-    <div class="mt-6 space-y-3">
-        <a th:href="@{/}" class="inline-block underline">Voltar para o inicio</a>
-        <br/>
-        <a th:href="@{/login}" class="inline-block underline">Fazer login</a>
-    </div>
-</section>
+<th:block layout:fragment="content">
+
+    <header th:replace="~{layout/fragments/public-header :: public-header-brand}"></header>
+
+    <main class="error-page">
+        <p class="error-page__code">403</p>
+        <h1 class="error-page__title">Sem permissão</h1>
+        <p class="error-page__lead">Voce nao tem permissao para acessar esta pagina. Volte ao inicio.</p>
+        <div class="error-page__links">
+            <a th:href="@{/}">Voltar para o inicio</a>
+            <a th:href="@{/login}">Fazer login</a>
+        </div>
+    </main>
+
+</th:block>
 </body>
 </html>

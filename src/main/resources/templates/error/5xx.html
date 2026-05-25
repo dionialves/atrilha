@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}">
+      layout:decorate="~{layout/public}"
+      lang="pt-BR">
 <head><title>Erro interno</title></head>
 <body>
-<section layout:fragment="content" class="text-center py-16">
-    <p class="text-6xl font-semibold text-slate-300">500</p>
-    <h1 class="mt-4 text-2xl font-semibold">Algo deu errado</h1>
-    <p class="mt-2 text-slate-600">Algo deu errado. Tente novamente em instantes.</p>
-    <a th:href="@{/}" class="mt-6 inline-block underline">Voltar para o início</a>
-</section>
+<th:block layout:fragment="content">
+
+    <header th:replace="~{layout/fragments/public-header :: public-header-brand}"></header>
+
+    <main class="error-page">
+        <p class="error-page__code">500</p>
+        <h1 class="error-page__title">Algo deu errado</h1>
+        <p class="error-page__lead">Algo deu errado. Tente novamente em instantes.</p>
+        <a th:href="@{/}" class="error-page__link">Voltar para o início</a>
+    </main>
+
+</th:block>
 </body>
 </html>

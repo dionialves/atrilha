@@ -1,36 +1,44 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}">
+      layout:decorate="~{layout/public}"
+      lang="pt-BR">
 <head><title>Esse caminho não é pra agora</title></head>
 <body>
-<section layout:fragment="content" class="age-block">
-    <article class="card card--flat age-block__card">
-        <th:block th:if="${variant == 'under-13'}">
-            <h1>Esse caminho ainda não é pra você</h1>
-            <p>
-                Quando for a hora certa, a gente espera você por aqui. Por
-                enquanto, segue tua trilha do teu jeito.
-            </p>
-        </th:block>
+<th:block layout:fragment="content">
 
-        <th:block th:if="${variant == 'over-17'}">
-            <h1>Esse caminho é pra quem tem entre 13 e 17 anos</h1>
-            <p>
-                Se você é responsável por uma adolescente, comece pelo caminho
-                "Sou responsável" lá no início.
-            </p>
-            <p>
-                <a th:href="@{/cadastro/responsavel}" class="btn btn-primary btn-md">
-                    Ir para responsável
-                </a>
-            </p>
-        </th:block>
+    <!-- Header — voltar para a escolha de caminho. -->
+    <header th:replace="~{layout/fragments/public-header :: public-header(@{/comecar}, 'Voltar para a escolha de caminho')}"></header>
 
-        <p class="age-block__back">
-            <a th:href="@{/comecar}">Voltar pro começo</a>
-        </p>
-    </article>
-</section>
+    <main class="age-block">
+        <article class="card card--flat age-block__card">
+            <th:block th:if="${variant == 'under-13'}">
+                <h1>Esse caminho ainda não é pra você</h1>
+                <p>
+                    Quando for a hora certa, a gente espera você por aqui. Por
+                    enquanto, segue tua trilha do teu jeito.
+                </p>
+            </th:block>
+
+            <th:block th:if="${variant == 'over-17'}">
+                <h1>Esse caminho é pra quem tem entre 13 e 17 anos</h1>
+                <p>
+                    Se você é responsável por uma adolescente, comece pelo caminho
+                    "Sou responsável" lá no início.
+                </p>
+                <p class="age-block__cta">
+                    <a th:href="@{/cadastro/responsavel}" class="btn btn-primary btn-md btn--block">
+                        Ir para responsável
+                    </a>
+                </p>
+            </th:block>
+
+            <p class="age-block__back">
+                <a th:href="@{/comecar}">Voltar pro começo</a>
+            </p>
+        </article>
+    </main>
+
+</th:block>
 </body>
 </html>

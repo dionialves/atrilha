@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Fragment: public-header(backHref, backLabel)
+
+  Header sticky usado nas telas públicas que precisam de "voltar + marca":
+  /comecar, /login e /cadastro/adolescente/escolher-metodo. Consolida três
+  variantes que existiam isoladas (.comecar__header, .login__header, .header)
+  em um único par CSS (.public-header + .public-header__back) servido por
+  este fragmento.
+
+  Parâmetros:
+    - backHref:  String — destino do botão voltar (ex.: '/', '/comecar').
+    - backLabel: String — texto do aria-label do botão voltar.
+-->
+<header th:fragment="public-header(backHref, backLabel)"
+        class="public-header" role="banner">
+    <a class="public-header__back" th:href="${backHref}" th:aria-label="${backLabel}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6"/>
+        </svg>
+    </a>
+    <span class="brand">
+        <th:block th:replace="~{components/brand :: brand-body}"></th:block>
+    </span>
+</header>
+
+<!--
+  Variante brand-only: apenas a marca centrada, sem botão voltar. Usado em
+  áreas autenticadas (ex.: /trilha, /painel) onde "voltar" não faz sentido —
+  a marca atua como link para a raiz.
+-->
+<header th:fragment="public-header-brand"
+        class="public-header public-header--brand-only" role="banner">
+    <a th:replace="~{components/brand :: brand(@{/})}"></a>
+</header>
+</body>
+</html>

@@ -1,20 +1,28 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}">
+      layout:decorate="~{layout/public}"
+      lang="pt-BR">
 <head><title>Em breve</title></head>
 <body>
-<section layout:fragment="content" class="coming-soon">
-    <article class="card card--flat">
-        <h1>Em breve</h1>
-        <p>
-            O caminho de responsável entra no próximo passo da plataforma.
-            Quando estiver disponível, traremos você de volta por aqui.
-        </p>
-        <p>
-            <a th:href="@{/comecar}">Voltar pro começo</a>
-        </p>
-    </article>
-</section>
+<th:block layout:fragment="content">
+
+    <!-- Header — voltar para a escolha de caminho. -->
+    <header th:replace="~{layout/fragments/public-header :: public-header(@{/comecar}, 'Voltar para a escolha de caminho')}"></header>
+
+    <main class="coming-soon">
+        <article class="card card--flat">
+            <h1>Em breve</h1>
+            <p>
+                O caminho de responsável entra no próximo passo da plataforma.
+                Quando estiver disponível, traremos você de volta por aqui.
+            </p>
+            <p class="coming-soon__back">
+                <a th:href="@{/comecar}">Voltar pro começo</a>
+            </p>
+        </article>
+    </main>
+
+</th:block>
 </body>
 </html>

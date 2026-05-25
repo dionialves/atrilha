@@ -50,12 +50,6 @@ infra/compose/.env
 .env
 
 
-# Frontend toolchain (frontend-maven-plugin)
-# Node e dependencias sao baixadas localmente em build time; package-lock.json
-# fica versionado para que `npm ci` seja deterministico.
-/node/
-/node_modules/
-
 # Git Worktree
 .claude/worktrees
 

@@ -1,70 +1,78 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}">
+      layout:decorate="~{layout/public}"
+      lang="pt-BR">
 <head><title>Confirme teu e-mail</title></head>
 <body>
 <!--
   Tela "Confirme teu e-mail" — US-006 §3.
-  Estrutura segue UX spec: ilustração + título + e-mail destacado + texto
-  de apoio + botão "Reenviar link" + área aria-live para feedback de reenvio.
-  CSRF embutido via Spring Security/Thymeleaf no <form>.
+  Área autenticada após signup com email_verified_at IS NULL. Header
+  brand-only (sem "voltar" — o caminho de escape é "Continuar mesmo assim"
+  ou a confirmação por e-mail). CSRF embutido via Spring Security/Thymeleaf.
 -->
-<section layout:fragment="content" class="verify-email">
-    <article class="card card--flat max-w-md mx-auto text-center">
-        <!-- Ilustração decorativa: SVG envelope simples, alt vazio (UX §3.5). -->
-        <div aria-hidden="true" class="mb-4">
-            <svg width="96" height="96" viewBox="0 0 24 24" fill="none"
-                 xmlns="http://www.w3.org/2000/svg" class="mx-auto text-slate-400">
-                <path d="M3 8L12 13L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z"
-                      stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        </div>
+<th:block layout:fragment="content">
 
-        <h1 class="text-2xl font-semibold mb-3">Confirme teu e-mail</h1>
+    <!-- Header — apenas a marca (área autenticada). -->
+    <header th:replace="~{layout/fragments/public-header :: public-header-brand}"></header>
 
-        <p class="text-base text-slate-700 mb-2">
-            Enviamos um link pra
-            <strong th:text="${email}" class="font-semibold">teu@e-mail.com</strong>
-        </p>
-        <p class="text-base text-slate-600 mb-6">
-            Clica nele e voltamos a falar. O link vale por 24 horas.
-        </p>
+    <main class="verify-email">
+        <article class="card card--flat email-confirm">
+            <!-- Ilustração decorativa: SVG envelope simples, alt vazio (UX §3.5). -->
+            <div aria-hidden="true" class="email-confirm__art">
+                <svg width="96" height="96" viewBox="0 0 24 24" fill="none"
+                     xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 8L12 13L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z"
+                          stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
 
-        <!-- Feedback do reenvio (flash attribute do controller). -->
-        <div id="resend-status" role="status" aria-live="polite" class="mb-4">
-            <p th:if="${resendStatus == 'success'}"
-               class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-3"
-               data-testid="resend-status-success">
-                Reenviamos. Confere a tua caixa de entrada (e o spam).
+            <h1 class="email-confirm__title">Confirme teu e-mail</h1>
+
+            <p class="email-confirm__lead">
+                Enviamos um link pra
+                <strong th:text="${email}">teu@e-mail.com</strong>
             </p>
-            <p th:if="${resendStatus == 'rate_limited'}"
-               class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-3"
-               data-testid="resend-status-rate-limited">
-                Ei, calma — espera alguns segundos antes do próximo reenvio.
+            <p class="email-confirm__lead--muted">
+                Clica nele e voltamos a falar. O link vale por 24 horas.
             </p>
-        </div>
 
-        <form th:action="@{/verificar-email/reenviar}" method="post" novalidate>
-            <!-- Token CSRF (Spring Security) -->
-            <input type="hidden" th:if="${_csrf}"
-                   th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <button type="submit" class="btn btn-secondary btn-md w-full">
-                Reenviar link
-            </button>
-        </form>
+            <!-- Feedback do reenvio (flash attribute do controller). -->
+            <div id="resend-status" role="status" aria-live="polite" class="email-confirm__status">
+                <p th:if="${resendStatus == 'success'}"
+                   class="alert alert--success"
+                   data-testid="resend-status-success">
+                    Reenviamos. Confere a tua caixa de entrada (e o spam).
+                </p>
+                <p th:if="${resendStatus == 'rate_limited'}"
+                   class="alert alert--warning"
+                   data-testid="resend-status-rate-limited">
+                    Ei, calma — espera alguns segundos antes do próximo reenvio.
+                </p>
+            </div>
 
-        <div class="mt-3">
-            <a th:href="@{/}" class="btn btn-ghost btn-md w-full inline-block">
-                Continuar mesmo assim
-            </a>
-        </div>
+            <form th:action="@{/verificar-email/reenviar}" method="post" novalidate>
+                <!-- Token CSRF (Spring Security) -->
+                <input type="hidden" th:if="${_csrf}"
+                       th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-secondary btn-md btn--block">
+                    Reenviar link
+                </button>
+            </form>
 
-        <p class="text-sm text-slate-500 mt-6">
-            Trocou de e-mail?
-            <a th:href="@{/}" class="underline">Atualizar no perfil</a>
-        </p>
-    </article>
-</section>
+            <div class="email-confirm__cta-secondary">
+                <a th:href="@{/trilha}" class="btn btn-ghost btn-md btn--block">
+                    Continuar mesmo assim
+                </a>
+            </div>
+
+            <p class="email-confirm__footer-note">
+                Trocou de e-mail?
+                <a th:href="@{/}">Atualizar no perfil</a>
+            </p>
+        </article>
+    </main>
+
+</th:block>
 </body>
 </html>
