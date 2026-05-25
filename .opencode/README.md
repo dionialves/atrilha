@@ -7,9 +7,12 @@ fazer e *se aprova*; o *como* do Git é mecânico via shell scripts.
 ## Filosofia (idêntica ao `.pi/`)
 
 ```
-Dioni cria Issue (PO + CTO/Arquiteto + Designer)
+Dioni descreve a demanda em linguagem natural
    │
    ▼
+[sessão @arquiteto]     investiga código → projeta plano TDD → gh issue create
+   │                                                                │
+   ▼                                                                ▼
 [sessão @codificador]   start_task → implementa → finish_task   (mvn test verde + SUMMARY.md)
    │
    ▼
@@ -19,6 +22,8 @@ Dioni cria Issue (PO + CTO/Arquiteto + Designer)
    ▼                                                MESMA worktree)
 Dioni revisa PR draft → ready → merge → Issue fecha via Closes #N
 ```
+
+> O **Arquiteto** é opcional: o Dioni pode continuar criando Issues à mão (papel humano) e pular direto para o Codificador. Use o agente quando quiser delegar o trabalho de investigação + planejamento.
 
 **Uma task = uma worktree isolada = uma branch (`<tipo>/<N>-<slug>`) = um PR = um commit squash.** A worktree e a branch são criadas juntas por `start_task.sh`; o Revisor faz o squash + push + abertura do PR via `approve.sh`.
 
@@ -45,6 +50,7 @@ atrilha/
     │   ├── approve.sh
     │   └── reject.sh
     └── agents/
+        ├── arquiteto.md            # papel Arquiteto   (analisa demanda → cria Issue via gh)
         ├── codificador.md          # papel Codificador (frontmatter + prompt)
         └── revisor.md              # papel Revisor    (frontmatter + prompt)
 ```
@@ -110,6 +116,20 @@ bash .opencode/scripts/start_task.sh  # sem args = mostra "uso: start_task <nume
 ## Uso
 
 OpenCode descobre agentes em `.opencode/agents/*.md` automaticamente. Em cada sessão:
+
+### Sessão do Arquiteto (opcional — só se quiser delegar o planejamento)
+
+```bash
+cd /Users/dionia.oliveira/sources/atrilha
+opencode
+# /agent arquiteto
+# /model anthropic/claude-sonnet-4-5     (raciocínio forte ajuda no plano)
+# "Implemente a US-042 de cadastro com responsável." (ou bug/refactor descrito em linguagem natural)
+#   → o agente lê código (Read/Grep/Glob), consulta gh issue list
+#   → projeta plano TDD, escreve corpo da issue em /tmp/...md
+#   → roda: gh issue create --title "US-042: ..." --label user-story --body-file ...
+#   → devolve: #142 — https://github.com/.../issues/142 → próximo agente: codificador
+```
 
 ### Sessão do Codificador
 

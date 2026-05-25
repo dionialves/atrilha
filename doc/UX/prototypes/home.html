@@ -1,0 +1,378 @@
+<!-- Protótipo estático — tela inicial (home). Aberto direto no navegador. Não é código de produção. -->
+<!-- Segue doc/UX/00-identidade-visual.md, 01-design-tokens.md, 02-componentes-base.md. -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>atrilha — protótipo home</title>
+
+  <!-- Fontes da marca: Bricolage Grotesque (display) + Inter (texto). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* =====================================================================
+       TOKENS (subset literal de doc/UX/01-design-tokens.md — só o usado aqui)
+       ===================================================================== */
+    :root {
+      --color-primary-50:  #FFF1F0;
+      --color-primary-100: #FFD9D6;
+      --color-primary-300: #FF9A92;
+      --color-primary-500: #F25C54;
+      --color-primary-600: #D94A43;
+      --color-primary-700: #A8362F;
+
+      --color-secondary-300: #BEEB6A;
+      --color-secondary-500: #7BC42F;
+
+      --color-sky-300: #7CD0E6;
+
+      --color-neutral-0:   #FFFFFF;
+      --color-neutral-50:  #F7F4F1;
+      --color-neutral-100: #EDE8E4;
+      --color-neutral-200: #DCD6D0;
+      --color-neutral-300: #C9C2BD;
+      --color-neutral-500: #7A716B;
+      --color-neutral-700: #3D3733;
+      --color-neutral-900: #1A1614;
+
+      --color-info-700: #0E6C82;
+
+      /* Semânticos */
+      --color-bg:           var(--color-neutral-50);
+      --color-surface:      var(--color-neutral-0);
+      --color-border:       var(--color-neutral-300);
+      --color-border-strong:#A39A93;
+      --color-divider:      var(--color-neutral-200);
+      --color-text-display: var(--color-neutral-900);
+      --color-text-body:    var(--color-neutral-700);
+      --color-text-muted:   var(--color-neutral-500);
+      --color-text-link:    var(--color-info-700);
+      --color-primary:      var(--color-primary-500);
+      --color-primary-hover:var(--color-primary-600);
+      --color-primary-active:var(--color-primary-700);
+      --color-on-primary:   var(--color-neutral-0);
+      --color-focus-ring:   var(--color-primary-500);
+
+      --font-display: "Bricolage Grotesque", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-sans:    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+      --font-weight-regular:  400;
+      --font-weight-medium:   500;
+      --font-weight-semibold: 600;
+      --font-weight-bold:     700;
+
+      --text-xs:      0.75rem;
+      --text-sm:      0.875rem;
+      --text-base:    1rem;
+      --text-lg:      1.125rem;
+      --text-2xl:     1.5rem;
+      --text-3xl:     2rem;
+      --text-display: 2.5rem;
+
+      --tracking-overline: 0.05em;
+
+      --space-1:  0.25rem;
+      --space-2:  0.5rem;
+      --space-3:  0.75rem;
+      --space-4:  1rem;
+      --space-5:  1.25rem;
+      --space-6:  1.5rem;
+      --space-8:  2rem;
+      --space-10: 2.5rem;
+      --space-11: 2.75rem;
+      --space-12: 3rem;
+      --space-16: 4rem;
+
+      --radius-md:   0.5rem;
+      --radius-lg:   0.75rem;
+      --radius-xl:   1.25rem;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 1px 2px 0 rgba(26, 22, 20, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(26, 22, 20, 0.08), 0 2px 4px -2px rgba(26, 22, 20, 0.06);
+      --shadow-focus: 0 0 0 3px rgba(242, 92, 84, 0.35);
+
+      --duration-fast: 120ms;
+      --duration-base: 240ms;
+      --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* =====================================================================
+       RESET mínimo
+       ===================================================================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      color: var(--color-text-body);
+      background: var(--color-bg);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    h1, h2, h3, p { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    :focus-visible {
+      outline: 2px solid var(--color-focus-ring);
+      outline-offset: 2px;
+      border-radius: var(--radius-md);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* =====================================================================
+       Header — apenas a marca centrada (tela pública, sem navegação)
+       ===================================================================== */
+    .topbar {
+      display: flex;
+      justify-content: center;
+      padding: var(--space-6) var(--space-4) var(--space-2);
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: var(--font-sans);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-display);
+      font-size: var(--text-lg);
+      min-height: var(--space-11);
+      padding: var(--space-2) var(--space-1);
+    }
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      display: inline-grid;
+      place-items: center;
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,.08);
+      flex-shrink: 0;
+    }
+    .brand-mark svg { width: 18px; height: 18px; display: block; }
+
+    /* =====================================================================
+       Main — hero
+       ===================================================================== */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-4) var(--space-4) var(--space-8);
+      max-width: 30rem;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: var(--space-5);
+      padding: var(--space-8) 0;
+    }
+
+    /* Ilustração decorativa — "trilha" de marcadores, coerente com a marca
+       gráfica (chevron + ponto). Não é foto stock nem ícone genérico:
+       é a própria metáfora do produto (identidade §3.2, §5.8). */
+    .hero-art {
+      align-self: center;
+      width: 100%;
+      max-width: 240px;
+      height: auto;
+    }
+
+    .overline {
+      font-size: var(--text-xs);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: var(--tracking-overline);
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-weight: var(--font-weight-bold);
+      font-size: var(--text-display);
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      color: var(--color-text-display);
+    }
+    .hero-title .accent { color: var(--color-primary); }
+
+    .hero-lead {
+      font-size: var(--text-lg);
+      line-height: 1.5;
+      color: var(--color-text-body);
+      max-width: 24rem;
+    }
+
+    /* =====================================================================
+       Bloco de ações — CTA primário + link secundário (identidade §5.2)
+       ===================================================================== */
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      font-family: var(--font-sans);
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--text-base);
+      border-radius: var(--radius-full);
+      transition: background-color var(--duration-fast) var(--ease-out-soft),
+                  color var(--duration-fast) var(--ease-out-soft);
+    }
+    /* primário, tamanho lg, full-width em mobile */
+    .btn-primary {
+      width: 100%;
+      min-height: var(--space-12);
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-primary:active { background: var(--color-primary-active); }
+    .btn-primary svg { width: 16px; height: 16px; }
+
+    /* ghost — link de ação secundária */
+    .btn-ghost {
+      min-height: var(--space-11);
+      padding: var(--space-2) var(--space-4);
+      color: var(--color-text-body);
+    }
+    .btn-ghost:hover { background: var(--color-neutral-100); }
+    .btn-ghost .link-strong {
+      color: var(--color-primary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    /* =====================================================================
+       Rodapé — termos (texto pequeno, calmo)
+       ===================================================================== */
+    .legal {
+      text-align: center;
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      padding: var(--space-4) var(--space-4) var(--space-6);
+      max-width: 30rem;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    .legal a { color: var(--color-text-link); }
+  </style>
+</head>
+<body>
+
+  <!-- =================================================================
+       TOPBAR — só a marca. Tela pública, sem bottom-nav nem ajustes.
+       ================================================================= -->
+  <div class="topbar">
+    <a class="brand" href="#" aria-label="atrilha — página inicial">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12 L8 4 L13 12"/>
+          <circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+      </span>
+      atrilha
+    </a>
+  </div>
+
+  <!-- =================================================================
+       MAIN — hero de boas-vindas (identidade §5.1 — acolhimento sem
+       moralismo; §5.2 — CTA primário full-width).
+       ================================================================= -->
+  <main class="main">
+    <section class="hero">
+
+      <!-- Ilustração editorial: trilha de marcadores chevron+ponto.
+           Repete a marca gráfica como caminho ascendente (identidade §3.2). -->
+      <svg class="hero-art" viewBox="0 0 240 150" fill="none"
+           xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- fio da trilha -->
+        <path d="M28 122 C 70 122, 70 70, 118 70 S 170 30, 212 30"
+              stroke="var(--color-neutral-200)" stroke-width="3"
+              stroke-linecap="round" stroke-dasharray="2 9"/>
+        <!-- marcador 1 (percorrido) -->
+        <g transform="translate(28 122)">
+          <circle r="14" fill="var(--color-secondary-300)"/>
+          <path d="M-5 9 L0 -1 L5 9" stroke="var(--color-neutral-900)"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="0" cy="10" r="1.4" fill="var(--color-neutral-900)"/>
+        </g>
+        <!-- marcador 2 (percorrido) -->
+        <g transform="translate(118 70)">
+          <circle r="14" fill="var(--color-sky-300)"/>
+          <path d="M-5 9 L0 -1 L5 9" stroke="var(--color-neutral-900)"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="0" cy="10" r="1.4" fill="var(--color-neutral-900)"/>
+        </g>
+        <!-- marcador 3 (atual — coral, maior) -->
+        <g transform="translate(212 30)">
+          <circle r="20" fill="var(--color-primary)"/>
+          <circle r="20" fill="none" stroke="var(--color-primary-100)" stroke-width="6" opacity="0.55"/>
+          <path d="M-7 12 L0 -2 L7 12" stroke="var(--color-on-primary)"
+                stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="0" cy="14" r="2" fill="var(--color-on-primary)"/>
+        </g>
+      </svg>
+
+      <p class="overline">Fé no seu ritmo</p>
+
+      <h1 class="hero-title">
+        Sua fé,<br>
+        um <span class="accent">caminho</span><br>
+        por dia.
+      </h1>
+
+      <p class="hero-lead">
+        atrilha conduz você por uma reflexão diária sobre a Bíblia em
+        sessões de até 10 minutos. No seu tempo, do seu jeito.
+      </p>
+    </section>
+
+    <!-- Bloco de ações: 1 CTA primário + 1 link secundário (nunca dois
+         primários lado a lado — identidade §5.2). -->
+    <section class="actions" aria-label="Entrar ou criar conta">
+      <a class="btn btn-primary" href="comecar.html">
+        Começar
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 8h10M9 4l4 4-4 4"/>
+        </svg>
+      </a>
+      <a class="btn btn-ghost" href="login.html">
+        Já tenho conta. <span class="link-strong">Entrar</span>
+      </a>
+    </section>
+  </main>
+
+  <!-- Rodapé legal — discreto, sem peso visual. -->
+  <p class="legal">
+    Ao continuar, você concorda com os
+    <a href="#">Termos de uso</a> e a <a href="#">Política de privacidade</a>.
+  </p>
+
+</body>
+</html>
