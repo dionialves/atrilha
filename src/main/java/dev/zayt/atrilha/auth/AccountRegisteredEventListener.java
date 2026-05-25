@@ -61,8 +61,7 @@ class AccountRegisteredEventListener {
         }
         Account account = accountOpt.get();
         if (account.getEmailVerifiedAt() != null) {
-            // Conta já chegou verificada (caso futuro Google OAuth — US-002) —
-            // não dispara fluxo de verificação.
+            // Conta já chegou verificada — não dispara fluxo de verificação.
             return;
         }
 

@@ -17,10 +17,10 @@ import dev.zayt.atrilha.auth.login.RateLimitedAuthenticationFailureHandler;
 import dev.zayt.atrilha.auth.login.RoleBasedAuthenticationSuccessHandler;
 
 /**
- * Configuração de Spring Security para autenticação por formulário + OAuth2 Google.
+ * Configuração de Spring Security para autenticação por formulário.
  *
- * <p>Rotas públicas: tela inicial, login, cadastro (US-001/002), verificação de
- * e-mail, OAuth callback, estáticos, health e páginas de erro.</p>
+ * <p>Rotas públicas: tela inicial, login, cadastro (US-001), verificação de
+ * e-mail, estáticos, health e páginas de erro.</p>
  *
  * <p>Rotas protegidas por papel:
  * <ul>
@@ -43,8 +43,6 @@ class SecurityConfig {
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http,
-                                    GoogleOAuth2UserService googleOAuth2UserService,
-                                    OAuthFailureHandler oauthFailureHandler,
                                     RoleBasedAuthenticationSuccessHandler roleBasedSuccessHandler,
                                     RateLimitedAuthenticationFailureHandler rateLimitedFailureHandler) throws Exception {
         return http
@@ -53,13 +51,10 @@ class SecurityConfig {
                         .requestMatchers("/", "/health", "/login",
                                 "/css/**", "/img/**", "/js/**", "/error", "/error/**")
                                 .permitAll()
-                        // Fluxo de cadastro (US-001/002) — permanece público
+                        // Fluxo de cadastro (US-001) — permanece público
                         .requestMatchers("/cadastro/**", "/comecar").permitAll()
                         // Verificação de e-mail
                         .requestMatchers("/verificar-email", "/verify-email").permitAll()
-                        // OAuth2 Google — callback e autorização
-                        .requestMatchers("/login/oauth2/code/**", "/oauth2/authorization/**")
-                                .permitAll()
                         // Rotas protegidas por papel
                         .requestMatchers("/trilha/**").hasRole("TEEN")
                         .requestMatchers("/painel/**").hasRole("GUARDIAN")
@@ -93,13 +88,6 @@ class SecurityConfig {
                         .successHandler(roleBasedSuccessHandler)
                         .failureHandler(rateLimitedFailureHandler)
                 )
-                // US-002: OAuth2 login (cadastro Google). Compartilha o mesmo
-                // successHandler do form login — resolve destino por papel.
-                .oauth2Login(oauth -> oauth
-                        .loginPage("/login")
-                        .userInfoEndpoint(ui -> ui.userService(googleOAuth2UserService))
-                        .successHandler(roleBasedSuccessHandler)
-                        .failureHandler(oauthFailureHandler))
                 // Logout
                 .logout(logout -> logout
                         .logoutUrl("/logout")

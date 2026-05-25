@@ -18,14 +18,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Verifica a aplicação completa da migration V2 (US-001) sobre uma base
- * limpa Postgres 18, garantindo que:
+ * Verifica a aplicação completa das migrations V2 + V4 (US-001 + REF-003)
+ * sobre uma base limpa Postgres 18, garantindo que:
  *
  * <ul>
  *   <li>As tabelas {@code accounts} e {@code adolescent_profiles} são criadas.</li>
  *   <li>A unicidade case-insensitive de e-mail funciona, respeitando soft-delete.</li>
- *   <li>O CHECK constraint {@code accounts_credential_chk} bloqueia contas sem
- *       credencial e contas com password + oauth simultâneos.</li>
+ *   <li>Após V4 (REF-003) a coluna {@code oauth_provider} não existe mais.</li>
+ *   <li>O CHECK constraint {@code accounts_credential_chk} exige
+ *       {@code password_hash IS NOT NULL} para contas ativas (não soft-deletadas).</li>
  *   <li>A FK 1:1 {@code adolescent_profiles.account_id → accounts.id} existe.</li>
  * </ul>
  *
@@ -97,7 +98,7 @@ class AccountsMigrationIT {
             }
             assertThat(cols).containsExactlyInAnyOrder(
                     "id", "type", "email", "email_verified_at",
-                    "password_hash", "oauth_provider",
+                    "password_hash",
                     "created_at", "last_login_at", "deleted_at");
         }
     }
@@ -160,8 +161,13 @@ class AccountsMigrationIT {
         }
     }
 
+    /**
+     * Após V4 (REF-003) o CHECK accounts_credential_chk passa a exigir
+     * password_hash NOT NULL (ou deleted_at NOT NULL, para preservar contas
+     * soft-deletadas historicas). Sem password_hash, INSERT deve falhar.
+     */
     @Test
-    void credentialConstraintRejectsBothNull() throws SQLException {
+    void credentialConstraintRequiresPasswordHash() throws SQLException {
         assumeTrue(DockerClientFactory.instance().isDockerAvailable(),
                 "Docker nao disponivel — teste ignorado");
 
@@ -173,7 +179,7 @@ class AccountsMigrationIT {
                         "INSERT INTO accounts (id, type, email, created_at) "
                                 + "VALUES ('33333333-3333-3333-3333-333333333333', "
                                 + "        'ADOLESCENT', 'nocred@example.com', NOW())");
-                throw new AssertionError("CHECK accounts_credential_chk deveria rejeitar sem credencial");
+                throw new AssertionError("CHECK accounts_credential_chk deveria rejeitar password_hash NULL em conta ativa");
             } catch (SQLException expected) {
                 assertThat(expected.getMessage().toLowerCase())
                         .containsAnyOf("check", "constraint");
@@ -181,26 +187,29 @@ class AccountsMigrationIT {
         }
     }
 
+    /**
+     * Complementa {@link #credentialConstraintRequiresPasswordHash()}: a outra
+     * perna do CHECK pos-V4 e permitir password_hash NULL quando deleted_at
+     * estiver preenchido (preserva contas soft-deletadas historicas que vieram
+     * do schema pre-V4). Se essa perna regredir, qualquer migration futura que
+     * tente fazer back-fill de soft-deletes vai quebrar.
+     */
     @Test
-    void credentialConstraintRejectsBothFilled() throws SQLException {
+    void credentialConstraintAllowsPasswordHashNullWhenSoftDeleted() throws SQLException {
         assumeTrue(DockerClientFactory.instance().isDockerAvailable(),
                 "Docker nao disponivel — teste ignorado");
 
         migrate();
 
         try (Connection conn = dataSource().getConnection()) {
-            try {
-                conn.createStatement().executeUpdate(
-                        "INSERT INTO accounts (id, type, email, password_hash, oauth_provider, created_at) "
-                                + "VALUES ('44444444-4444-4444-4444-444444444444', "
-                                + "        'ADOLESCENT', 'both@example.com', "
-                                + "        '$2b$12$abcabcabcabcabcabcabcuQ7K3w6vM2Lz1Y8aA9bB0cC1dD2eE3fF', "
-                                + "        'GOOGLE', NOW())");
-                throw new AssertionError("CHECK accounts_credential_chk deveria rejeitar password+oauth simultâneos");
-            } catch (SQLException expected) {
-                assertThat(expected.getMessage().toLowerCase())
-                        .containsAnyOf("check", "constraint");
-            }
+            int inserted = conn.createStatement().executeUpdate(
+                    "INSERT INTO accounts (id, type, email, created_at, deleted_at) "
+                            + "VALUES ('44444444-4444-4444-4444-444444444444', "
+                            + "        'ADOLESCENT', 'soft-deleted@example.com', "
+                            + "        NOW(), NOW())");
+            assertThat(inserted)
+                    .as("CHECK accounts_credential_chk deve aceitar password_hash NULL quando deleted_at preenchido")
+                    .isEqualTo(1);
         }
     }
 

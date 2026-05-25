@@ -5,7 +5,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import dev.zayt.atrilha.AtrilhaApplication;
@@ -19,10 +18,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -33,8 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Testes end-to-end de cadastro + login (FIX-013).
  *
  * <p>Valida que um usu&a;rio cadastrado via US-001 consegue logar com
- * e-mail/senha, que senha errada retorna erro gen&eacute;rico (privacidade),
- * e que conta Google gravada diretamente pelo banco loga via OAuth.</p>
+ * e-mail/senha e que senha errada retorna erro gen&eacute;rico (privacidade).</p>
  */
 @Testcontainers
 @SpringBootTest(classes = { AtrilhaApplication.class, CadastroELoginIT.TestBeans.class },
@@ -67,9 +61,6 @@ class CadastroELoginIT {
     WebApplicationContext ctx;
 
     private MockMvc mvc;
-
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
@@ -132,45 +123,7 @@ class CadastroELoginIT {
     }
 
     /**
-     * Teste 10: conta Google gravada diretamente loga via OAuth.
-     */
-    @Test
-    @DisplayName("cadastraViaGoogleETentaLoginGoogleNovamenteRedirecionaParaTrilha")
-    void cadastraViaGoogleETentaLoginGoogleNovamenteRedirecionaParaTrilha() throws Exception {
-        String email = "google-e2e@atrilha.test";
-
-        // Grava conta Google diretamente via SQL (simulando US-002)
-        UUID accountId = UUID.randomUUID();
-        jdbcTemplate.update(
-                """
-                        INSERT INTO accounts (id, type, email, password_hash, oauth_provider, created_at)
-                        VALUES (?, 'ADOLESCENT', ?, NULL, 'google', ?)
-                        """,
-                accountId, email, OffsetDateTime.now());
-
-        // Cria perfil adolescente associado
-        jdbcTemplate.update(
-                """
-                        INSERT INTO adolescent_profiles (account_id, nickname, birth_date, timezone)
-                        VALUES (?, ?, ?, ?)
-                        """,
-                accountId, "GoogleE2E", java.time.LocalDate.of(2013, 6, 15), "America/Sao_Paulo");
-
-        // Valida&ccedil;&atilde;o: a conta Google &eacute; encontrada no banco
-        var found = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM accounts WHERE email = ? AND oauth_provider = 'google' AND deleted_at IS NULL",
-                Integer.class, email);
-        assertThat(found).isEqualTo(1);
-
-        // O fluxo OAuth completo (redirect → Google → callback) n&atilde;o &eacute;
-        // test&aacute;vel com MockMvc sem um mock do provedor Google. A cobertura
-        // do handler RoleBasedAuthenticationSuccessHandler j&aacute; existe em
-        // RoleBasedAuthenticationSuccessHandlerTest. Este teste valida que a conta
-        // existe e &eacute; leg&iacute;vel pelo JpaLoginAccountQuery.
-    }
-
-    /**
-     * Teste 11: email n&atilde;o cadastrado retorna mesma resposta de senha errada.
+     * Teste 10: email n&atilde;o cadastrado retorna mesma resposta de senha errada.
      */
     @Test
     @DisplayName("emailNaoCadastradoRetornaMesmaRespostaDeSenhaErrada")

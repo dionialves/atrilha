@@ -30,8 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Testes de rate-limit do login (US-007 / Issue #61).
  *
- * <p>Cobre: bloqueio após 5 tentativas falhas, expiração do bloqueio,
- * e independência do OAuth em relação ao rate-limit de form-login.</p>
+ * <p>Cobre: bloqueio após 5 tentativas falhas e expiração do bloqueio.</p>
  */
 @Testcontainers
 @SpringBootTest(classes = { AtrilhaApplication.class, LoginRateLimitIT.TestBeans.class },
@@ -108,28 +107,6 @@ class LoginRateLimitIT {
                 .getContentAsString();
 
         assertThat(content).contains("data-error=\"rate-limited\"");
-    }
-
-    @Test
-    void bloqueioNoFormLoginNaoAfetaOAuthGoogle() throws Exception {
-        // Bloquear teen@atrilha.test (5 falhas)
-        for (int i = 0; i < 5; i++) {
-            mvc.perform(post("/login")
-                            .param("username", "teen@atrilha.test")
-                            .param("password", "ERRADA")
-                            .with(csrf()))
-                    .andExpect(status().is3xxRedirection());
-        }
-
-        // GET /oauth2/authorization/google deve retornar 302 para Google
-        var result = mvc.perform(get("/oauth2/authorization/google"))
-                .andExpect(status().is3xxRedirection())
-                .andReturn();
-
-        String location = result.getResponse().getRedirectedUrl();
-        assertThat(location)
-                .isNotNull()
-                .startsWith("https://accounts.google.com");
     }
 
     @Test
