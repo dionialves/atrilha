@@ -111,10 +111,9 @@
             <scope>test</scope>
         </dependency>
         <!--
-            H2 só é usada em testes de smoke do contexto Spring (HomeControllerTest,
-            NotFoundPageTest, AtrilhaApplicationTests) — testes que não exercitam
-            persistência. Testes que tocam SQL real (migrations, repositórios,
-            service) usam PostgreSQLContainer (PRD §9.1, ADR-010).
+            H2 só é usada em testes de smoke do contexto Spring (AtrilhaApplicationTests)
+            — testes que não exercitam persistência. Testes que tocam SQL real (migrations,
+            repositórios, service) usam PostgreSQLContainer (PRD §9.1, ADR-010).
         -->
         <dependency>
             <groupId>com.h2database</groupId>
