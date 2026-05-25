@@ -21,6 +21,14 @@
         </a>
     </div>
 
+    <!-- Lembrete de verificação de e-mail (US-006 §7): aparece apenas para
+         usuários autenticados com email_verified_at IS NULL. O fragment já
+         carrega seu próprio th:if (showEmailVerificationBanner), então é
+         seguro incluí-lo aqui — anônimos não veem nada. Localizado só na
+         home porque layout/public.html é intencionalmente enxuto e
+         comecar/login não devem mostrar o aviso. -->
+    <div th:replace="~{layout/fragments/email-verification-banner :: banner}"></div>
+
     <!-- Main — hero de boas-vindas. aria-label preserva "Bem-vindo à atrilha"
          (contrato com HomeControllerTest sem inflar o markup visível). -->
     <main class="home" aria-label="Bem-vindo à atrilha">
