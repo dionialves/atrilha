@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Refactors
+
+- **ref-004 · remover-testes-cosmeticos-e-de-build-front** ([#84](https://github.com/dionialves/atrilha/issues/84)) — Remoção de 7 arquivos de teste cosméticos/build/frontend da suíte. `./mvnw test` verde: 159 testes, 0 falhas.
+
 ### Chores
 
 ## CHORE · Aplicar protótipos aprovados às telas públicas (#79)

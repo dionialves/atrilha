@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Refactors
+
+- **ref-004 · remover-testes-cosmeticos-e-de-build-front** ([#84](https://github.com/dionialves/atrilha/issues/84)) — Remoção de 7 arquivos de teste que validam aspectos cosméticos, de build ou frontend (não funcionalidade de backend): `NotFoundPageTest`, `StaticAssetsCssIT`, `StaticAssetsCssCoverageIT`, `StaticAssetsFingerprintCoverageIT`, `StaticAssetsFingerprintProdIT`, `HomeControllerTest`, `Error403PageTest`. Comentários órfãos em `pom.xml` e `application-test.properties` atualizados para refletir os ITs removidos. Suíte de testes continua verde: 53 arquivos `.java` em `src/test/`, 159 testes, zero falhas.
+
 ### Chores
 
 - **chore-016 · aplicar-prototipos-telas-publicas** ([#79](https://github.com/dionialves/atrilha/issues/79)) — Aplicação dos protótipos aprovados nas três telas públicas (`GET /`, `GET /comecar`, `GET /login`) preservando 100% do comportamento (rotas, form de login, CSRF, banners `data-error`/`data-state`, toggle de senha). Novo decorator enxuto `layout/public.html` separa o shell das telas públicas do `layout/base.html` (intocado). Fontes Bricolage Grotesque (600/700) e Inter (400/500/600) passam a ser servidas self-hosted via `@font-face` com `font-display: swap` — sem requisição a `fonts.googleapis.com`. CSS de página adicionado a `app.css` reaproveitando classes do design system (`.btn`, `.card`, `.input-field`, `.alert`, `.brand`, etc.), sem hex duplicado nem `@theme` redeclarado. Botão Google permanece `disabled` (consistente com REF-003 / PR #83).
