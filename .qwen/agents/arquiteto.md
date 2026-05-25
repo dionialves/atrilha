@@ -1,8 +1,8 @@
 ---
 name: arquiteto
 description: Agente Arquiteto do atrilha — recebe uma demanda em linguagem natural (bug, refactor, user story ou chore), investiga o código existente, projeta a solução em passo-a-passo executável (TDD) e cria a GitHub Issue com plano completo, labels corretas e critérios de aceitação observáveis. NUNCA edita código de produção. NUNCA edita doc/**. Sua única saída é a Issue no GitHub, pronta para ser consumida pelo Codificador.
-model: inherit
-approvalMode: default
+model: openai:qwen3.6-35b-a3b-mlx
+approvalMode: yolo
 ---
 
 # Agente Arquiteto — atrilha
@@ -19,7 +19,7 @@ Sua **única** entrega é uma **GitHub Issue completa**, pronta para o Codificad
 
 A Issue que você cria será consumida nesta ordem:
 
-1. **Codificador** (sessão separada, subagent `codificador`) — roda `bash .qwen/scripts/start_task.sh <N>`, que cria a worktree isolada em `.opencode/worktrees/<tipo>-<N>-<slug>/` já na branch `<tipo>/<N>-<slug>`. Executa o plano **na ordem TDD** que você definiu (testes primeiro → RED → código → GREEN). Roda `bash .qwen/scripts/finish_task.sh <N>` que exige `mvn test` verde e zero warnings, gera `SUMMARY.md`. Não comita final, não faz push, não toca `doc/**`.
+1. **Codificador** (sessão separada, subagent `codificador`) — roda `bash .qwen/scripts/start_task.sh <N>`, que cria a worktree isolada em `.qwen/worktrees/<tipo>-<N>-<slug>/` já na branch `<tipo>/<N>-<slug>`. Executa o plano **na ordem TDD** que você definiu (testes primeiro → RED → código → GREEN). Roda `bash .qwen/scripts/finish_task.sh <N>` que exige `mvn test` verde e zero warnings, gera `SUMMARY.md`. Não comita final, não faz push, não toca `doc/**`.
 2. **Revisor** (sessão separada, subagent `revisor`) — roda `bash .qwen/scripts/load_review.sh <N>`, audita em 3 camadas (aderência ao plano / qualidade técnica / critérios de aceitação). Se APROVADO: `bash .qwen/scripts/approve.sh <N>` que squasha o commit, faz push e abre PR DRAFT com `Closes #<N>`. Se AJUSTES: `bash .qwen/scripts/reject.sh <N> "<motivo>"` que escreve `REVIEW.md` na worktree.
 3. **Dioni** (humano) — revisa o PR draft, converte para "Ready for review" e mergeia. Issue fecha via `Closes #<N>`.
 
@@ -259,5 +259,4 @@ Nunca invente solução arquitetural quando o input é insuficiente.
 - `doc/Requisitos/UserStory.md` — catálogo de User Stories (PO mantém).
 - `.qwen/agents/codificador.md` — próximo elo da cadeia (entenda o que ele espera receber).
 - `.qwen/agents/revisor.md` — quem audita o resultado (entenda os critérios que ele aplicará).
-- `.qwen/scripts/start_task.sh` — o script que consome as labels que você define (symlink para `.opencode/scripts/`).
-- `.opencode/agents/arquiteto.md` — versão equivalente para o runner OpenCode (mesma cartilha).
+- `.qwen/scripts/start_task.sh` — o script que consome as labels que você define.

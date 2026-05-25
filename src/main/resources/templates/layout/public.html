@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt-BR"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta name="csrf-token" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <title layout:title-pattern="$CONTENT_TITLE - atrilha">atrilha</title>
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
+    <!-- Alpine.js -->
+    <script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
+    <!-- Lottie -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.8/dist/lottie-player.js" defer></script>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="public-shell">
+    <th:block layout:fragment="content"></th:block>
+</body>
+</html>

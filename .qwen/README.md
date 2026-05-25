@@ -1,23 +1,10 @@
 # Agentes locais do atrilha — Arquiteto + Codificador + Revisor (Qwen Code)
 
-Adaptação do fluxo do `.opencode/` para o **Qwen Code CLI** (`https://github.com/QwenLM/qwen-code`).
-Mesmo ciclo, mesmos scripts determinísticos, mesma filosofia: o LLM decide *o quê*
-fazer e *se aprova*; o *como* do Git é mecânico via shell scripts.
+Fluxo de desenvolvimento assistido por LLM rodando 100% local via **Qwen Code CLI** (`https://github.com/QwenLM/qwen-code`) + **LM Studio**.
 
-> Os scripts em `.qwen/scripts/` são um **symlink para `.opencode/scripts/`** —
-> assim qualquer evolução de fluxo aplica-se aos dois runners sem duplicação.
+Filosofia: o LLM decide *o quê* fazer e *se aprova*; o *como* do Git é mecânico via shell scripts determinísticos em `.qwen/scripts/`. Tudo neste diretório é self-contained — pode ser copiado/movido sem depender de outras pastas do repo.
 
-## Diferença de paradigma vs OpenCode
-
-| Aspecto | OpenCode | Qwen Code |
-|---|---|---|
-| Troca de papel | `/agent <nome>` muda a persona da sessão (`mode: primary`) | Subagents são **delegados** pela sessão principal (`"use o codificador para..."`) ou invocados explicitamente por nome |
-| Config de provider | Global em `~/.config/opencode/opencode.json` | Projeto em `.qwen/settings.json` (este repo) — pode ser sobrescrito por `~/.qwen/settings.json` |
-| Modelo por agente | Cada sessão usa o modelo escolhido com `/model` | Cada subagent pode **pinar** seu modelo no frontmatter (`model: openai:<id>`) |
-| Onde acha os agentes | `.opencode/agents/*.md` | `.qwen/agents/*.md` (precedência sobre `~/.qwen/agents/`) |
-| Scripts | `.opencode/scripts/*.sh` | `.qwen/scripts/*.sh` (symlink para `.opencode/scripts/`) |
-
-## Filosofia (idêntica ao `.opencode/`)
+## Filosofia
 
 ```
 Dioni descreve a demanda em linguagem natural
@@ -36,32 +23,44 @@ Dioni descreve a demanda em linguagem natural
 Dioni revisa PR draft → ready → merge → Issue fecha via Closes #N
 ```
 
-> O **Arquiteto** continua opcional: Dioni pode criar Issues à mão (papel humano) e pular direto para o Codificador.
+> O **Arquiteto** é opcional: Dioni pode criar Issues à mão (papel humano) e pular direto para o Codificador.
 
-**Uma task = uma worktree isolada = uma branch (`<tipo>/<N>-<slug>`) = um PR = um commit squash.** A worktree e a branch são criadas juntas por `start_task.sh`; o Revisor faz o squash + push + abertura do PR via `approve.sh`. As worktrees vivem em `.opencode/worktrees/` (compartilhadas com o runner OpenCode — não há diretório separado para qwen).
+**Uma task = uma worktree isolada = uma branch (`<tipo>/<N>-<slug>`) = um PR = um commit squash.** A worktree e a branch são criadas juntas por `start_task.sh`; o Revisor faz o squash + push + abertura do PR via `approve.sh`. As worktrees vivem em `.qwen/worktrees/` (gitignorada).
+
+## Como o Qwen Code lida com agentes
+
+Diferente de outros runners onde você "muda de persona" com um comando, no Qwen Code os papéis são **subagents**: a sessão principal **delega** a tarefa pelo nome do agente.
+
+```
+qwen
+> Use o codificador para iniciar a implementação da issue #61
+```
+
+O subagent carrega o **system prompt** descrito no arquivo `.md` correspondente e o **modelo pinado no frontmatter** (`model: openai:qwen3.6-35b-a3b-ud-mlx` para o codificador, por exemplo). Você pode invocar também explicitamente pelo nome (ex.: `"have the revisor agent audit #61"`).
+
+Precedência de descoberta dos agentes:
+1. **Projeto** (este diretório): `.qwen/agents/*.md` ← usado por este repo.
+2. **Usuário**: `~/.qwen/agents/*.md`.
+3. **Extensões instaladas**.
 
 ## Estrutura
 
 ```
-atrilha/
-├── AGENTS.md                       # contexto do projeto (auto-carregado pelo Qwen Code)
-├── .opencode/
-│   ├── ...                         # runner OpenCode (independente)
-│   └── scripts/                    # FONTE ÚNICA dos scripts determinísticos
-│       ├── start_task.sh
-│       ├── finish_task.sh
-│       ├── load_review.sh
-│       ├── approve.sh
-│       └── reject.sh
-└── .qwen/
-    ├── README.md                   # este arquivo
-    ├── .gitignore                  # ignora worktrees, node_modules etc.
-    ├── settings.json               # provider LM Studio + modelos + auth
-    ├── scripts/  →  ../.opencode/scripts/   (symlink: fonte única)
-    └── agents/
-        ├── arquiteto.md            # subagent Arquiteto   (model: inherit — usa o que /model definir)
-        ├── codificador.md          # subagent Codificador (model: openai:qwen3.6-35b-a3b-mlx)
-        └── revisor.md              # subagent Revisor     (model: openai:qwen3.6-27b)
+.qwen/
+├── README.md                   # este arquivo
+├── .gitignore                  # ignora worktrees/, node_modules/, etc.
+├── settings.json               # provider LM Studio + modelos + auth
+├── scripts/                    # scripts determinísticos (self-contained)
+│   ├── start_task.sh           #  [Codificador] issue → worktree + branch
+│   ├── finish_task.sh          #  [Codificador] mvn test + SUMMARY.md
+│   ├── load_review.sh          #  [Revisor]    dossiê read-only
+│   ├── approve.sh              #  [Revisor]    squash → push → PR DRAFT
+│   └── reject.sh               #  [Revisor]    REVIEW.md, preserva worktree
+├── agents/
+│   ├── arquiteto.md            # subagent Arquiteto   (model: openai:qwen3.6-35b-a3b-mlx)
+│   ├── codificador.md          # subagent Codificador (model: openai:qwen3.6-35b-a3b-ud-mlx)
+│   └── revisor.md              # subagent Revisor     (model: openai:qwen3.6-35b-a3b-mlx)
+└── worktrees/                  # criadas e removidas dinamicamente (gitignored)
 ```
 
 ## Setup
@@ -76,11 +75,12 @@ qwen --version
 ### 2. Subir o LM Studio Server
 
 - Aba **Developer** → **Start Server** (porta `1234`).
-- Habilite **JIT loading** + **Keep models loaded** para evitar carga em runtime.
-- Modelos esperados (já presentes na sua máquina):
-  - `qwen3.6-35b-a3b-mlx` — Codificador.
-  - `qwen3.6-27b` — Revisor.
-  - `qwen3-14b-mlx` — fallback leve (configurado, opcional).
+- Habilite **JIT loading** e **deixe "Keep models loaded" DESLIGADO** (ou no máximo 1 modelo): nesta máquina só cabe **um** modelo 35B por vez na RAM, então o LM Studio precisa descarregar o anterior para subir o próximo. JIT cuida desse swap automaticamente quando o `qwen` faz uma requisição para um `id` diferente do carregado.
+- Como **Arquiteto e Revisor usam o mesmo modelo** (`qwen3.6-35b-a3b-mlx`), um ciclo completo (planejamento → implementação → revisão) tem só **uma troca**: `mlx → ud-mlx → mlx`.
+- Modelos esperados:
+  - `qwen3.6-35b-a3b-ud-mlx` — Codificador.
+  - `qwen3.6-35b-a3b-mlx` — Arquiteto + Revisor (e default da sessão raiz).
+  - `qwen3-14b-mlx` — fallback leve (opcional).
 
 Validar:
 
@@ -96,7 +96,7 @@ O arquivo neste diretório define:
 - `security.auth.selectedType = "openai"` — qwen-code conversa com LM Studio via protocolo OpenAI.
 - `model.name = "qwen3.6-35b-a3b-mlx"` — modelo default da sessão raiz.
 
-Se preferir centralizar a config no perfil do usuário, copie o conteúdo para `~/.qwen/settings.json` (precedência: user > project, segundo a documentação). Para este projeto, **manter no `.qwen/` deste repo é o recomendado** — mesma filosofia self-contained do `.opencode/`.
+Se preferir centralizar a config no perfil do usuário, copie o conteúdo para `~/.qwen/settings.json` (precedência: user > project). Manter aqui é o recomendado — todo o setup viaja com o repo.
 
 ### 4. Ferramentas auxiliares
 
@@ -105,23 +105,20 @@ brew install gh just         # gh = GitHub CLI; just (opcional, atalhos)
 gh auth login                # autenticar no GitHub
 ```
 
-### 5. Verificar scripts e symlink
+### 5. Verificar scripts
 
 ```bash
-ls -l .qwen/scripts          # 5 scripts (resolvidos via symlink para .opencode/scripts/)
-bash .qwen/scripts/start_task.sh    # sem args = mostra "uso: start_task <numero>"
+ls -l .qwen/scripts                   # 5 scripts executáveis
+bash .qwen/scripts/start_task.sh      # sem args = mostra "uso: start_task <numero>"
 ```
 
 ## Uso
-
-Qwen Code descobre subagents em `.qwen/agents/*.md` automaticamente. Diferente do OpenCode, **não há comando `/agent` para trocar de persona da sessão** — você invoca o subagent pelo nome (delegação) ou pede que ele assuma a tarefa.
 
 ### Sessão 1 — delegando ao Arquiteto (opcional)
 
 ```bash
 cd /Users/dionia.oliveira/sources/atrilha
 qwen
-# (modelo default do settings.json — pode ajustar com /model openai:qwen3.6-27b)
 # >  Use o arquiteto para planejar a US-042 (cadastro com responsável).
 #   → o subagent arquiteto lê código (Read/Grep/Glob), consulta gh issue list
 #   → projeta plano TDD, escreve corpo da issue em /tmp/...md
@@ -135,20 +132,20 @@ qwen
 cd /Users/dionia.oliveira/sources/atrilha
 qwen
 # >  Use o codificador para iniciar a implementação da issue #61.
-#   → o subagent roda automaticamente com modelo openai:qwen3.6-35b-a3b-mlx
+#   → o subagent roda automaticamente com modelo openai:qwen3.6-35b-a3b-ud-mlx
 #   → executa: bash .qwen/scripts/start_task.sh 61
-#   → trabalha DENTRO da worktree .opencode/worktrees/feat-61-...
+#   → trabalha DENTRO da worktree .qwen/worktrees/feat-61-...
 #   → "finalize" → bash .qwen/scripts/finish_task.sh 61
 #   → edita SUMMARY.md (narrativa + LGPD)
 ```
 
-### Sessão 3 — delegando ao Revisor (novo terminal, em paralelo se quiser)
+### Sessão 3 — delegando ao Revisor (sequencial: feche a sessão do Codificador antes)
 
 ```bash
 cd /Users/dionia.oliveira/sources/atrilha
 qwen
 # >  Use o revisor para auditar a issue #61.
-#   → o subagent roda com modelo openai:qwen3.6-27b
+#   → o subagent roda com modelo openai:qwen3.6-35b-a3b-mlx
 #   → bash .qwen/scripts/load_review.sh 61
 #   → audita 3 camadas (plano / qualidade / critérios)
 #   → APROVADO: bash .qwen/scripts/approve.sh 61   →  PR DRAFT no GitHub
@@ -163,15 +160,15 @@ qwen
 4. Issue fecha automaticamente via `Closes #<N>` no body.
 5. Limpar:
    ```bash
-   git worktree remove .opencode/worktrees/<dir>
+   git worktree remove .qwen/worktrees/<dir>
    git branch -D <branch>     # opcional, ramo local
    ```
 
 ## Notas
 
-- **Worktrees são compartilhadas com o runner OpenCode** (`.opencode/worktrees/`). Não rode `qwen` e `opencode` na mesma issue ao mesmo tempo.
 - **PR sempre draft.** Rede contra Revisor local aprovar algo com teste verde mas lógica errada. Quando confiar nos pareceres, troque `--draft` em `approve.sh`.
-- **Tasks em paralelo.** Worktrees isoladas permitem Codificador na #61 enquanto você revisa o PR da #58. LM Studio precisa dos dois modelos carregados — habilite **Keep models loaded** para evitar swap.
+- **Sessões serializadas (1 modelo por vez).** A máquina não comporta dois 35B simultâneos na RAM. Rode **uma persona de cada vez**: feche a sessão do Codificador antes de abrir a do Revisor. O LM Studio descarrega `qwen3.6-35b-a3b-ud-mlx` e sobe `qwen3.6-35b-a3b-mlx` automaticamente via JIT no primeiro request do Revisor. **Não rode #61 e #58 em paralelo** — worktrees são isoladas, mas o modelo no LM Studio não é.
+- **Primeiro request após swap é lento.** Carga de um modelo 35B MLX leva 30–90s. Os `timeout: 600000` no `settings.json` cobrem isso; só fique atento à primeira resposta de cada role-switch.
 - **`reject` preserva a worktree** e escreve `REVIEW.md` — o Codificador retoma de onde parou.
 - **QA** está embutido no `mvn test` obrigatório de `finish_task`/`load_review` (verde é trava). Não há subagent QA dedicado no atrilha.
 - **Documentação canônica do ciclo**: `doc/workflow.md` (conceitual completo) e `AGENTS.md` (operacional).
@@ -184,4 +181,6 @@ qwen
 | Subagent não aparece em `/agents` | Frontmatter inválido | Conferir indentação YAML; `name`/`description` obrigatórios |
 | Modelo do subagent não muda | `model:` ausente ou typo | Usar prefixo `openai:` antes do id (ex.: `openai:qwen3.6-35b-a3b-mlx`) |
 | Subagent não roda script | `tools` filtrado demais | Não defina `tools` — herda todas as ferramentas do parent |
-| Resposta lenta no Revisor | Modelo grande em swap | LM Studio → Settings → Keep models loaded ON |
+| Primeira resposta após trocar de agente trava | LM Studio carregando o outro 35B (30–90s) | Esperar — `timeout: 600000` no `settings.json` cobre. NÃO ligue "Keep models loaded": não há RAM para os dois. |
+| LM Studio estoura RAM ao subir modelo | "Keep models loaded" ON forçando 2× 35B | Desligar em Settings → manter no máximo 1 modelo residente |
+| `mvn test` reclama de janela curta | Contexto do modelo subdimensionado | LM Studio → modelo carregado → `n_ctx` ≥ 32768 |

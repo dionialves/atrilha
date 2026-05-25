@@ -6,14 +6,14 @@
   "modelProviders": {
     "openai": [
       {
-        "id": "qwen3.6-35b-a3b-mlx",
-        "name": "Qwen3.6 35B A3B MLX (Codificador)",
+        "id": "qwen3.6-35b-a3b-ud-mlx",
+        "name": "Qwen3.6 35B A3B UD MLX (Codificador)",
         "envKey": "LMSTUDIO_API_KEY",
         "baseUrl": "http://localhost:1234/v1",
         "generationConfig": {
           "timeout": 600000,
           "maxRetries": 2,
-          "contextWindowSize": 32768,
+          "contextWindowSize": 131072,
           "samplingParams": {
             "temperature": 0.2,
             "top_p": 0.9
@@ -21,14 +21,14 @@
         }
       },
       {
-        "id": "qwen3.6-27b",
-        "name": "Qwen3.6 27B (Revisor)",
+        "id": "qwen3.6-35b-a3b-mlx",
+        "name": "Qwen3.6 35B A3B MLX (Arquiteto + Revisor)",
         "envKey": "LMSTUDIO_API_KEY",
         "baseUrl": "http://localhost:1234/v1",
         "generationConfig": {
           "timeout": 600000,
           "maxRetries": 2,
-          "contextWindowSize": 32768,
+          "contextWindowSize": 86016,
           "samplingParams": {
             "temperature": 0.1,
             "top_p": 0.9
@@ -56,5 +56,30 @@
   "model": {
     "name": "qwen3.6-35b-a3b-mlx"
   },
-  "$version": 4
+  "tools": {
+    "approvalMode": "yolo"
+  },
+  "$version": 4,
+  "permissions": {
+    "allow": [
+      "Agent(codificador)",
+      "Bash(bash *)",
+      "Bash(./mvnw *)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(ls *)",
+      "Bash(gh *)",
+      "Bash(do *)",
+      "Bash(then *)",
+      "Bash(else *)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(file *)",
+      "Bash(grep *)",
+      "Bash(xxd *)",
+      "Bash(readlink *)",
+      "Bash(stat *)"
+    ]
+  }
 }

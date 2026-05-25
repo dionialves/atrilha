@@ -1,0 +1,402 @@
+<!-- Protótipo estático — tela /cadastro/responsavel/escolher-metodo. Não é código de produção. -->
+<!-- Segue doc/UX/00-identidade-visual.md, 01-design-tokens.md, 02-componentes-base.md. -->
+<!-- Métodos principais: Google e Apple (DESATIVADOS neste protótipo). E-mail ativo abaixo. -->
+<!-- Atenção: o fluxo de cadastro de responsável ainda não está liberado em produção (ver nota no fim). -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>atrilha — protótipo escolher método (responsável)</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* =====================================================================
+       TOKENS (subset literal de doc/UX/01-design-tokens.md)
+       ===================================================================== */
+    :root {
+      --color-primary-100: #FFD9D6;
+      --color-primary-500: #F25C54;
+      --color-primary-600: #D94A43;
+      --color-primary-700: #A8362F;
+
+      --color-neutral-0:   #FFFFFF;
+      --color-neutral-50:  #F7F4F1;
+      --color-neutral-100: #EDE8E4;
+      --color-neutral-200: #DCD6D0;
+      --color-neutral-300: #C9C2BD;
+      --color-neutral-400: #A39A93;
+      --color-neutral-500: #7A716B;
+      --color-neutral-700: #3D3733;
+      --color-neutral-900: #1A1614;
+
+      --color-info-100: #EAF7FB;
+      --color-info-700: #0E6C82;
+
+      --color-bg:           var(--color-neutral-50);
+      --color-surface:      var(--color-neutral-0);
+      --color-surface-muted:var(--color-neutral-100);
+      --color-border:       var(--color-neutral-300);
+      --color-border-strong:var(--color-neutral-400);
+      --color-divider:      var(--color-neutral-200);
+      --color-text-display: var(--color-neutral-900);
+      --color-text-body:    var(--color-neutral-700);
+      --color-text-muted:   var(--color-neutral-500);
+      --color-primary:      var(--color-primary-500);
+      --color-primary-hover:var(--color-primary-600);
+      --color-on-primary:   var(--color-neutral-0);
+      --color-focus-ring:   var(--color-primary-500);
+
+      --font-display: "Bricolage Grotesque", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-sans:    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+      --font-weight-regular:  400;
+      --font-weight-medium:   500;
+      --font-weight-semibold: 600;
+      --font-weight-bold:     700;
+
+      --text-xs:   0.75rem;
+      --text-sm:   0.875rem;
+      --text-base: 1rem;
+      --text-lg:   1.125rem;
+      --text-2xl:  1.5rem;
+
+      --tracking-overline: 0.05em;
+
+      --space-1:  0.25rem;
+      --space-2:  0.5rem;
+      --space-3:  0.75rem;
+      --space-4:  1rem;
+      --space-5:  1.25rem;
+      --space-6:  1.5rem;
+      --space-8:  2rem;
+      --space-10: 2.5rem;
+      --space-11: 2.75rem;
+      --space-12: 3rem;
+
+      --radius-md:   0.5rem;
+      --radius-lg:   0.75rem;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 1px 2px 0 rgba(26, 22, 20, 0.05);
+      --shadow-focus: 0 0 0 3px rgba(242, 92, 84, 0.35);
+
+      --duration-fast: 120ms;
+      --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+      --z-sticky: 20;
+    }
+
+    /* =====================================================================
+       RESET mínimo
+       ===================================================================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      color: var(--color-text-body);
+      background: var(--color-bg);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    h1, h2, h3, p { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    :focus-visible {
+      outline: 2px solid var(--color-focus-ring);
+      outline-offset: 2px;
+      border-radius: var(--radius-md);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* =====================================================================
+       Header — botão voltar + marca
+       ===================================================================== */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-divider);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      min-height: 56px;
+    }
+    .icon-button {
+      display: inline-grid;
+      place-items: center;
+      min-width: var(--space-11);
+      min-height: var(--space-11);
+      border-radius: var(--radius-md);
+      color: var(--color-text-body);
+      transition: background-color var(--duration-fast) var(--ease-out-soft);
+      flex-shrink: 0;
+    }
+    .icon-button:hover { background: var(--color-neutral-100); }
+    .icon-button svg { width: 20px; height: 20px; display: block; }
+    .header-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-display);
+      font-size: var(--text-base);
+    }
+    .brand-mark {
+      width: 26px; height: 26px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      display: inline-grid;
+      place-items: center;
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,.08);
+    }
+    .brand-mark svg { width: 15px; height: 15px; display: block; }
+
+    /* =====================================================================
+       Main
+       ===================================================================== */
+    .main {
+      padding: var(--space-8) var(--space-4) var(--space-10);
+      max-width: 26rem;
+      margin: 0 auto;
+    }
+    .intro { margin-bottom: var(--space-8); }
+    .overline {
+      font-size: var(--text-xs);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: var(--tracking-overline);
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-2);
+    }
+    .intro h1 {
+      font-family: var(--font-display);
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--text-2xl);
+      line-height: 1.15;
+      color: var(--color-text-display);
+      margin-bottom: var(--space-3);
+    }
+    .intro p {
+      font-size: var(--text-base);
+      color: var(--color-text-body);
+      line-height: 1.5;
+    }
+
+    /* =====================================================================
+       Métodos principais — Google e Apple (ux-003 §1.3, variant secondary)
+       DESATIVADOS neste protótipo. O e-mail abaixo segue ativo.
+       ===================================================================== */
+    .social-stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    .btn-social {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      width: 100%;
+      min-height: var(--space-12);
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-full);
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--text-base);
+      color: var(--color-text-body);
+      transition: background-color var(--duration-fast) var(--ease-out-soft);
+    }
+    .btn-social:hover:not(:disabled) { background: var(--color-surface-muted); }
+    .btn-social:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-social svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .btn-social:disabled .logo-google { filter: grayscale(1); }
+
+    .social-note {
+      margin-top: var(--space-3);
+      text-align: center;
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+
+    /* Divisor "ou" */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin: var(--space-5) 0;
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+    }
+    .divider::before,
+    .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--color-divider);
+    }
+
+    /* Botão e-mail — caminho ativo, abaixo dos métodos principais. */
+    .btn-email {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      width: 100%;
+      min-height: var(--space-12);
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-full);
+      font-family: var(--font-sans);
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--text-base);
+      color: var(--color-text-body);
+      transition: background-color var(--duration-fast) var(--ease-out-soft);
+    }
+    .btn-email:hover { background: var(--color-surface-muted); }
+    .btn-email svg { width: 16px; height: 16px; }
+
+    /* Aviso calmo (info — ux-002 §2.4) */
+    .note {
+      margin-top: var(--space-8);
+      display: flex;
+      gap: var(--space-3);
+      background: var(--color-info-100);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+    }
+    .note svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--color-info-700); }
+    .note p { font-size: var(--text-sm); color: var(--color-text-body); line-height: 1.5; }
+
+    .back-link {
+      margin-top: var(--space-8);
+      text-align: center;
+      font-size: var(--text-sm);
+    }
+    .back-link a { color: var(--color-text-muted); }
+  </style>
+</head>
+<body>
+
+  <!-- =================================================================
+       HEADER — voltar para a escolha de papel (/comecar) + marca.
+       ================================================================= -->
+  <header class="header" role="banner">
+    <a class="icon-button" href="comecar.html" aria-label="Voltar para a escolha de caminho">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </a>
+    <span class="header-brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12 L8 4 L13 12"/>
+          <circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+      </span>
+      atrilha
+    </span>
+  </header>
+
+  <!-- =================================================================
+       MAIN — escolha de método de cadastro do responsável.
+       ================================================================= -->
+  <main class="main">
+
+    <div class="intro">
+      <p class="overline">Cadastro · Responsável</p>
+      <h1>Como você quer entrar?</h1>
+      <p>
+        Crie sua conta de responsável com Google ou Apple — é o caminho
+        mais rápido. Você também pode usar e-mail e senha.
+      </p>
+    </div>
+
+    <!-- Métodos principais: Google e Apple. DESATIVADOS neste protótipo. -->
+    <div class="social-stack">
+      <button type="button" class="btn-social"
+              disabled aria-disabled="true"
+              data-test="cta-google-disabled"
+              title="Indisponível no momento">
+        <svg class="logo-google" aria-hidden="true" focusable="false"
+             xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+          <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+          <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+          <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+          <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+        </svg>
+        <span>Continuar com Google</span>
+      </button>
+
+      <button type="button" class="btn-social"
+              disabled aria-disabled="true"
+              data-test="cta-apple-disabled"
+              title="Indisponível no momento">
+        <svg class="logo-apple" aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+          <path fill="#1A1614" d="M16.365 1.43c0 1.14-.417 2.2-1.25 3.18-1.005 1.16-2.22 1.84-3.54 1.73a3.6 3.6 0 0 1-.027-.43c0-1.094.476-2.26 1.32-3.214.42-.48.957-.88 1.61-1.196.65-.317 1.266-.49 1.848-.52.02.224.029.448.029.67zM21.6 17.12c-.32.74-.47 1.07-.88 1.72-.57.91-1.38 2.04-2.38 2.05-.89.01-1.12-.58-2.33-.57-1.21.01-1.46.58-2.35.57-1-.01-1.77-1.03-2.34-1.94-1.6-2.55-1.77-5.54-.78-7.13.7-1.13 1.81-1.79 2.85-1.79 1.06 0 1.73.58 2.61.58.85 0 1.37-.58 2.6-.58.93 0 1.91.5 2.61 1.37-2.29 1.26-1.92 4.53.79 5.7z"/>
+        </svg>
+        <span>Continuar com Apple</span>
+      </button>
+    </div>
+    <p class="social-note">Entrar com Google e Apple está indisponível no momento.</p>
+
+    <div class="divider" aria-hidden="true">ou</div>
+
+    <!-- Caminho ativo: cadastro por e-mail. -->
+    <a class="btn-email" href="#">
+      Cadastrar com e-mail e senha
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 8h10M9 4l4 4-4 4"/>
+      </svg>
+    </a>
+
+    <!-- Aviso calmo: o que o responsável faz a seguir. -->
+    <div class="note" role="note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/>
+        <path d="M9 12l2 2 4-4"/>
+      </svg>
+      <p>
+        Depois do cadastro, você vincula a conta de uma adolescente sob
+        sua responsabilidade e passa a acompanhar a semana dela.
+      </p>
+    </div>
+
+    <p class="back-link">
+      <a href="comecar.html">Voltar pro começo</a>
+    </p>
+
+  </main>
+
+  <!-- =================================================================
+       NOTA DE IMPLEMENTAÇÃO (para o Codificador)
+       - Rota /cadastro/responsavel/escolher-metodo ainda não existe; hoje
+         /comecar aponta para /cadastro/responsavel → responsavel_em_breve.html.
+       - O fluxo completo de cadastro de responsável NÃO está liberado em
+         produção. Esta tela é o protótipo do estado final desejado.
+       - Google e Apple: manter `disabled`, `aria-disabled` e os data-test
+         `cta-google-disabled` / `cta-apple-disabled`.
+       - Enquanto o épico de responsável não entrar, a rota pode continuar
+         servindo a tela "Em breve" — este protótipo guia a versão definitiva.
+       ================================================================= -->
+
+</body>
+</html>
