@@ -9,16 +9,7 @@
 
     <!-- Topbar — apenas a marca centrada (tela pública, sem nav nem footer do app). -->
     <div class="home__topbar">
-        <a class="brand" th:href="@{/}" aria-label="atrilha — página inicial">
-            <span class="brand-mark" aria-hidden="true">
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
-                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 12 L8 4 L13 12"/>
-                    <circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/>
-                </svg>
-            </span>
-            <span class="brand-wordmark">atrilha</span>
-        </a>
+        <a th:replace="~{components/brand :: brand(@{/})}"></a>
     </div>
 
     <!-- Lembrete de verificação de e-mail (US-006 §7): aparece apenas para
@@ -79,7 +70,7 @@
         <!-- Bloco de ações: 1 CTA primário + 1 link secundário (identidade §5.2). -->
         <section class="home__actions" aria-label="Entrar ou criar conta">
             <p class="home__cta">
-                <a class="w-full btn btn-primary btn-lg" th:href="@{/comecar}">
+                <a class="btn btn-primary btn-lg btn--block" th:href="@{/comecar}">
                     Começar
                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
                          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -88,7 +79,7 @@
                 </a>
             </p>
             <p class="home__cta-secondary">
-                <a class="btn btn-ghost btn-md" th:href="@{/login}">
+                <a class="btn btn-ghost btn-lg btn--block" th:href="@{/login}">
                     Já tenho conta. <span class="home__cta-strong">Entrar</span>
                 </a>
             </p>

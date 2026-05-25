@@ -8,24 +8,7 @@
 <th:block layout:fragment="content">
 
     <!-- Header expanded — botão voltar (volta para a home) + marca. -->
-    <header class="comecar__header" role="banner">
-        <a class="comecar__back" th:href="@{/}" aria-label="Voltar para o início">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M15 18l-6-6 6-6"/>
-            </svg>
-        </a>
-        <span class="brand">
-            <span class="brand-mark" aria-hidden="true">
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
-                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 12 L8 4 L13 12"/>
-                    <circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/>
-                </svg>
-            </span>
-            <span class="brand-wordmark">atrilha</span>
-        </span>
-    </header>
+    <header th:replace="~{layout/fragments/public-header :: public-header(@{/}, 'Voltar para o início')}"></header>
 
     <!-- Main — escolha de papel para o cadastro. -->
     <main class="comecar">

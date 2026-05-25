@@ -23,17 +23,16 @@
      data-testid="email-verification-banner"
      role="status"
      aria-live="polite"
-     class="bg-amber-50 border-b border-amber-200 px-4 py-3 text-sm text-slate-800">
-    <div class="container mx-auto flex flex-wrap items-center justify-between gap-2">
+     class="email-verify-banner">
+    <div class="email-verify-banner__row">
         <span>Falta confirmar teu e-mail.</span>
-        <div class="flex items-center gap-3">
-            <a th:href="@{/verificar-email}"
-               class="font-medium underline text-amber-800 hover:text-amber-900">
+        <div class="email-verify-banner__actions">
+            <a th:href="@{/verificar-email}" class="email-verify-banner__link">
                 Verificar agora
             </a>
             <button type="button"
                     aria-label="Dispensar aviso por enquanto"
-                    class="w-11 h-11 inline-flex items-center justify-center text-amber-800"
+                    class="email-verify-banner__close"
                     x-on:click="sessionStorage.setItem('atrilha.banner.email.dismissed','1'); dismissed = true">
                 <span aria-hidden="true">&times;</span>
             </button>
