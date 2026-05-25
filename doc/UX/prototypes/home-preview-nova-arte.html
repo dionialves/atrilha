@@ -1,0 +1,222 @@
+<!-- Preview — proposta de nova ilustração para a home (cena ilustrada quente). -->
+<!-- Aberto direto no navegador. Não é código de produção. -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>atrilha — preview nova ilustração da home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary-100: #FFD9D6;
+      --color-primary-500: #F25C54;
+      --color-neutral-0:   #FFFFFF;
+      --color-neutral-50:  #F7F4F1;
+      --color-neutral-100: #EDE8E4;
+      --color-neutral-500: #7A716B;
+      --color-neutral-700: #3D3733;
+      --color-neutral-900: #1A1614;
+      --color-info-700:    #0E6C82;
+      --color-bg: var(--color-neutral-50);
+      --color-text-display: var(--color-neutral-900);
+      --color-text-body: var(--color-neutral-700);
+      --color-text-muted: var(--color-neutral-500);
+      --color-text-link: var(--color-info-700);
+      --color-primary: var(--color-primary-500);
+      --color-on-primary: var(--color-neutral-0);
+      --font-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+      --font-sans: "Inter", system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans); line-height: 1.5;
+      color: var(--color-text-body); background: #EDE8E4;
+      -webkit-font-smoothing: antialiased;
+      padding: 32px 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 24px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    a { color: inherit; text-decoration: none; }
+    .page-note {
+      max-width: 30rem; text-align: center; font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+    /* "moldura" de celular para enquadrar a home */
+    .phone {
+      width: 100%; max-width: 26rem;
+      background: var(--color-bg);
+      border-radius: 28px;
+      box-shadow: 0 12px 40px -8px rgba(26,22,20,0.22);
+      overflow: hidden;
+      display: flex; flex-direction: column; min-height: 720px;
+    }
+    .topbar { display: flex; justify-content: center; padding: 24px 16px 8px; }
+    .brand {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-weight: 600; color: var(--color-text-display); font-size: 1.125rem;
+    }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--color-primary); color: var(--color-on-primary);
+      display: inline-grid; place-items: center;
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,.08);
+    }
+    .brand-mark svg { width: 18px; height: 18px; display: block; }
+    .main {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 16px 24px 32px; max-width: 30rem; width: 100%; margin: 0 auto;
+    }
+    .hero {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: center; gap: 20px; padding: 24px 0;
+    }
+    .hero-art { align-self: center; width: 100%; max-width: 300px; height: auto; }
+    .overline {
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--color-text-muted);
+    }
+    .hero-title {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: 2.5rem; line-height: 1.05; letter-spacing: -0.01em;
+      color: var(--color-text-display);
+    }
+    .hero-title .accent { color: var(--color-primary); }
+    .hero-lead { font-size: 1.125rem; color: var(--color-text-body); max-width: 24rem; }
+    .actions { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-family: var(--font-sans); font-weight: 600; font-size: 1rem;
+      border-radius: 9999px;
+    }
+    .btn-primary {
+      width: 100%; min-height: 48px; padding: 12px 24px;
+      background: var(--color-primary); color: var(--color-on-primary);
+    }
+    .btn-primary svg { width: 16px; height: 16px; }
+    .btn-ghost { min-height: 44px; padding: 8px 16px; color: var(--color-text-body); }
+    .btn-ghost .link-strong { color: var(--color-primary); font-weight: 600; }
+    .legal {
+      text-align: center; font-size: 0.75rem; color: var(--color-text-muted);
+      padding: 8px 24px 24px;
+    }
+    .legal a { color: var(--color-text-link); }
+  </style>
+</head>
+<body>
+
+  <p class="page-note">
+    Proposta de nova ilustração para a home do atrilha — cena ilustrada quente
+    (caminho, colinas, luz da manhã) mantendo os marcadores chevron+ponto da marca.
+  </p>
+
+  <div class="phone">
+    <div class="topbar">
+      <a class="brand" href="#" aria-label="atrilha — página inicial">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12 L8 4 L13 12"/>
+            <circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/>
+          </svg>
+        </span>
+        atrilha
+      </a>
+    </div>
+
+    <main class="main">
+      <section class="hero">
+
+        <!-- ===== NOVA ILUSTRAÇÃO DA HOME ===== -->
+        <svg class="hero-art" viewBox="0 0 280 190" fill="none"
+             xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- luz da manhã: glow suave do amanhecer atrás do cume -->
+          <circle cx="228" cy="46" r="50" fill="#FFD9D6" opacity="0.38"/>
+          <circle cx="228" cy="46" r="32" fill="#FFC6BE" opacity="0.55"/>
+          <circle cx="228" cy="46" r="17" fill="#FF9A92"/>
+          <!-- pássaros — eco do chevron "^" da marca -->
+          <path d="M62 44 q3 -4.5 6 0 q3 -4.5 6 0 M82 36 q3 -4.5 6 0 q3 -4.5 6 0"
+                stroke="#B3AAA3" stroke-width="2" stroke-linecap="round"/>
+          <!-- colinas: três tons quentes para profundidade -->
+          <path d="M0 124 C 46 100, 96 108, 150 122 C 200 134, 244 112, 280 118 L280 190 L0 190 Z"
+                fill="#FFE4DE"/>
+          <g transform="translate(72 110)">
+            <rect x="-2.4" y="6" width="4.8" height="13" rx="2" fill="#8A6F5E"/>
+            <path d="M0 -20 L11 7 L-11 7 Z" fill="#9CD24A"/>
+            <path d="M0 -8 L13 16 L-13 16 Z" fill="#7BC42F"/>
+          </g>
+          <path d="M0 148 C 58 128, 120 146, 180 148 C 226 149, 252 136, 280 142 L280 190 L0 190 Z"
+                fill="#FFCFC5"/>
+          <g transform="translate(244 146)">
+            <rect x="-3" y="8" width="6" height="16" rx="2.5" fill="#8A6F5E"/>
+            <path d="M0 -26 L14 9 L-14 9 Z" fill="#9CD24A"/>
+            <path d="M0 -11 L17 21 L-17 21 Z" fill="#7BC42F"/>
+          </g>
+          <circle cx="22" cy="156" r="9" fill="#7BC42F"/>
+          <circle cx="33" cy="158" r="6.5" fill="#9CD24A"/>
+          <path d="M0 166 C 70 152, 150 164, 210 164 C 244 164, 264 156, 280 160 L280 190 L0 190 Z"
+                fill="#FFB7AB"/>
+          <!-- trilha -->
+          <path d="M46 170 C 94 165, 80 138, 126 128 C 168 119, 168 92, 204 82"
+                stroke="#FFF6F1" stroke-width="11" stroke-linecap="round"/>
+          <path d="M46 170 C 94 165, 80 138, 126 128 C 168 119, 168 92, 204 82"
+                stroke="#E7B3AA" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.5 8"/>
+          <!-- marcadores chevron+ponto -->
+          <g transform="translate(46 170)">
+            <circle r="13" fill="#BEEB6A"/>
+            <path d="M-4.6 8 L0 -1 L4.6 8" stroke="#1A1614" stroke-width="2.4"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="0" cy="9" r="1.4" fill="#1A1614"/>
+          </g>
+          <g transform="translate(126 128)">
+            <circle r="14" fill="#7CD0E6"/>
+            <path d="M-5 9 L0 -1 L5 9" stroke="#1A1614" stroke-width="2.4"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="0" cy="10" r="1.5" fill="#1A1614"/>
+          </g>
+          <g transform="translate(204 82)">
+            <circle r="21" fill="none" stroke="#FFD9D6" stroke-width="7" opacity="0.7"/>
+            <circle r="20" fill="#F25C54"/>
+            <path d="M-7 12 L0 -2 L7 12" stroke="#FFFFFF" stroke-width="3.2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="0" cy="14" r="2" fill="#FFFFFF"/>
+          </g>
+        </svg>
+
+        <p class="overline">Fé no seu ritmo</p>
+        <h1 class="hero-title">
+          Sua fé,<br>
+          um <span class="accent">caminho</span><br>
+          por dia.
+        </h1>
+        <p class="hero-lead">
+          atrilha conduz você por uma reflexão diária sobre a Bíblia em
+          sessões de até 10 minutos. No seu tempo, do seu jeito.
+        </p>
+      </section>
+
+      <section class="actions" aria-label="Entrar ou criar conta">
+        <a class="btn btn-primary" href="#">
+          Começar
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4"/>
+          </svg>
+        </a>
+        <a class="btn btn-ghost" href="#">
+          Já tenho conta. <span class="link-strong">Entrar</span>
+        </a>
+      </section>
+    </main>
+
+    <p class="legal">
+      Ao continuar, você concorda com os
+      <a href="#">Termos de uso</a> e a <a href="#">Política de privacidade</a>.
+    </p>
+  </div>
+
+</body>
+</html>

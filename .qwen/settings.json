@@ -36,12 +36,12 @@
         }
       },
       {
-        "id": "qwen3-14b-mlx",
-        "name": "Qwen3 14B MLX (leve)",
+        "id": "qwen3.6-27b",
+        "name": "Qwen3 27B MLX (Arquiteto)",
         "envKey": "LMSTUDIO_API_KEY",
         "baseUrl": "http://localhost:1234/v1",
         "generationConfig": {
-          "timeout": 600000,
+          "timeout": 65536,
           "maxRetries": 2,
           "contextWindowSize": 32768
         }
@@ -54,7 +54,7 @@
     }
   },
   "model": {
-    "name": "qwen3.6-35b-a3b-mlx"
+    "name": "qwen3.6-27b"
   },
   "tools": {
     "approvalMode": "yolo"
