@@ -6,8 +6,8 @@
   "modelProviders": {
     "openai": [
       {
-        "id": "qwen3.6-35b-a3b-mlx",
-        "name": "Qwen3.6 35B A3B MLX (Codificador)",
+        "id": "qwen3.6-35b-a3b-ud-mlx",
+        "name": "Qwen3.6 35B A3B UD MLX (Codificador)",
         "envKey": "LMSTUDIO_API_KEY",
         "baseUrl": "http://localhost:1234/v1",
         "generationConfig": {
@@ -21,8 +21,8 @@
         }
       },
       {
-        "id": "qwen3.6-27b",
-        "name": "Qwen3.6 27B (Revisor)",
+        "id": "qwen3.6-35b-a3b-mlx",
+        "name": "Qwen3.6 35B A3B MLX (Arquiteto + Revisor)",
         "envKey": "LMSTUDIO_API_KEY",
         "baseUrl": "http://localhost:1234/v1",
         "generationConfig": {
@@ -56,5 +56,18 @@
   "model": {
     "name": "qwen3.6-35b-a3b-mlx"
   },
-  "$version": 4
+  "tools": {
+    "approvalMode": "yolo"
+  },
+  "$version": 4,
+  "permissions": {
+    "allow": [
+      "Agent(codificador)",
+      "Bash(bash *)",
+      "Bash(./mvnw *)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
 }
