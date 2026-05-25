@@ -158,7 +158,8 @@ qwen
 2. Confere o diff, converte para **Ready for review**.
 3. Mergeia (estratégia merge commit — padrão do repo).
 4. Issue fecha automaticamente via `Closes #<N>` no body.
-5. Limpar:
+5. **Atualizar `doc/changelog.md` e `doc/release_notes/unreleased.md` (humano, pós-merge).** O Revisor está proibido de tocar `doc/**` em qualquer momento do ciclo — essa entrada é exclusiva do Dioni e acontece **depois** do merge, não no PR draft.
+6. Limpar:
    ```bash
    git worktree remove .qwen/worktrees/<dir>
    git branch -D <branch>     # opcional, ramo local
