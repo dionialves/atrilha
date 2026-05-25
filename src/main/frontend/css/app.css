@@ -497,6 +497,106 @@ a { color: var(--color-text-link); }
 }
 
 /* =============================================================================
+ * Bloco social (escolher método de cadastro) — reutilizável
+ *
+ * Classes padronizadas para os botões Google/Apple (desativados) e o botão
+ * de e-mail (ativo), conforme protótipos em doc/UX/prototypes/.
+ * ============================================================================= */
+
+.social-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.btn-social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--space-12);
+  padding: var(--space-3) var(--button-padding-x-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-base);
+  color: var(--color-text-body);
+  transition: background-color var(--duration-fast) var(--ease-out-soft);
+}
+.btn-social:hover:not(:disabled) { background: var(--color-surface-muted); }
+.btn-social:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+.btn-social:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-social svg { width: 20px; height: 20px; flex-shrink: 0; }
+.btn-social:disabled .logo-google { filter: grayscale(1); }
+
+.social-note {
+  margin-top: var(--space-3);
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Divisor "ou" */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-divider);
+}
+
+/* Botão e-mail — caminho ativo, abaixo dos métodos principais */
+.btn-email {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--space-12);
+  padding: var(--space-3) var(--button-padding-x-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-base);
+  color: var(--color-text-body);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-out-soft);
+}
+.btn-email:hover { background: var(--color-surface-muted); }
+.btn-email:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+.btn-email svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* Aviso calmo sobre vinculação (info) */
+.note {
+  margin-top: var(--space-8);
+  display: flex;
+  gap: var(--space-3);
+  background: var(--color-info-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+.note svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--color-info-700); }
+.note p { font-size: var(--text-sm); color: var(--color-text-body); line-height: 1.5; }
+
+/* =============================================================================
  * Telas específicas (US-002 — cadastro adolescente via Google)
  *
  * doc/UX/us-002-spec.md §§3–4

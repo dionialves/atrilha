@@ -1,69 +1,36 @@
-# Resumo de execução — Issue #84
+# Resumo de execução — Issue #86
 
-**Branch:** refactor/84-ref-004-remover-testes-cosmeticos-e-de-build-front
+**Branch:** chore/86-chore-aplicar-prototipos-de-escolha-de-metodo-ao-f
 **Estado:** working tree pronto para revisão (sem PR, sem push)
 **Testes:** Tests run: (ver log)
 **Warnings de compilação:** 0
 
 ## Arquivos alterados
 ```
-REVIEW.md
-SUMMARY.md
-pom.xml
 src/main/frontend/css/app.css
-src/main/resources/static/fonts/bricolage-grotesque-latin-600.woff2
-src/main/resources/static/fonts/bricolage-grotesque-latin-700.woff2
-src/main/resources/static/fonts/inter-latin-400.woff2
-src/main/resources/static/fonts/inter-latin-500.woff2
-src/main/resources/static/fonts/inter-latin-600.woff2
-src/main/resources/templates/auth/login.html
-src/main/resources/templates/comecar.html
-src/main/resources/templates/home.html
-src/main/resources/templates/layout/public.html
-src/test/java/dev/zayt/atrilha/NotFoundPageTest.java
-src/test/java/dev/zayt/atrilha/StaticAssetsCssCoverageIT.java
-src/test/java/dev/zayt/atrilha/StaticAssetsCssIT.java
-src/test/java/dev/zayt/atrilha/StaticAssetsFingerprintCoverageIT.java
-src/test/java/dev/zayt/atrilha/StaticAssetsFingerprintProdIT.java
-src/test/java/dev/zayt/atrilha/auth/web/Error403PageTest.java
-src/test/java/dev/zayt/atrilha/web/HomeControllerTest.java
-src/test/resources/application-test.properties
+src/main/resources/templates/cadastro/adolescente_escolher_metodo.html
 ```
 
 ## Diff (stat)
 ```
- REVIEW.md                                          |  14 -
- SUMMARY.md                                         | 270 +++--------
- pom.xml                                            |   7 +-
- src/main/frontend/css/app.css                      | 502 --------------------
- .../fonts/bricolage-grotesque-latin-600.woff2      | Bin 22456 -> 0 bytes
- .../fonts/bricolage-grotesque-latin-700.woff2      | Bin 22384 -> 0 bytes
- .../resources/static/fonts/inter-latin-400.woff2   | Bin 23664 -> 0 bytes
- .../resources/static/fonts/inter-latin-500.woff2   | Bin 24272 -> 0 bytes
- .../resources/static/fonts/inter-latin-600.woff2   | Bin 24452 -> 0 bytes
- src/main/resources/templates/auth/login.html       | 217 ++++-----
- src/main/resources/templates/comecar.html          | 126 +----
- src/main/resources/templates/home.html             | 111 +----
- src/main/resources/templates/layout/public.html    |  21 -
- .../java/dev/zayt/atrilha/NotFoundPageTest.java    |  42 --
- .../zayt/atrilha/StaticAssetsCssCoverageIT.java    | 519 ---------------------
- .../java/dev/zayt/atrilha/StaticAssetsCssIT.java   | 215 ---------
- .../atrilha/StaticAssetsFingerprintCoverageIT.java | 307 ------------
- .../atrilha/StaticAssetsFingerprintProdIT.java     | 160 -------
- .../zayt/atrilha/auth/web/Error403PageTest.java    |  98 ----
- .../dev/zayt/atrilha/web/HomeControllerTest.java   |  37 --
- src/test/resources/application-test.properties     |   8 +-
- 21 files changed, 180 insertions(+), 2474 deletions(-)
+ src/main/frontend/css/app.css                      | 100 ++++++++++++++++
+ .../cadastro/adolescente_escolher_metodo.html      | 128 +++++++++++++++------
+ 2 files changed, 191 insertions(+), 37 deletions(-)
 ```
 
 ## O que foi feito
-<!-- AGENTE: preencha aqui em 3-6 linhas. O QUE mudou e POR QUÊ.
-     Decisões implícitas tomadas durante a execução.
-     Pontos de atenção / dúvidas para o Revisor.
-     Autoavaliação dos critérios de aceitação da issue. -->
+
+Reescrita completa do template `cadastro/adolescente_escolher_metodo.html` para alinhar a tela de escolha de método ao protótipo aprovado (`doc/UX/prototypes/cadastro-adolescente-metodo.html`). Principais mudanças:
+
+1. **Decorator migrado** de `layout/base` para `layout/public` — tela pré-login, sem header/footer/nav do app logado.
+2. **Novo header** com botão voltar (→ `/comecar`) + marca atrilha (SVG brand-mark + wordmark).
+3. **Bloco social padronizado**: Google e Apple em `<div class="social-stack">`, ambos `disabled` + `aria-disabled="true"` com `data-test="cta-google-disabled"` / `cta-apple-disabled`. Nota de indisponibilidade adicionada.
+4. **Divisor "ou"** e botão e-mail ativo (`class="btn-email"`) apontando para `/cadastro/adolescente`, com SVG de seta inline.
+5. **Callout info** sobre vinculação do responsável + link "Voltar pro começo" → `/comecar`.
+6. **CSS adicionado** em `app.css`: `.social-stack`, `.btn-social`, `.social-note`, `.divider`, `.btn-email`, `.note` — todos reutilizando tokens `var(--*)` existentes, sem hex redeclarado. Classes são reutilizáveis (não scoped a uma US).
+
+Autoavaliação: todos os 6 critérios de aceitação da issue atendidos. `mvn test` verde (159 testes, 0 falhas). Zero warnings de compilação.
 
 ## ⚠️ Checagem LGPD (atrilha)
-<!-- AGENTE: se o diff TOCA consentimento, compartilhamento, ou dados de
-     menor (13-17), declare explicitamente quais ADRs (005/006/007) foram
-     respeitados e como. Se NÃO toca nada disso, escreva "N/A — sem
-     superfície de dados pessoais". -->
+
+N/A — sem superfície de dados pessoais. Esta task altera apenas a camada de apresentação (template Thymeleaf + CSS) da tela de escolha de método de cadastro. Não toca em consentimento, compartilhamento, dados de menor (13–17), ou qualquer lógica de ADR-005/006/007.
