@@ -13,7 +13,7 @@
         "generationConfig": {
           "timeout": 600000,
           "maxRetries": 2,
-          "contextWindowSize": 32768,
+          "contextWindowSize": 131072,
           "samplingParams": {
             "temperature": 0.2,
             "top_p": 0.9
@@ -28,7 +28,7 @@
         "generationConfig": {
           "timeout": 600000,
           "maxRetries": 2,
-          "contextWindowSize": 32768,
+          "contextWindowSize": 86016,
           "samplingParams": {
             "temperature": 0.1,
             "top_p": 0.9
@@ -67,7 +67,19 @@
       "Bash(./mvnw *)",
       "Bash(git rm *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(ls *)",
+      "Bash(gh *)",
+      "Bash(do *)",
+      "Bash(then *)",
+      "Bash(else *)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(file *)",
+      "Bash(grep *)",
+      "Bash(xxd *)",
+      "Bash(readlink *)",
+      "Bash(stat *)"
     ]
   }
 }

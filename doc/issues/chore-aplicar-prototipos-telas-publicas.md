@@ -88,9 +88,11 @@ Aplicar o protótipo `login.html` **preservando o contrato funcional intacto**:
 
 - `<form th:action="@{/login}" method="post">`, hidden CSRF, `name="username"`/`name="password"`.
 - Banners de estado server-side via `th:if` (`errorState`, `infoState`) — manter `role`, `data-error="bad-credentials"`, `data-error="rate-limited"`, `data-state="logged-out"`. **Não** portar a "barra de demonstração" do protótipo (é só ferramenta de preview).
-- `disabled` dos campos em `rate-limited`; botão Google **nunca** `disabled`; `data-test="cta-google"`.
+- **Métodos principais Google e Apple no topo, desativados.** Decisão de produto: o login social é o caminho principal, mas ainda não liberado nesta fase. Renderizar os dois botões com `disabled` + `aria-disabled="true"` + `data-test="cta-google-disabled"` / `data-test="cta-apple-disabled"`, logo Google e logo Apple, e a legenda "Entrar com Google e Apple está indisponível no momento". O formulário de e-mail/senha fica **abaixo** do divisor "ou" e segue sendo o caminho ativo.
+- **⚠ Mudança de comportamento intencional:** hoje o login Google está ativo em produção (`data-test="cta-google"`). Esta task o desativa na UI e adiciona Apple (também desativado). A rota `/oauth2/authorization/google` e os handlers OAuth **não são removidos** — apenas o botão sai do ar. É a única mudança de comportamento desta issue; tudo mais é só apresentação.
+- `disabled` dos campos de e-mail/senha em `rate-limited` (comportamento atual mantido). Os botões social já são `disabled` por padrão nesta fase.
 - Toggle "mostrar senha" em Alpine; links "Esqueci minha senha" e "Criar conta".
-- Aplicar apenas a casca visual nova (header com voltar, `.input-field`, `.alert`, divisor, `.btn-google`).
+- Aplicar apenas a casca visual nova (header com voltar, `.input-field`, `.alert`, divisor, `.btn-social`).
 
 ## 6. Diretrizes técnicas
 
@@ -106,18 +108,19 @@ Aplicar o protótipo `login.html` **preservando o contrato funcional intacto**:
 2. As três telas usam `layout/public.html`; `layout/base.html` segue inalterado.
 3. Fontes Bricolage Grotesque e Inter carregam self-hosted, com `font-display: swap`; sem requisição a `fonts.googleapis.com`.
 4. `app.css` não contém hex de cor duplicado de token nem `@theme` redeclarado.
-5. Login: `POST /login` funciona; CSRF presente; os três banners aparecem nos estados corretos; campos desabilitam em `rate-limited`; botão Google permanece ativo.
+5. Login: `POST /login` funciona; CSRF presente; os três banners aparecem nos estados corretos; campos de e-mail/senha desabilitam em `rate-limited`; botões Google e Apple renderizados `disabled` no topo, com `data-test="cta-google-disabled"` / `cta-apple-disabled`; formulário de e-mail abaixo do divisor.
 6. `mvn test` passa — incluindo os testes existentes de `LoginPageTest`, `CadastroELoginIT`, `HomeControllerTest`, `StaticAssetsCssIT` e afins. Nenhum contrato `data-*`/`aria-*` quebrado.
 7. Compila com zero warnings; `prefers-reduced-motion` e foco acessível preservados.
 
 ## 8. Follow-ups (issues separadas)
 
+- **Telas de escolha de método (`cadastro/**`)** — protótipos `doc/UX/prototypes/cadastro-adolescente-metodo.html` e `cadastro-responsavel-metodo.html` prontos, com o mesmo bloco Google + Apple (desativados) + e-mail ativo. Aplicar em issue própria, alinhada à spec da US-002 — `cadastro/**` segue fora do escopo desta task (§3). A tela do responsável depende ainda do épico de cadastro de responsável (hoje `responsavel_em_breve.html`).
 - **`/trilha/{dia}`** — protótipo `doc/UX/prototypes/trilha-dia.html` pronto, mas a **rota ainda não está definida** (`/trilha/dia/{n}` vs. `/trilha/{slug-do-dia}`). Requer decisão de roteamento + criação da view (hoje só existe `trilha/placeholder.html`).
 - **`/trilha`** e **`/painel`** — protótipos `trilha.html` e `painel-pais.html` existentes; aplicar quando as US correspondentes (US-018+ e US-042+) entrarem. Hoje são placeholders.
 
 ## 9. Riscos
 
-- **Testes de markup acoplados** (`LoginPageTest`, `StaticAssetsCssIT`): a reescrita pode esbarrar em seletores/strings esperados. Mitigação: rodar a suíte cedo e ajustar markup para manter os contratos, **não** afrouxar os testes.
+- **Testes de markup acoplados** (`LoginPageTest`, `StaticAssetsCssIT`, `OAuthHandlersIT`): a reescrita pode esbarrar em seletores/strings esperados — em especial qualquer teste que verifique o botão Google ativo ou `data-test="cta-google"`. Mitigação: rodar a suíte cedo, atualizar as asserções do botão social para o novo estado (`disabled`, `cta-google-disabled`, `cta-apple-disabled`) e manter os contratos de banner/CSRF intactos.
 - **Decoração Thymeleaf Layout Dialect**: o novo `public.html` precisa expor `layout:fragment="content"` exatamente como `base.html` para o `layout:decorate` funcionar.
 - **Regressão de FOUT/FOIT** das fontes: validar `font-display: swap` e fallback `system-ui`.
 
