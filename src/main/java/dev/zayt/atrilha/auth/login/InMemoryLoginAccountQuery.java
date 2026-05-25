@@ -3,7 +3,7 @@
 
 package dev.zayt.atrilha.auth.login;
 
-import dev.zayt.atrilha.auth.AccountRole;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.security.crypto.password.PasswordEncoder;

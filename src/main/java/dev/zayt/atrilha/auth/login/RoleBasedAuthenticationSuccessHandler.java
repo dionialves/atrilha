@@ -1,7 +1,7 @@
 package dev.zayt.atrilha.auth.login;
 
-import dev.zayt.atrilha.auth.AccountRole;
-import dev.zayt.atrilha.auth.AuthenticatedPrincipal;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
+import dev.zayt.atrilha.auth.domain.AuthenticatedPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;

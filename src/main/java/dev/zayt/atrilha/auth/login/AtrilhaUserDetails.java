@@ -1,7 +1,7 @@
 package dev.zayt.atrilha.auth.login;
 
-import dev.zayt.atrilha.auth.AccountRole;
-import dev.zayt.atrilha.auth.AuthenticatedPrincipal;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
+import dev.zayt.atrilha.auth.domain.AuthenticatedPrincipal;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

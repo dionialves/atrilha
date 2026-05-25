@@ -1,6 +1,6 @@
 package dev.zayt.atrilha.auth.login;
 
-import dev.zayt.atrilha.auth.AccountRole;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;

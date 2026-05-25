@@ -1,6 +1,7 @@
 package dev.zayt.atrilha.auth.login;
 
 import dev.zayt.atrilha.AtrilhaApplication;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
 import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -92,7 +93,7 @@ class JpaLoginAccountQueryIT {
         var la = result.get();
         assertThat(la.email()).isEqualTo(email);
         assertThat(la.passwordHashBcrypt()).isEqualTo(hashed);
-        assertThat(la.role()).isEqualTo(dev.zayt.atrilha.auth.AccountRole.TEEN);
+        assertThat(la.role()).isEqualTo(dev.zayt.atrilha.accounts.domain.AccountRole.TEEN);
         assertThat(la.hasGuardianLink()).isFalse();
         assertThat(la.displayName()).isEqualTo("Julia");
     }
@@ -159,7 +160,7 @@ class JpaLoginAccountQueryIT {
 
         assertThat(result).isPresent();
         var la = result.get();
-        assertThat(la.role()).isEqualTo(dev.zayt.atrilha.auth.AccountRole.GUARDIAN);
+        assertThat(la.role()).isEqualTo(dev.zayt.atrilha.accounts.domain.AccountRole.GUARDIAN);
         assertThat(la.hasGuardianLink()).isFalse();
     }
 

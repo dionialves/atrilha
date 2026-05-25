@@ -1,7 +1,9 @@
 package dev.zayt.atrilha.accounts;
 
-import dev.zayt.atrilha.auth.AccountRole;
-import dev.zayt.atrilha.auth.AuthenticatedAccount;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
+import dev.zayt.atrilha.accounts.domain.Account;
+import dev.zayt.atrilha.accounts.repository.AccountRepository;
+import dev.zayt.atrilha.auth.domain.AuthenticatedAccount;
 import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 
 import java.time.Clock;

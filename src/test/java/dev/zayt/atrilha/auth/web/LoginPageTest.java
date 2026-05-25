@@ -1,7 +1,7 @@
 package dev.zayt.atrilha.auth.web;
 
 import dev.zayt.atrilha.AtrilhaApplication;
-import dev.zayt.atrilha.auth.AccountRole;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
 import dev.zayt.atrilha.auth.login.AtrilhaUserDetails;
 import dev.zayt.atrilha.auth.login.LoginAccountQuery;
 import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;

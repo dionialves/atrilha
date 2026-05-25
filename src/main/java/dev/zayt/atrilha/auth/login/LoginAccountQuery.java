@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.auth.login;
 
+import dev.zayt.atrilha.accounts.domain.AccountRole;
+
 import java.io.Serializable;
 import java.util.Optional;
 
@@ -27,7 +29,7 @@ public interface LoginAccountQuery {
             String email,
             /* nullable para contas OAuth-only (sem senha local) */
             String passwordHashBcrypt,
-            dev.zayt.atrilha.auth.AccountRole role,
+            AccountRole role,
             boolean hasGuardianLink,
             String displayName) implements Serializable {
     }

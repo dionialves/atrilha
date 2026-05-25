@@ -1,9 +1,11 @@
 package dev.zayt.atrilha.auth;
 
 import dev.zayt.atrilha.AtrilhaApplication;
-import dev.zayt.atrilha.accounts.Account;
 import dev.zayt.atrilha.accounts.AccountTestFactory;
-import dev.zayt.atrilha.accounts.EmailVerificationTokenRepository;
+import dev.zayt.atrilha.accounts.domain.Account;
+import dev.zayt.atrilha.accounts.domain.AccountRegisteredEvent;
+import dev.zayt.atrilha.auth.verification.EmailVerificationTokenRepository;
+import dev.zayt.atrilha.auth.verification.EmailVerificationService;
 import dev.zayt.atrilha.notifications.RecordedEmail;
 import dev.zayt.atrilha.notifications.RecordingEmailSender;
 import jakarta.persistence.EntityManager;

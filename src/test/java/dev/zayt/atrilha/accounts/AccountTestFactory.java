@@ -1,5 +1,6 @@
 package dev.zayt.atrilha.accounts;
 
+import dev.zayt.atrilha.accounts.domain.Account;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 

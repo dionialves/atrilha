@@ -1,5 +1,8 @@
 package dev.zayt.atrilha.accounts;
 
+import dev.zayt.atrilha.accounts.avatar.FilesystemAvatarStorage;
+import dev.zayt.atrilha.accounts.avatar.AvatarTooLargeException;
+import dev.zayt.atrilha.accounts.avatar.AvatarUnsupportedTypeException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

@@ -1,8 +1,9 @@
 package dev.zayt.atrilha.auth.login;
 
-import dev.zayt.atrilha.accounts.Account;
-import dev.zayt.atrilha.accounts.AccountProfileLookup;
-import dev.zayt.atrilha.auth.AccountRole;
+import dev.zayt.atrilha.accounts.domain.Account;
+import dev.zayt.atrilha.accounts.repository.AccountProfileLookup;
+import dev.zayt.atrilha.accounts.repository.AccountReader;
+import dev.zayt.atrilha.accounts.domain.AccountRole;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -25,10 +26,10 @@ import java.util.Optional;
 @ConditionalOnProperty(name = "atrilha.auth.seed.enabled", havingValue = "false", matchIfMissing = true)
 class JpaLoginAccountQuery implements LoginAccountQuery {
 
-    private final dev.zayt.atrilha.accounts.AccountReader accountReader;
+    private final AccountReader accountReader;
     private final AccountProfileLookup adolescentProfileLookup;
 
-    JpaLoginAccountQuery(dev.zayt.atrilha.accounts.AccountReader accountReader,
+    JpaLoginAccountQuery(AccountReader accountReader,
                          AccountProfileLookup adolescentProfileLookup) {
         this.accountReader = accountReader;
         this.adolescentProfileLookup = adolescentProfileLookup;

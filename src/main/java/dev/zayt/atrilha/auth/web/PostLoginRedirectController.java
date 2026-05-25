@@ -1,6 +1,6 @@
 package dev.zayt.atrilha.auth.web;
 
-import dev.zayt.atrilha.auth.AuthenticatedPrincipal;
+import dev.zayt.atrilha.auth.domain.AuthenticatedPrincipal;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

@@ -1,6 +1,9 @@
 package dev.zayt.atrilha.accounts;
 
 import dev.zayt.atrilha.AtrilhaApplication;
+import dev.zayt.atrilha.accounts.domain.Account;
+import dev.zayt.atrilha.auth.verification.EmailVerificationToken;
+import dev.zayt.atrilha.auth.verification.EmailVerificationTokenRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
