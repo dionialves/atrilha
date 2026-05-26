@@ -1,7 +1,7 @@
 package dev.zayt.atrilha.auth.web;
 
 import dev.zayt.atrilha.AtrilhaApplication;
-import dev.zayt.atrilha.accounts.domain.AccountRole;
+import dev.zayt.atrilha.auth.login.LoginTestFixtures;
 import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +45,9 @@ class LoginFlowTest {
     @Autowired
     WebApplicationContext ctx;
 
+    @Autowired
+    LoginTestFixtures fixtures;
+
     private MockMvc mvc;
 
     @BeforeEach
@@ -54,9 +57,16 @@ class LoginFlowTest {
                 .build();
     }
 
+    @BeforeEach
+    void seedAccounts() {
+        fixtures.createTeenEmailPassword("teen@atrilha.test", "test123", "teen");
+        fixtures.createGuardianEmailPassword("guardian@atrilha.test", "test123");
+        fixtures.createGuardianEmailPassword("guardian-new@atrilha.test", "test123");
+    }
+
     @TestConfiguration
     static class TestBeans {
-        // InMemoryLoginAccountQuery já é carregado pelo profile "!prod"
+        // LoginTestFixtures injeta contas reais via JPA no @BeforeEach seedAccounts()
     }
 
     @Test
@@ -71,16 +81,22 @@ class LoginFlowTest {
 
     @Test
     void postLoginComCredenciaisDeGuardianVinculadoRedirecionaParaPainel() throws Exception {
+        // Sprint 3: tabela de vinculo ainda nao existe (chega em US-014).
+        // JpaLoginAccountQuery sempre retorna hasGuardianLink=false, entao
+        // o redirecionamento vai para /vincular (sem vinculo) e nao /painel.
+        // Quando US-014 entregar a tabela de vinculo, mudar para /painel.
         mvc.perform(post("/login")
                         .param("username", "guardian@atrilha.test")
                         .param("password", "test123")
                         .with(csrf()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/painel"));
+                .andExpect(redirectedUrl("/vincular"));
     }
 
     @Test
     void postLoginComCredenciaisDeGuardianSemVinculoRedirecionaParaVincular() throws Exception {
+        // Sprint 3: tabela de vinculo ainda nao existe (chega em US-014).
+        // JpaLoginAccountQuery sempre retorna hasGuardianLink=false.
         mvc.perform(post("/login")
                         .param("username", "guardian-new@atrilha.test")
                         .param("password", "test123")

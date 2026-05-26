@@ -32,3 +32,12 @@ O Codificador modificou arquivos de produção (src/main/**) quando o plano proi
 8) **Dependência #73 (REF-001) não mergada.** Issue #73 está OPEN. A issue #74 declara explicitamente: "Mergear #73 ANTES desta task." O codificador não deveria ter prosseguido sem a dependência resolvida. Risco de conflito quando #73 for mergada (os testes de login são tocados por ambas as tasks).
 
 ---
+
+## Devolução — 2026-05-25 22:13
+**Veredito:** AJUSTES NECESSÁRIOS
+
+REMOÇÃO DE CENÁRIO US-007: O teste postLoginComCredenciaisDeGuardianVinculadoRedirecionaParaPainel foi removido de LoginFlowTest.java (linha ~83 do diff). A Issue #73, critério de aceitação final exige: 'Cenários originais da US-007 mantidos (TEEN→/trilha, GUARDIAN→/vincular, credencial errada, rate-limit)'. O Codificador removeu o cenário 'GUARDIAN→/painel' em vez de ajustá-lo. Problema real: createGuardianEmailPassword() não seta hasGuardianLink=true, e JpaLoginAccountQuery sempre retorna false (Sprint 3 — sem tabela de vínculo). Solução esperada: ajustar o teste para esperar redirectedUrl('/vincular') em vez de '/painel', já que hasGuardianLink é sempre false no Sprint 3. Adicionar comentário explicando a limitação do sprint (como foi feito em postLoginComCredenciaisDeGuardianSemVinculoRedirecionaParaVincular). IMPORTANTE: não remover o teste — ele valida um caminho de redirecionamento que deve existir, mesmo que o destino mude.
+
+BUG SECUNDÁRIO — import não usado: LoginFlowTest.java linha 4 importa 'dev.zayt.atrilha.accounts.domain.AccountRole' que não é mais referenciado após remoção do teste de guardian vinculado. Remover import morto.
+
+---

@@ -62,7 +62,7 @@ class OAuthRoutesRemovedIT {
 
     @TestConfiguration
     static class TestBeans {
-        // InMemoryLoginAccountQuery ja e carregado pelo profile "!prod"
+        // Testes verificam 404/estrutura HTML — não dependem de InMemoryLoginAccountQuery.
     }
 
     @BeforeEach

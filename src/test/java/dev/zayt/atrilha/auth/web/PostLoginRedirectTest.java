@@ -58,7 +58,7 @@ class PostLoginRedirectTest {
 
     @TestConfiguration
     static class TestBeans {
-        // InMemoryLoginAccountQuery já é carregado pelo profile "!prod"
+        // Testes usam SecurityContext mockado — não dependem de InMemoryLoginAccountQuery.
     }
 
     private org.springframework.security.core.context.SecurityContext createSecurityContext(AtrilhaUserDetails userDetails) {

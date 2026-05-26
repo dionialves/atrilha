@@ -216,6 +216,6 @@ class JpaLoginAccountQueryIT {
 
     @org.springframework.boot.test.context.TestConfiguration
     static class TestBeans {
-        // InMemoryLoginAccountQuery desligado por atrilha.auth.seed.enabled=false
+        // JPA puro — InMemoryLoginAccountQuery desativado via @TestPropertySource.
     }
 }

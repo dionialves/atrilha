@@ -147,6 +147,6 @@ class CadastroELoginIT {
 
     @org.springframework.boot.test.context.TestConfiguration
     static class TestBeans {
-        // InMemoryLoginAccountQuery desligado por atrilha.auth.seed.enabled=false
+        // Cadastro via US-001 + login JPA — InMemoryLoginAccountQuery desativado.
     }
 }

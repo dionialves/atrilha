@@ -1,6 +1,7 @@
 package dev.zayt.atrilha.auth.web;
 
 import dev.zayt.atrilha.AtrilhaApplication;
+import dev.zayt.atrilha.auth.login.LoginTestFixtures;
 import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,9 @@ class LoginRateLimitIT {
     @Autowired
     WebApplicationContext ctx;
 
+    @Autowired
+    LoginTestFixtures fixtures;
+
     private MockMvc mvc;
 
     @BeforeEach
@@ -75,9 +79,14 @@ class LoginRateLimitIT {
                 .build();
     }
 
+    @BeforeEach
+    void seedAccount() {
+        fixtures.createTeenEmailPassword("teen@atrilha.test", "test123", "teen");
+    }
+
     @TestConfiguration
     static class TestBeans {
-        // InMemoryLoginAccountQuery já é carregado pelo profile "!prod"
+        // LoginTestFixtures injeta conta real via JPA no @BeforeEach seedAccount()
     }
 
     @Test
