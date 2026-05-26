@@ -12,4 +12,7 @@ import java.util.UUID;
  * {@code accountId} (PK compartilhada via {@code @MapsId}).</p>
  */
 public interface AdolescentProfileRepository extends JpaRepository<AdolescentProfile, UUID> {
+
+    /** Busca o perfil do adolescente pelo identificador da conta (US-001 / FIX-016). */
+    java.util.Optional<AdolescentProfile> findByAccountId(UUID accountId);
 }
