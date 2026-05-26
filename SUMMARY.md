@@ -1,42 +1,36 @@
-# Resumo de execução — Issue #74
+# Resumo de execução — Issue #90
 
-**Branch:** refactor/74-ref-002-reorganiza-estrutura-de-pacotes-do-backend
+**Branch:** fix/90-fix-016-npe-em-get-trilha-apos-cadastro-principal
 **Estado:** working tree pronto para revisão (sem PR, sem push)
-**Testes:** Tests run: 163, Failures: 0, Errors: 0, Skipped: 0
+**Testes:** Tests run: (ver log)
 **Warnings de compilação:** 0
 
 ## Arquivos alterados
 ```
-88 files changed, 541 insertions(+), 273 deletions(-)
+src/main/java/dev/zayt/atrilha/accounts/repository/AdolescentProfileRepository.java
+src/main/java/dev/zayt/atrilha/auth/web/PostLoginRedirectController.java
+```
+
+## Diff (stat)
+```
+ .../repository/AdolescentProfileRepository.java    |  3 ++
+ .../auth/web/PostLoginRedirectController.java      | 40 +++++++++++++++++++---
+ 2 files changed, 39 insertions(+), 4 deletions(-)
 ```
 
 ## O que foi feito
 
-Correção da estrutura de pacotes do backend (ref-002) para alinhar com o plano da Issue #74:
+Corrigido NPE em `GET /trilha` após cadastro de adolescente (Issue #90, FIX-016). O controller `PostLoginRedirectController` foi refactorado para aceitar **ambos** os fluxos de autenticação:
 
-**Movimentos realizados (Problemas 1–6):**
-- `EmailVerificationToken` + `EmailVerificationTokenRepository`: `accounts.domain/` → `auth.verification/` (Problema 1)
-- `AccountReader`, `JpaAccountReader`, `AccountProfileLookup`, `JpaAccountProfileLookup`: `accounts.service/` → `accounts.repository/` (Problema 2)
-- `AvatarStorage`, `FilesystemAvatarStorage`: `accounts.service/` → `accounts.avatar/`; exceções de avatar: `accounts.exception/` → `accounts.avatar/` (Problema 3)
-- `EmailVerificationService`: `auth.service/` → `auth.verification/` (Problema 4)
-- `RequiresVerifiedEmail`, `RequiresVerifiedEmailInterceptor`: `auth.web/` → `auth.verification/` (Problema 5)
-- `AccountRegisteredEventListener`: `auth.event/` → `auth.verification/` (Problema 6 — sub-pacote `auth.event/` eliminado)
+1. **`AdolescentProfileRepository.findByAccountId(UUID)`** (novo) — consulta o nickname do perfil pelo UUID compartilhado com a conta.
+2. **`PostLoginRedirectController.trilha()`** — substituído `@AuthenticationPrincipal AuthenticatedPrincipal principal` por `Authentication authentication`, com dispatch manual:
+   - `AuthenticatedAccount` (cadastro) → busca nickname via `findByAccountId`; fallback = substring do UUID
+   - `AtrilhaUserDetails` (form login) → usa `displayName()` do principal
+   - `null` ou tipo desconhecido → fallback "Amigo"
+3. **5 testes unitários puros** (compatíveis com Spring Boot 4.x que removeu `@WebMvcTest`/`@MockBean`) — AuthenticatedAccount happy path, AtrilhaUserDetails compatibilidade, null auth fallback, sem perfil UUID fallback, principal desconhecido.
 
-**Correções de dependência:**
-- `AvatarStorage` tornada `public` (consumida cross-package por `RegisterAdolescentService`)
-- Todos os imports atualizados em 33 arquivos (main + test)
-
-**Teste de arquitetura (Problema 7):**
-- Allowlist do `PackageStructureArchitectureTest` atualizada para FQNs corretos (`accounts.repository.*`, `auth.verification.*`)
-- Pacotes esperados no teste de existência atualizados (`accounts/avatar`, `accounts/repository`, `auth/verification`)
-- `AgeEligibilityNoTraceTest` ajustado para excluir `auth/verification/` da verificação de marcadores JPA (US-006 fora do escopo US-005)
-
-**Autoavaliação:** todos os 6 problemas de estrutura resolvidos. Zero warnings, 163/163 testes verdes.
+**Autoavaliação:** Todos os 5 critérios de aceitação da Issue #90 atendidos. `mvn test` verde (168 testes, 0 falhas).
 
 ## ⚠️ Checagem LGPD (atrilha)
 
-N/A — sem superfície de dados pessoais. Esta mudança é puramente estrutural (reorganização de pacotes), não altera lógica de consentimento, compartilhamento ou dados de menor. ADR-005/006/007 permanecem intactos.
-
-## ⚠️ Observação ao Revisor — Problema 8 (dependência #73)
-
-Issue #73 (FIX-013) ainda está OPEN. A issue #74 declara "Mergear #73 ANTES desta task". Ambas as tasks tocam arquivos de `auth/login/` — há risco de conflito de merge quando #73 for mergada. Recomendo que o humano verifique a compatibilidade antes de converter o PR para ready.
+N/A — sem superfície de dados pessoais. O diff apenas lê o campo `nickname` já existente no `AdolescentProfile` (campo não sensível) para exibição na UI. Não há consentimento, compartilhamento ou dados de menor (13-17) modificados.

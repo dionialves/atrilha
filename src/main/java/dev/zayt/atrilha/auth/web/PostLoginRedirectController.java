@@ -1,7 +1,10 @@
 package dev.zayt.atrilha.auth.web;
 
+import dev.zayt.atrilha.accounts.domain.AdolescentProfile;
+import dev.zayt.atrilha.accounts.repository.AdolescentProfileRepository;
+import dev.zayt.atrilha.auth.domain.AuthenticatedAccount;
 import dev.zayt.atrilha.auth.domain.AuthenticatedPrincipal;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,9 +12,37 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 class PostLoginRedirectController {
 
+    private final AdolescentProfileRepository profileRepo;
+
+    PostLoginRedirectController(AdolescentProfileRepository profileRepo) {
+        this.profileRepo = profileRepo;
+    }
+
     @GetMapping("/trilha")
-    String trilha(@AuthenticationPrincipal AuthenticatedPrincipal principal, Model model) {
-        model.addAttribute("displayName", principal.displayName());
+    String trilha(Authentication authentication, Model model) {
+        if (authentication == null) {
+            model.addAttribute("displayName", "Amigo");
+            return "trilha/placeholder";
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        String displayName;
+        if (principal instanceof AuthenticatedAccount acc) {
+            // Fluxo de cadastro: principal é AuthenticatedAccount (UUID + role).
+            // Buscar o nickname do perfil do adolescente.
+            displayName = profileRepo.findByAccountId(acc.id())
+                    .map(AdolescentProfile::getNickname)
+                    .orElse(acc.id().toString().substring(0, 8));
+        } else if (principal instanceof AuthenticatedPrincipal ap) {
+            // Fluxo de form login: principal é AtrilhaUserDetails.
+            displayName = ap.displayName();
+        } else {
+            // Fallback defensivo (não deveria acontecer com Spring Security ativo).
+            displayName = "Amigo";
+        }
+
+        model.addAttribute("displayName", displayName);
         return "trilha/placeholder";
     }
 
@@ -21,10 +52,11 @@ class PostLoginRedirectController {
     }
 
     @GetMapping("/vincular")
-    String vincular(@AuthenticationPrincipal AuthenticatedPrincipal principal) {
+    String vincular(@org.springframework.security.core.annotation.AuthenticationPrincipal AuthenticatedPrincipal principal) {
         if (principal.hasGuardianLink()) {
             return "redirect:/painel";
         }
+        // TODO: mesmo problema para GUARDIAN via cadastro
         return "vinculacao/inserir-codigo-placeholder";
     }
 }
