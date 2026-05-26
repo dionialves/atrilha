@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -70,6 +71,9 @@ class LoginRateLimitIT {
     @Autowired
     LoginTestFixtures fixtures;
 
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
     private MockMvc mvc;
 
     @BeforeEach
@@ -81,6 +85,11 @@ class LoginRateLimitIT {
 
     @BeforeEach
     void seedAccount() {
+        // Container PostgreSQL é estático e persiste entre @Test;
+        // delete direto via SQL torna o seed idempotente (evita duplicate key no CI).
+        jdbcTemplate.execute(
+            "DELETE FROM accounts WHERE LOWER(email) = LOWER('teen@atrilha.test') AND deleted_at IS NULL"
+        );
         fixtures.createTeenEmailPassword("teen@atrilha.test", "test123", "teen");
     }
 
