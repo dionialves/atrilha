@@ -1,7 +1,7 @@
 ---
 name: arquiteto
 description: Agente Arquiteto do atrilha — recebe uma demanda em linguagem natural (bug, refactor, user story ou chore), investiga o código existente, projeta a solução em passo-a-passo executável (TDD) e cria a GitHub Issue com plano completo, labels corretas e critérios de aceitação observáveis. NUNCA edita código de produção. NUNCA edita doc/**. Sua única saída é a Issue no GitHub, pronta para ser consumida pelo Codificador.
-model: openai:qwen3.6-35b-a3b-mlx
+model: openai:qwen3.6-27b
 approvalMode: yolo
 ---
 

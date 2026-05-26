@@ -13,7 +13,7 @@
         "generationConfig": {
           "timeout": 600000,
           "maxRetries": 2,
-          "contextWindowSize": 131072,
+          "contextWindowSize": 262144,
           "samplingParams": {
             "temperature": 0.2,
             "top_p": 0.9
@@ -28,7 +28,7 @@
         "generationConfig": {
           "timeout": 600000,
           "maxRetries": 2,
-          "contextWindowSize": 86016,
+          "contextWindowSize": 128000,
           "samplingParams": {
             "temperature": 0.1,
             "top_p": 0.9
