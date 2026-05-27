@@ -36,14 +36,14 @@
         }
       },
       {
-        "id": "qwen3.6-27b",
+        "id": "qwen3.6-27b-ud-mlx",
         "name": "Qwen3 27B MLX (Arquiteto)",
         "envKey": "LMSTUDIO_API_KEY",
         "baseUrl": "http://localhost:1234/v1",
         "generationConfig": {
-          "timeout": 65536,
+          "timeout": 600000,
           "maxRetries": 2,
-          "contextWindowSize": 32768
+          "contextWindowSize": 128000
         }
       }
     ]

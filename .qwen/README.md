@@ -51,6 +51,8 @@ Precedência de descoberta dos agentes:
 ├── .gitignore                  # ignora worktrees/, node_modules/, etc.
 ├── settings.json               # provider LM Studio + modelos + auth
 ├── scripts/                    # scripts determinísticos (self-contained)
+│   ├── qwen.sh                 #  [wrapper] roda `qwen` com bodyTimeout do undici zerado
+│   ├── no-undici-timeout.cjs   #  [preload] usado pelo qwen.sh
 │   ├── start_task.sh           #  [Codificador] issue → worktree + branch
 │   ├── finish_task.sh          #  [Codificador] mvn test + SUMMARY.md
 │   ├── load_review.sh          #  [Revisor]    dossiê read-only
@@ -75,11 +77,14 @@ qwen --version
 ### 2. Subir o LM Studio Server
 
 - Aba **Developer** → **Start Server** (porta `1234`).
-- Habilite **JIT loading** e **deixe "Keep models loaded" DESLIGADO** (ou no máximo 1 modelo): nesta máquina só cabe **um** modelo 35B por vez na RAM, então o LM Studio precisa descarregar o anterior para subir o próximo. JIT cuida desse swap automaticamente quando o `qwen` faz uma requisição para um `id` diferente do carregado.
-- Como **Arquiteto e Revisor usam o mesmo modelo** (`qwen3.6-35b-a3b-mlx`), um ciclo completo (planejamento → implementação → revisão) tem só **uma troca**: `mlx → ud-mlx → mlx`.
+- Habilite **JIT loading** e **deixe "Keep models loaded" DESLIGADO** (ou no máximo 1 modelo): nesta máquina só cabe **um** modelo grande por vez na RAM, então o LM Studio precisa descarregar o anterior para subir o próximo. JIT cuida desse swap automaticamente quando o `qwen` faz uma requisição para um `id` diferente do carregado.
+- **Atenção ao `n_ctx` ao carregar o modelo no LM Studio.** O campo `contextWindowSize` em `.qwen/settings.json` é só o budget que o **cliente** declara — a janela real é a que o LM Studio carregou. Se o servidor subir o modelo com `n_ctx: 32768` e o cliente mandar prompt esperando 262144, o servidor **estoura o budget e dropa a conexão** (sintoma típico: desconexão no meio de geração, mesmo com `timeout` alto). Carregue cada modelo com `n_ctx` igual (ou maior) ao `contextWindowSize` declarado:
+  - `qwen3.6-35b-a3b-ud-mlx` → **n_ctx ≥ 262144** (Codificador).
+  - `qwen3.6-35b-a3b-mlx` → **n_ctx ≥ 262144** (Arquiteto + Revisor — mesmo modelo).
+- Como **Arquiteto e Revisor usam o mesmo modelo** (`qwen3.6-35b-a3b-mlx`), um ciclo completo (planejamento → implementação → revisão) tem só **dois swaps**: `35b-a3b-mlx → 35b-a3b-ud-mlx → 35b-a3b-mlx`. Cada swap custa 30–90s (já coberto pelos `timeout: 1800000` ms / 30 min).
 - Modelos esperados:
-  - `qwen3.6-35b-a3b-ud-mlx` — Codificador.
   - `qwen3.6-35b-a3b-mlx` — Arquiteto + Revisor (e default da sessão raiz).
+  - `qwen3.6-35b-a3b-ud-mlx` — Codificador.
   - `qwen3-14b-mlx` — fallback leve (opcional).
 
 Validar:
@@ -108,8 +113,45 @@ gh auth login                # autenticar no GitHub
 ### 5. Verificar scripts
 
 ```bash
-ls -l .qwen/scripts                   # 5 scripts executáveis
+ls -l .qwen/scripts                   # 7 scripts executáveis (5 shell + qwen.sh + preload)
 bash .qwen/scripts/start_task.sh      # sem args = mostra "uso: start_task <numero>"
+```
+
+### 6. Wrapper `qwen.sh` (anti "Body Timeout Error")
+
+O cliente HTTP do Node (`undici`) tem dois timeouts internos hardcoded em **5 min** que não são expostos pelo `generationConfig` do qwen-code:
+- `headersTimeout` — tempo máximo até receber os headers (cobre TTFT).
+- `bodyTimeout` — tempo máximo **entre chunks** do body de resposta.
+
+Para um modelo grande rodando local em LM Studio (MLX 35B), com prompt de 40k+ tokens e pressão de RAM, é fácil estourar 5 min e ver:
+
+- `qwen`: `✕ [API Error: terminated (cause: Body Timeout Error)]`
+- LM Studio: `Client disconnected. Stopping generation...`
+
+O `timeout: 1800000` (30 min) do `settings.json` **não cobre isso** — ele cobre o request inteiro via AbortController, mas o undici aborta antes pelo seu próprio body/headers timeout interno.
+
+**Solução**: rodar `qwen` via `bash .qwen/scripts/qwen.sh` (ou alias) em vez de chamar `qwen` direto. O wrapper injeta um preload Node que faz `setGlobalDispatcher(new Agent({ headersTimeout: 0, bodyTimeout: 0 }))`. O teto de 30 min do `generationConfig` continua valendo via AbortController.
+
+**Setup único** (depois é só usar o wrapper):
+
+```bash
+cd .qwen/scripts
+npm init -y && npm install undici     # node_modules/ já está no .gitignore
+cd -
+```
+
+**Uso** (substituindo `qwen` em todos os fluxos do README):
+
+```bash
+bash .qwen/scripts/qwen.sh                  # sessão interativa
+bash .qwen/scripts/qwen.sh -p "pergunta"    # one-shot
+QWEN_DEBUG_PRELOAD=1 bash .qwen/scripts/qwen.sh   # confirma que o patch foi aplicado
+```
+
+Sugestão de alias em `~/.zshrc` / `~/.bashrc`:
+
+```bash
+alias qwen='bash $HOME/sources/atrilha/.qwen/scripts/qwen.sh'
 ```
 
 ## Uso
@@ -168,8 +210,8 @@ qwen
 ## Notas
 
 - **PR sempre draft.** Rede contra Revisor local aprovar algo com teste verde mas lógica errada. Quando confiar nos pareceres, troque `--draft` em `approve.sh`.
-- **Sessões serializadas (1 modelo por vez).** A máquina não comporta dois 35B simultâneos na RAM. Rode **uma persona de cada vez**: feche a sessão do Codificador antes de abrir a do Revisor. O LM Studio descarrega `qwen3.6-35b-a3b-ud-mlx` e sobe `qwen3.6-35b-a3b-mlx` automaticamente via JIT no primeiro request do Revisor. **Não rode #61 e #58 em paralelo** — worktrees são isoladas, mas o modelo no LM Studio não é.
-- **Primeiro request após swap é lento.** Carga de um modelo 35B MLX leva 30–90s. Os `timeout: 600000` no `settings.json` cobrem isso; só fique atento à primeira resposta de cada role-switch.
+- **Sessões serializadas (1 modelo por vez).** A máquina não comporta dois modelos grandes simultâneos na RAM. Rode **uma persona de cada vez**: feche a sessão do Arquiteto antes de abrir a do Codificador, e a do Codificador antes da do Revisor. O LM Studio descarrega o anterior e sobe o próximo automaticamente via JIT no primeiro request. **Arquiteto → Revisor (ou Revisor → Arquiteto) não dispara swap**, pois compartilham `qwen3.6-35b-a3b-mlx`. **Não rode #61 e #58 em paralelo** — worktrees são isoladas, mas o modelo no LM Studio não é.
+- **Primeiro request após swap é lento.** Carga de um modelo MLX leva 30–90s. Os `timeout: 1800000` (30 min) no `settings.json` cobrem isso com folga; só fique atento à primeira resposta de cada role-switch.
 - **`reject` preserva a worktree** e escreve `REVIEW.md` — o Codificador retoma de onde parou.
 - **QA** está embutido no `mvn test` obrigatório de `finish_task`/`load_review` (verde é trava). Não há subagent QA dedicado no atrilha.
 - **Documentação canônica do ciclo**: `doc/workflow.md` (conceitual completo) e `AGENTS.md` (operacional).
@@ -182,6 +224,8 @@ qwen
 | Subagent não aparece em `/agents` | Frontmatter inválido | Conferir indentação YAML; `name`/`description` obrigatórios |
 | Modelo do subagent não muda | `model:` ausente ou typo | Usar prefixo `openai:` antes do id (ex.: `openai:qwen3.6-35b-a3b-mlx`) |
 | Subagent não roda script | `tools` filtrado demais | Não defina `tools` — herda todas as ferramentas do parent |
-| Primeira resposta após trocar de agente trava | LM Studio carregando o outro 35B (30–90s) | Esperar — `timeout: 600000` no `settings.json` cobre. NÃO ligue "Keep models loaded": não há RAM para os dois. |
-| LM Studio estoura RAM ao subir modelo | "Keep models loaded" ON forçando 2× 35B | Desligar em Settings → manter no máximo 1 modelo residente |
-| `mvn test` reclama de janela curta | Contexto do modelo subdimensionado | LM Studio → modelo carregado → `n_ctx` ≥ 32768 |
+| Primeira resposta após trocar de agente trava | LM Studio carregando o outro modelo (30–90s) | Esperar — `timeout: 1800000` (30 min) no `settings.json` cobre. NÃO ligue "Keep models loaded": não há RAM para os dois. |
+| LM Studio estoura RAM ao subir modelo | "Keep models loaded" ON forçando 2 modelos grandes | Desligar em Settings → manter no máximo 1 modelo residente |
+| Subagent **desconecta no meio da geração** | `n_ctx` carregado no LM Studio menor que `contextWindowSize` declarado em `settings.json` (servidor estoura budget e dropa conexão) | LM Studio → modelo carregado → ajustar `n_ctx` para casar com `contextWindowSize` do `settings.json` (hoje todos em 262144). Sintomas: drop sem erro claro, geração cortada após N tokens, primeira resposta longa falha. |
+| `qwen` mostra `terminated (cause: Body Timeout Error)` + LM Studio mostra `Client disconnected. Stopping generation...` | undici (cliente HTTP do Node) tem `bodyTimeout` interno hardcoded em 5 min entre chunks. Para modelo grande local com 40k+ tokens de prompt e/ou pressão de RAM, o stream pausa >5 min e o cliente aborta. Não é o `timeout` do `settings.json` — é interno ao Node. | Rodar via wrapper: `bash .qwen/scripts/qwen.sh` (zera `bodyTimeout`/`headersTimeout`). Setup único: `cd .qwen/scripts && npm init -y && npm install undici`. Ver §6 do Setup. |
+| `mvn test` reclama de janela curta | Contexto do modelo subdimensionado | LM Studio → modelo carregado → `n_ctx` ≥ 32768 (recomendado 262144 para casar com `settings.json`) |
