@@ -67,9 +67,10 @@ class AccountRegisteredEventListener {
         }
 
         UUID token = verificationService.issueToken(account);
-        String nickname = profileLookup.findNickname(accountId).orElse("");
+        String displayName = profileLookup.findDisplayName(accountId, account.getType())
+                .orElse("");
         try {
-            sender.sendVerification(account.getEmail(), nickname, token);
+            sender.sendVerification(account.getEmail(), displayName, token);
         } catch (RuntimeException e) {
             // Falha de SMTP não pode bombardear o pós-commit (a conta já foi
             // criada; o token já está no banco). O usuário consegue pedir

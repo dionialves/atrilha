@@ -22,4 +22,10 @@ public interface AccountProfileLookup {
      * cobrir os dois tipos polimorficamente.</p>
      */
     Optional<String> findNickname(UUID accountId);
+
+    /** Resolve o nome completo (full_name) do perfil de responsável pelo accountId. */
+    Optional<String> findFullName(UUID accountId);
+
+    /** Resolve o nome de exibição (nickname ou full_name) pelo accountId e type. */
+    Optional<String> findDisplayName(UUID accountId, String accountType);
 }

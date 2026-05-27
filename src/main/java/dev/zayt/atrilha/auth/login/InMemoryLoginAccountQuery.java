@@ -57,7 +57,9 @@ public class InMemoryLoginAccountQuery implements LoginAccountQuery {
     private LoginAccount toAccount(SeedConfig seed) {
         String email = seed.email();
         String displayName;
-        if (email == null || email.isBlank()) {
+        if (seed.displayName() != null && !seed.displayName().isBlank()) {
+            displayName = seed.displayName();
+        } else if (email == null || email.isBlank()) {
             displayName = "";
         } else {
             int at = email.indexOf('@');
@@ -100,6 +102,7 @@ public class InMemoryLoginAccountQuery implements LoginAccountQuery {
         private String password;
         private AccountRole role;
         private boolean hasGuardianLink;
+        private String displayName;
 
         public String email() { return email; }
         public void setEmail(String email) { this.email = email; }
@@ -112,5 +115,8 @@ public class InMemoryLoginAccountQuery implements LoginAccountQuery {
 
         public boolean hasGuardianLink() { return hasGuardianLink; }
         public void setHasGuardianLink(boolean hasGuardianLink) { this.hasGuardianLink = hasGuardianLink; }
+
+        public String displayName() { return displayName; }
+        public void setDisplayName(String displayName) { this.displayName = displayName; }
     }
 }
