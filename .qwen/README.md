@@ -1,4 +1,4 @@
-# Agentes locais do atrilha — Arquiteto + Codificador + Revisor (Qwen Code)
+# Agentes locais do atrilha — Scout + Arquiteto + Codificador + Revisor (Qwen Code)
 
 Fluxo de desenvolvimento assistido por LLM rodando 100% local via **Qwen Code CLI** (`https://github.com/QwenLM/qwen-code`) + **LM Studio**.
 
@@ -10,20 +10,25 @@ Filosofia: o LLM decide *o quê* fazer e *se aprova*; o *como* do Git é mecâni
 Dioni descreve a demanda em linguagem natural
    │
    ▼
-[subagent arquiteto]      investiga código → projeta plano TDD → gh issue create
-   │                                                                │
-   ▼                                                                ▼
-[subagent codificador]    start_task → implementa → finish_task   (mvn test verde + SUMMARY.md)
+[subagent arquiteto-scout]   investiga código (frugal) → coleta dados → escreve .qwen/briefs/<CODE>.md
+   │                                                                       │
+   ▼                                                                       ▼
+[subagent arquiteto]          lê APENAS o brief → decide arquitetura → gh issue create
    │
    ▼
-[subagent revisor]        load_review → audita 3 camadas → approve | reject
-   │                                       │         │
-   │                                  PR DRAFT   REVIEW.md (volta ao Codificador,
-   ▼                                                MESMA worktree)
+[subagent codificador]        start_task → implementa → finish_task   (mvn test verde + SUMMARY.md)
+   │
+   ▼
+[subagent revisor]            load_review → audita 3 camadas → approve | reject
+   │                                          │         │
+   │                                     PR DRAFT   REVIEW.md (volta ao Codificador,
+   ▼                                                   MESMA worktree)
 Dioni revisa PR draft → ready → merge → Issue fecha via Closes #N
 ```
 
-> O **Arquiteto** é opcional: Dioni pode criar Issues à mão (papel humano) e pular direto para o Codificador.
+> O **planejamento em duas fases** (Scout → Arquiteto) existe porque o modelo do Arquiteto (`qwen3.6-27b-mlx`) é mais inteligente em decisão fina mas tem janela ~68k tokens — não cabe explorar repo grande. O Scout (`qwen3.6-35b-a3b-mlx`, MoE, janela maior) faz a coleta exaustiva; o Arquiteto recebe um brief compacto e gasta sua inteligência só em decisão + redação da Issue extremamente detalhada.
+>
+> Ambas as fases são opcionais: Dioni pode criar Issues à mão e pular direto para o Codificador.
 
 **Uma task = uma worktree isolada = uma branch (`<tipo>/<N>-<slug>`) = um PR = um commit squash.** A worktree e a branch são criadas juntas por `start_task.sh`; o Revisor faz o squash + push + abertura do PR via `approve.sh`. As worktrees vivem em `.qwen/worktrees/` (gitignorada).
 
@@ -59,9 +64,12 @@ Precedência de descoberta dos agentes:
 │   ├── approve.sh              #  [Revisor]    squash → push → PR DRAFT
 │   └── reject.sh               #  [Revisor]    REVIEW.md, preserva worktree
 ├── agents/
-│   ├── arquiteto.md            # subagent Arquiteto   (model: openai:qwen3.6-35b-a3b-mlx)
+│   ├── arquiteto-scout.md      # subagent Scout       (model: openai:qwen3.6-35b-a3b-mlx) — coleta dados
+│   ├── arquiteto.md            # subagent Arquiteto   (model: openai:qwen3.6-27b-mlx)     — decide + redige
 │   ├── codificador.md          # subagent Codificador (model: openai:qwen3.6-35b-a3b-ud-mlx)
 │   └── revisor.md              # subagent Revisor     (model: openai:qwen3.6-35b-a3b-mlx)
+├── briefs/                     # handoff Scout → Arquiteto (gitignored, exceto README)
+│   └── README.md               # convenção de nome e ciclo de vida
 └── worktrees/                  # criadas e removidas dinamicamente (gitignored)
 ```
 
@@ -79,11 +87,13 @@ qwen --version
 - Aba **Developer** → **Start Server** (porta `1234`).
 - Habilite **JIT loading** e **deixe "Keep models loaded" DESLIGADO** (ou no máximo 1 modelo): nesta máquina só cabe **um** modelo grande por vez na RAM, então o LM Studio precisa descarregar o anterior para subir o próximo. JIT cuida desse swap automaticamente quando o `qwen` faz uma requisição para um `id` diferente do carregado.
 - **Atenção ao `n_ctx` ao carregar o modelo no LM Studio.** O campo `contextWindowSize` em `.qwen/settings.json` é só o budget que o **cliente** declara — a janela real é a que o LM Studio carregou. Se o servidor subir o modelo com `n_ctx: 32768` e o cliente mandar prompt esperando 262144, o servidor **estoura o budget e dropa a conexão** (sintoma típico: desconexão no meio de geração, mesmo com `timeout` alto). Carregue cada modelo com `n_ctx` igual (ou maior) ao `contextWindowSize` declarado:
+  - `qwen3.6-35b-a3b-mlx` → **n_ctx ≥ 262144** (Scout + Revisor — mesmo modelo).
   - `qwen3.6-35b-a3b-ud-mlx` → **n_ctx ≥ 262144** (Codificador).
-  - `qwen3.6-35b-a3b-mlx` → **n_ctx ≥ 262144** (Arquiteto + Revisor — mesmo modelo).
-- Como **Arquiteto e Revisor usam o mesmo modelo** (`qwen3.6-35b-a3b-mlx`), um ciclo completo (planejamento → implementação → revisão) tem só **dois swaps**: `35b-a3b-mlx → 35b-a3b-ud-mlx → 35b-a3b-mlx`. Cada swap custa 30–90s (já coberto pelos `timeout: 1800000` ms / 30 min).
+  - `qwen3.6-27b-mlx` → **n_ctx ≥ 68000** (Arquiteto — janela apertada por design, brief compacto cabe).
+- Como **Scout e Revisor usam o mesmo modelo** (`qwen3.6-35b-a3b-mlx`), o ciclo completo (scout → arquiteto → codificador → revisor) tem **três swaps**: `35b-a3b-mlx → 27b-mlx → 35b-a3b-ud-mlx → 35b-a3b-mlx`. Cada swap custa 30–90s (já coberto pelos `timeout: 1800000` ms / 30 min).
 - Modelos esperados:
-  - `qwen3.6-35b-a3b-mlx` — Arquiteto + Revisor (e default da sessão raiz).
+  - `qwen3.6-35b-a3b-mlx` — Scout + Revisor (e default da sessão raiz).
+  - `qwen3.6-27b-mlx` — Arquiteto (decisão fina; janela apertada exige brief do Scout).
   - `qwen3.6-35b-a3b-ud-mlx` — Codificador.
   - `qwen3-14b-mlx` — fallback leve (opcional).
 
@@ -156,17 +166,36 @@ alias qwen='bash $HOME/sources/atrilha/.qwen/scripts/qwen.sh'
 
 ## Uso
 
-### Sessão 1 — delegando ao Arquiteto (opcional)
+> **Como invocar subagents no Qwen Code**: o `qwen` não tem comando "mudar de persona"; você delega na própria mensagem inicial nomeando o agente. Frases canônicas abaixo. Sempre comece a sessão dentro do diretório do projeto e use o wrapper `qwen.sh` (ou alias `qwen`) para evitar `Body Timeout Error`.
+
+### Sessão 1a — delegando ao Scout (fase 1 do planejamento — opcional)
 
 ```bash
 cd /Users/dionia.oliveira/sources/atrilha
 qwen
-# >  Use o arquiteto para planejar a US-042 (cadastro com responsável).
-#   → o subagent arquiteto lê código (Read/Grep/Glob), consulta gh issue list
-#   → projeta plano TDD, escreve corpo da issue em /tmp/...md
+# >  Use o arquiteto-scout para preparar o brief da US-042 (cadastro com responsável).
+#   → o subagent arquiteto-scout roda com modelo openai:qwen3.6-35b-a3b-mlx
+#   → lê código com política frugal (Grep + Read offset/limit), consulta gh issue list
+#   → escreve .qwen/briefs/US-042.md (dados factuais: arquivos, snippets literais, migrations, testes, issues relacionadas, LGPD, stack)
+#   → devolve: caminho do brief + "Use o arquiteto para gerar a Issue de US-042"
+```
+
+### Sessão 1b — delegando ao Arquiteto (fase 2 do planejamento — opcional)
+
+> Pode rodar na MESMA sessão depois do Scout (não dispara swap se você ficar no mesmo modelo) OU em sessão nova. Como Scout usa 35b-a3b-mlx e Arquiteto usa 27b-mlx, **há um swap** entre as duas fases.
+
+```bash
+cd /Users/dionia.oliveira/sources/atrilha
+qwen
+# >  Use o arquiteto para gerar a Issue de US-042.
+#   → o subagent arquiteto roda com modelo openai:qwen3.6-27b-mlx
+#   → lê APENAS .qwen/briefs/US-042.md (não abre código do projeto)
+#   → decide arquitetura, escreve corpo da Issue com detalhe extremo (zero-decisão para Codificador)
 #   → roda: gh issue create --title "US-042: ..." --label user-story --body-file ...
 #   → devolve: #142 — https://github.com/.../issues/142 → próximo agente: codificador
 ```
+
+**Se o brief não existir** (`.qwen/briefs/US-042.md` ausente), o Arquiteto para e pede ao Dioni rodar o Scout antes.
 
 ### Sessão 2 — delegando ao Codificador
 
@@ -210,7 +239,7 @@ qwen
 ## Notas
 
 - **PR sempre draft.** Rede contra Revisor local aprovar algo com teste verde mas lógica errada. Quando confiar nos pareceres, troque `--draft` em `approve.sh`.
-- **Sessões serializadas (1 modelo por vez).** A máquina não comporta dois modelos grandes simultâneos na RAM. Rode **uma persona de cada vez**: feche a sessão do Arquiteto antes de abrir a do Codificador, e a do Codificador antes da do Revisor. O LM Studio descarrega o anterior e sobe o próximo automaticamente via JIT no primeiro request. **Arquiteto → Revisor (ou Revisor → Arquiteto) não dispara swap**, pois compartilham `qwen3.6-35b-a3b-mlx`. **Não rode #61 e #58 em paralelo** — worktrees são isoladas, mas o modelo no LM Studio não é.
+- **Sessões serializadas (1 modelo por vez).** A máquina não comporta dois modelos grandes simultâneos na RAM. Rode **uma persona de cada vez**: feche a sessão do Scout antes de abrir a do Arquiteto, do Arquiteto antes da do Codificador, e do Codificador antes da do Revisor. O LM Studio descarrega o anterior e sobe o próximo automaticamente via JIT no primeiro request. **Scout → Revisor (ou Revisor → Scout) não dispara swap**, pois compartilham `qwen3.6-35b-a3b-mlx`. **Não rode #61 e #58 em paralelo** — worktrees são isoladas, mas o modelo no LM Studio não é.
 - **Primeiro request após swap é lento.** Carga de um modelo MLX leva 30–90s. Os `timeout: 1800000` (30 min) no `settings.json` cobrem isso com folga; só fique atento à primeira resposta de cada role-switch.
 - **`reject` preserva a worktree** e escreve `REVIEW.md` — o Codificador retoma de onde parou.
 - **QA** está embutido no `mvn test` obrigatório de `finish_task`/`load_review` (verde é trava). Não há subagent QA dedicado no atrilha.
