@@ -168,6 +168,20 @@ alias qwen='bash $HOME/sources/atrilha/.qwen/scripts/qwen.sh'
 
 > **Como invocar subagents no Qwen Code**: o `qwen` não tem comando "mudar de persona"; você delega na própria mensagem inicial nomeando o agente. Frases canônicas abaixo. Sempre comece a sessão dentro do diretório do projeto e use o wrapper `qwen.sh` (ou alias `qwen`) para evitar `Body Timeout Error`.
 
+### ⚠️ Armadilha de roteamento: NÃO use "planejar" sem citar o `arquiteto-scout`
+
+O agente raiz do qwen-code faz match semântico entre a sua mensagem e a `description` dos subagents. Frases ambíguas como **"crie o planejamento da US-XXX"** ou **"planeje a US-XXX"** podem ser roteadas para o `arquiteto` (que cria a Issue) em vez do `arquiteto-scout` (que faz a investigação). O `arquiteto` é gatilho da **fase 2** e tem protocolo de recusa formal quando o brief não existe — mas o ideal é não chegar até essa recusa.
+
+**Sempre nomeie o agente explicitamente na primeira mensagem da sessão**:
+
+- ✅ `Use o arquiteto-scout para preparar o brief de US-004. Escopo: ...`
+- ✅ `Use o arquiteto para gerar a Issue de US-004` (somente depois do scout ter escrito o brief)
+- ❌ `Planeje a US-004` (ambíguo — pode ir para o `arquiteto`)
+- ❌ `Crie o planejamento da US-004` (idem)
+- ❌ `Investigue e crie a Issue da US-004` (idem; mistura as duas fases)
+
+Se mesmo nomeando `arquiteto-scout` o qwen-code rotear para o `arquiteto`, o `arquiteto` deve recusar formalmente e devolver com instrução clara para invocar o scout. Se isso acontecer com frequência, abra Issue no qwen-code reportando o picker.
+
 ### Sessão 1a — delegando ao Scout (fase 1 do planejamento — opcional)
 
 ```bash
@@ -179,6 +193,37 @@ qwen
 #   → escreve .qwen/briefs/US-042.md (dados factuais: arquivos, snippets literais, migrations, testes, issues relacionadas, LGPD, stack)
 #   → devolve: caminho do brief + "Use o arquiteto para gerar a Issue de US-042"
 ```
+
+### Sessão 1a-bis — quando o Scout detecta demanda grande (slicing)
+
+Se a demanda investigada estoura os limites de "brief único" (> 2 camadas, > 5 arquivos, > 1 migration, > 1 fluxo de UI, > 5 testes novos), o Scout NÃO escreve um brief gigante. Em vez disso, escreve uma **slicing proposal** em `.qwen/briefs/<CODE>-slicing.md` propondo 2-6 slices independentemente entregáveis com ordem topológica.
+
+Fluxo completo nesse caso:
+
+```bash
+# 1ª passada — Scout detecta tamanho e propõe quebra:
+> Use o arquiteto-scout para preparar o brief de US-042
+#   → Scout descobre que é grande, escreve .qwen/briefs/US-042-slicing.md
+#   → Devolve: "Revise .qwen/briefs/US-042-slicing.md e responda com 'gerar os briefs das slices aprovadas de US-042'"
+
+# Humano abre US-042-slicing.md, lê a proposta, decide:
+#   - Aprovar: comando abaixo
+#   - Refinar: "Refaça a slicing proposal de US-042 considerando <ajuste>"
+
+# 2ª passada — Scout escreve os briefs das slices aprovadas:
+> Use o arquiteto-scout para gerar os briefs das slices aprovadas de US-042
+#   → Scout produz .qwen/briefs/US-042-a.md, US-042-b.md, US-042-c.md, ...
+#   → Cada brief com "Depende de: <CODE>-<letra>" (códigos, não #N)
+#   → Devolve a lista em ordem topológica
+
+# Para cada slice, em ordem topológica (Arquiteto resolve dependências via gh):
+> Use o arquiteto para gerar a Issue de US-042-a   # cria #142
+> Use o arquiteto para gerar a Issue de US-042-b   # resolve "Depende de US-042-a" → #142
+> Use o arquiteto para gerar a Issue de US-042-c   # resolve dependências
+# (Arquiteto recusa se você invocar fora de ordem; não cria Issue cuja dependência ainda não virou Issue)
+```
+
+Convenção e detalhes em [`.qwen/briefs/README.md`](briefs/README.md).
 
 ### Sessão 1b — delegando ao Arquiteto (fase 2 do planejamento — opcional)
 
