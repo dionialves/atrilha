@@ -1515,3 +1515,44 @@ a {
     height: 15px;
     width: 15px;
 }
+
+/* =============================================================================
+ * Código de vinculação — 6 dígitos (usado na tela /vincular)
+ * ============================================================================= */
+
+.codigo-grid {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: center;
+    margin-bottom: var(--space-4);
+}
+
+.codigo-grid__digit {
+    width: 3rem;
+    height: var(--input-min-height);
+    text-align: center;
+    font-family: var(--font-mono, monospace);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.15em;
+    /* Reutiliza tokens de .input-field */
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--input-radius);
+    color: var(--color-text-body);
+    transition: border-color var(--duration-fast) var(--ease-out-soft);
+}
+
+.codigo-grid__digit:focus {
+    border-color: var(--input-border-focus);
+    outline: none;
+    box-shadow: var(--shadow-focus);
+}
+
+/* Responsivo: reduzir em telas pequenas */
+@media (max-width: 360px) {
+    .codigo-grid__digit {
+        width: 2.5rem;
+        font-size: var(--text-xl);
+    }
+}
