@@ -66,6 +66,12 @@ class JpaLoginAccountQuery implements LoginAccountQuery {
             if (nickname.isPresent() && !nickname.get().isBlank()) {
                 return nickname.get();
             }
+        } else if (role == AccountRole.GUARDIAN) {
+            Optional<String> fullName = adolescentProfileLookup
+                    .findFullName(account.getId());
+            if (fullName.isPresent() && !fullName.get().isBlank()) {
+                return fullName.get();
+            }
         }
         // Fallback: parte antes do @ (consistente com InMemoryLoginAccountQuery)
         String email = account.getEmail();
