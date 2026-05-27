@@ -1,8 +1,8 @@
 package dev.zayt.atrilha.accounts.validation;
 
+import dev.zayt.atrilha.accounts.domain.AccountRole;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-
 import java.time.LocalDate;
 
 /**
@@ -18,7 +18,9 @@ import java.time.LocalDate;
  * violação compatível com o {@link dev.zayt.atrilha.accounts.domain.AccountRole}
  * ({@code TEEN_TOO_YOUNG} ou {@code GUARDIAN_TOO_YOUNG}).</p>
  */
-class EligibleAgeValidator implements ConstraintValidator<EligibleAge, LocalDate> {
+class EligibleAgeValidator
+    implements ConstraintValidator<EligibleAge, LocalDate>
+{
 
     private final AgeEligibilityChecker checker;
     private dev.zayt.atrilha.accounts.domain.AccountRole role;
@@ -33,7 +35,10 @@ class EligibleAgeValidator implements ConstraintValidator<EligibleAge, LocalDate
     }
 
     @Override
-    public boolean isValid(LocalDate birthDate, ConstraintValidatorContext context) {
+    public boolean isValid(
+        LocalDate birthDate,
+        ConstraintValidatorContext context
+    ) {
         if (birthDate == null) {
             // delega a @NotNull
             return true;
@@ -48,7 +53,8 @@ class EligibleAgeValidator implements ConstraintValidator<EligibleAge, LocalDate
         } catch (IllegalArgumentException e) {
             // data futura → trata como "muito jovem" para o role corrente,
             // preservando o contrato observável de "rejeitado".
-            String key = role == dev.zayt.atrilha.accounts.domain.AccountRole.TEEN
+            String key =
+                role == AccountRole.TEEN
                     ? AgeEligibilityViolation.TEEN_TOO_YOUNG.messageKey()
                     : AgeEligibilityViolation.GUARDIAN_TOO_YOUNG.messageKey();
             applyTemplate(context, key);
@@ -56,8 +62,13 @@ class EligibleAgeValidator implements ConstraintValidator<EligibleAge, LocalDate
         }
     }
 
-    private static void applyTemplate(ConstraintValidatorContext context, String key) {
+    private static void applyTemplate(
+        ConstraintValidatorContext context,
+        String key
+    ) {
         context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate("{" + key + "}").addConstraintViolation();
+        context
+            .buildConstraintViolationWithTemplate("{" + key + "}")
+            .addConstraintViolation();
     }
 }
