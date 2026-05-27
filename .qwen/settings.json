@@ -34,6 +34,21 @@
             "top_p": 0.9
           }
         }
+      },
+      {
+        "id": "qwen3.6-27b-mlx",
+        "name": "Qwen3.6 27B MLX (opcional, seleção manual)",
+        "envKey": "LMSTUDIO_API_KEY",
+        "baseUrl": "http://localhost:1234/v1",
+        "generationConfig": {
+          "timeout": 1800000,
+          "maxRetries": 3,
+          "contextWindowSize": 262144,
+          "samplingParams": {
+            "temperature": 0.1,
+            "top_p": 0.9
+          }
+        }
       }
     ]
   },
