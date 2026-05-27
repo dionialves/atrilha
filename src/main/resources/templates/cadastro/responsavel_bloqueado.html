@@ -3,21 +3,24 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout/public}"
       lang="pt-BR">
-<head><title>Em breve</title></head>
+<head><title>Esse caminho não é pra agora</title></head>
 <body>
 <th:block layout:fragment="content">
 
     <!-- Header — voltar para a escolha de caminho. -->
     <header th:replace="~{layout/fragments/public-header :: public-header(@{/comecar}, 'Voltar para a escolha de caminho')}"></header>
 
-    <main class="coming-soon">
-        <article class="card card--flat">
-            <h1>Em breve</h1>
-            <p>
-                O caminho de responsável entra no próximo passo da plataforma.
-                Quando estiver disponível, traremos você de volta por aqui.
-            </p>
-            <p class="coming-soon__back">
+    <main class="age-block">
+        <article class="card card--flat age-block__card">
+            <th:block th:if="${variant == 'under-18'}">
+                <h1>Esse caminho é pra quem tem 18 anos ou mais</h1>
+                <p>
+                    Para se cadastrar como responsável, você precisa ser maior de
+                    idade. Quando for a hora certa, a gente espera você por aqui.
+                </p>
+            </th:block>
+
+            <p class="age-block__back">
                 <a th:href="@{/comecar}">Voltar pro começo</a>
             </p>
         </article>

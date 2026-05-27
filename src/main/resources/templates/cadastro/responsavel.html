@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/public}"
+      lang="pt-BR">
+<head><title>Cadastro — responsável</title></head>
+<body>
+<th:block layout:fragment="content">
+
+    <!-- Header — voltar para a tela de escolha de método. -->
+    <header th:replace="~{layout/fragments/public-header :: public-header(@{/comecar}, 'Voltar para a escolha de caminho')}"></header>
+
+    <main class="cadastro-form">
+        <header class="cadastro-form__intro">
+            <p class="overline">Cadastro · Responsável</p>
+            <h1>Conta nova</h1>
+            <p class="cadastro-form__lead">
+                Algumas informações básicas pra vincular sua conta à da sua
+                adolescente. Você pode trocar depois.
+            </p>
+        </header>
+
+        <form th:action="@{/cadastro/responsavel}" method="post"
+              th:object="${form}"
+              class="cadastro-form__form" novalidate>
+
+            <!-- E-mail -->
+            <div class="input-group" th:classappend="${#fields.hasErrors('email')} ? 'input-group--error' : ''">
+                <label for="email" class="input-label">E-mail</label>
+                <input id="email" type="email" name="email" autocomplete="email"
+                       th:field="*{email}"
+                       th:attr="aria-invalid=${#fields.hasErrors('email')}, aria-describedby=${#fields.hasErrors('email')} ? 'email-error' : null"
+                       class="input-field" maxlength="255"/>
+                <span th:if="${#fields.hasErrors('email')}" id="email-error" class="input-error" role="alert"
+                      th:errors="*{email}"></span>
+            </div>
+
+            <!-- Senha -->
+            <div class="input-group" th:classappend="${#fields.hasErrors('password')} ? 'input-group--error' : ''">
+                <label for="password" class="input-label">Senha</label>
+                <input id="password" type="password" name="password" autocomplete="new-password"
+                       th:field="*{password}"
+                       th:attr="aria-invalid=${#fields.hasErrors('password')}, aria-describedby=${#fields.hasErrors('password')} ? 'password-error' : 'password-helper'"
+                       class="input-field" minlength="8" maxlength="72"/>
+                <span th:unless="${#fields.hasErrors('password')}" id="password-helper" class="input-helper">
+                    Mínimo 8 caracteres.
+                </span>
+                <span th:if="${#fields.hasErrors('password')}" id="password-error" class="input-error" role="alert"
+                      th:errors="*{password}"></span>
+            </div>
+
+            <!-- Nome completo -->
+            <div class="input-group" th:classappend="${#fields.hasErrors('fullName')} ? 'input-group--error' : ''">
+                <label for="fullName" class="input-label">Nome completo</label>
+                <input id="fullName" type="text" name="fullName" autocomplete="name"
+                       th:field="*{fullName}"
+                       th:attr="aria-invalid=${#fields.hasErrors('fullName')}, aria-describedby=${#fields.hasErrors('fullName')} ? 'fullName-error' : 'fullName-helper'"
+                       class="input-field" minlength="3" maxlength="100"/>
+                <span th:unless="${#fields.hasErrors('fullName')}" id="fullName-helper" class="input-helper">
+                    De 3 a 100 caracteres.
+                </span>
+                <span th:if="${#fields.hasErrors('fullName')}" id="fullName-error" class="input-error" role="alert"
+                      th:errors="*{fullName}"></span>
+            </div>
+
+            <!-- Data de nascimento -->
+            <div class="input-group" th:classappend="${#fields.hasErrors('birthDate')} ? 'input-group--error' : ''">
+                <label for="birthDate" class="input-label">Data de nascimento</label>
+                <input id="birthDate" type="date" name="birthDate"
+                       th:field="*{birthDate}"
+                       th:attr="aria-invalid=${#fields.hasErrors('birthDate')}, aria-describedby=${#fields.hasErrors('birthDate')} ? 'birthDate-error' : null"
+                       class="input-field"/>
+                <span th:if="${#fields.hasErrors('birthDate')}" id="birthDate-error" class="input-error" role="alert"
+                      th:errors="*{birthDate}"></span>
+            </div>
+
+            <div class="cadastro-form__actions">
+                <button type="submit" class="btn btn-primary btn-lg btn--block">Criar conta</button>
+            </div>
+
+            <p class="cadastro-form__legal">
+                Ao continuar, você aceita os
+                <a href="#">Termos</a> e a
+                <a href="#">Política de Privacidade</a>.
+            </p>
+        </form>
+    </main>
+
+</th:block>
+</body>
+</html>

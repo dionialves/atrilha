@@ -5,7 +5,6 @@ import dev.zayt.atrilha.accounts.repository.AdolescentProfileRepository;
 import dev.zayt.atrilha.auth.domain.AuthenticatedAccount;
 import dev.zayt.atrilha.auth.domain.AuthenticatedPrincipal;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,11 +53,22 @@ class PostLoginRedirectController {
     }
 
     @GetMapping("/vincular")
-    String vincular(@AuthenticationPrincipal AuthenticatedPrincipal principal) {
-        if (principal.hasGuardianLink()) {
-            return "redirect:/painel";
+    String vincular(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof AuthenticatedAccount acc) {
+            // Recém-cadastrado via SessionAuthenticator — ainda não tem
+            // AuthenticatedPrincipal resolvido. Permite acesso sem hasGuardianLink().
+            return "vinculacao/inserir-codigo-placeholder";
         }
-        // TODO: mesmo problema para GUARDIAN via cadastro
+
+        if (principal instanceof AuthenticatedPrincipal ap) {
+            if (ap.hasGuardianLink()) {
+                return "redirect:/painel";
+            }
+        }
+
+        // Fallback: mostra a tela de vinculação.
         return "vinculacao/inserir-codigo-placeholder";
     }
 }
