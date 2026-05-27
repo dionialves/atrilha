@@ -27,12 +27,12 @@ import java.util.Optional;
 class JpaLoginAccountQuery implements LoginAccountQuery {
 
     private final AccountReader accountReader;
-    private final AccountProfileLookup adolescentProfileLookup;
+    private final AccountProfileLookup profileLookup;
 
     JpaLoginAccountQuery(AccountReader accountReader,
-                         AccountProfileLookup adolescentProfileLookup) {
+                         AccountProfileLookup profileLookup) {
         this.accountReader = accountReader;
-        this.adolescentProfileLookup = adolescentProfileLookup;
+        this.profileLookup = profileLookup;
     }
 
     @Override
@@ -61,13 +61,13 @@ class JpaLoginAccountQuery implements LoginAccountQuery {
 
     private String resolveDisplayName(Account account, AccountRole role) {
         if (role == AccountRole.TEEN) {
-            Optional<String> nickname = adolescentProfileLookup
+            Optional<String> nickname = profileLookup
                     .findNickname(account.getId());
             if (nickname.isPresent() && !nickname.get().isBlank()) {
                 return nickname.get();
             }
         } else if (role == AccountRole.GUARDIAN) {
-            Optional<String> fullName = adolescentProfileLookup
+            Optional<String> fullName = profileLookup
                     .findFullName(account.getId());
             if (fullName.isPresent() && !fullName.get().isBlank()) {
                 return fullName.get();
