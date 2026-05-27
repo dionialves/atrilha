@@ -1,35 +1,49 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}"
+      layout:decorate="~{layout/public}"
       lang="pt-BR">
-<head>
-    <title>Inserir código — atrilha</title>
-</head>
+<head><title>Vincular — atrilha</title></head>
 <body>
-<section layout:fragment="content" class="placeholder placeholder--vincular">
-    <h1>Insira o código da adolescente</h1>
-    <p>Peça à adolescente o código de 6 caracteres e digite abaixo.
-       (Placeholder — a tela real chega em breve.)</p>
+<th:block layout:fragment="content">
 
-    <!-- 6 inputs decorativos (disabled) — sem JS de avanço automático ainda -->
-    <div class="codigo-grid" aria-label="Código de 6 caracteres">
-        <input type="text" maxlength="1" disabled aria-label="Caractere 1"/>
-        <input type="text" maxlength="1" disabled aria-label="Caractere 2"/>
-        <input type="text" maxlength="1" disabled aria-label="Caractere 3"/>
-        <input type="text" maxlength="1" disabled aria-label="Caractere 4"/>
-        <input type="text" maxlength="1" disabled aria-label="Caractere 5"/>
-        <input type="text" maxlength="1" disabled aria-label="Caractere 6"/>
-    </div>
+    <!-- Header — voltar para a tela de escolha de caminho. -->
+    <header th:replace="~{layout/fragments/public-header :: public-header(@{/comecar}, 'Voltar para a escolha de caminho')}"></header>
 
-    <button type="button" class="btn btn-primary btn-lg" disabled
-            aria-disabled="true">Em breve</button>
+    <main class="cadastro-form">
+        <header class="cadastro-form__intro">
+            <p class="overline">Vinculação · Responsável</p>
+            <h1>Código de vinculação</h1>
+            <p class="cadastro-form__lead">
+                Peça à adolescente o código de 6 caracteres e digite abaixo.
+            </p>
+        </header>
 
-    <form th:action="@{/logout}" method="post" class="placeholder__logout">
-        <input type="hidden" th:if="${_csrf}"
-               th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        <button type="submit" class="btn btn-ghost btn-md">Sair</button>
-    </form>
-</section>
+        <form th:action="@{/vincular}" method="post"
+              class="cadastro-form__form" novalidate>
+
+            <div class="codigo-grid" aria-label="Código de 6 caracteres">
+                <input type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code"
+                       class="codigo-grid__digit" aria-label="Caractere 1" name="code0"/>
+                <input type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code"
+                       class="codigo-grid__digit" aria-label="Caractere 2" name="code1"/>
+                <input type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code"
+                       class="codigo-grid__digit" aria-label="Caractere 3" name="code2"/>
+                <input type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code"
+                       class="codigo-grid__digit" aria-label="Caractere 4" name="code3"/>
+                <input type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code"
+                       class="codigo-grid__digit" aria-label="Caractere 5" name="code4"/>
+                <input type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code"
+                       class="codigo-grid__digit" aria-label="Caractere 6" name="code5"/>
+            </div>
+
+            <div class="cadastro-form__actions">
+                <button type="submit" class="btn btn-primary btn-lg btn--block">Continuar</button>
+            </div>
+
+        </form>
+    </main>
+
+</th:block>
 </body>
 </html>

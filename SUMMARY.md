@@ -1,42 +1,51 @@
-# Resumo de execução — Issue #93
+# Resumo de execução — Issue #94
 
-**Branch:** feat/93-feat-us-003-entidade-migration-repository-do-guard
+**Branch:** feat/94-feat-us-003-fluxo-completo-de-cadastro-do-responsa
 **Estado:** working tree pronto para revisão (sem PR, sem push)
 **Testes:** Tests run: (ver log)
 **Warnings de compilação:** 0
 
 ## Arquivos alterados
 ```
-
+SUMMARY.md
+src/main/java/dev/zayt/atrilha/accounts/domain/RegisterGuardianRequest.java
+src/main/java/dev/zayt/atrilha/accounts/service/RegisterGuardianService.java
+src/main/java/dev/zayt/atrilha/accounts/web/GuardianRegistrationController.java
+src/main/java/dev/zayt/atrilha/accounts/web/RegisterGuardianForm.java
+src/main/java/dev/zayt/atrilha/auth/web/PostLoginRedirectController.java
+src/main/java/dev/zayt/atrilha/web/GuardianRegistrationStubController.java
+src/main/resources/templates/cadastro/responsavel.html
+src/main/resources/templates/cadastro/responsavel_bloqueado.html
+src/test/java/dev/zayt/atrilha/accounts/AdolescentRegistrationControllerIT.java
+src/test/java/dev/zayt/atrilha/accounts/GuardianRegistrationControllerIT.java
+src/test/java/dev/zayt/atrilha/accounts/service/RegisterGuardianServiceTest.java
 ```
 
 ## Diff (stat)
 ```
-
+ SUMMARY.md                                         |  57 ++++--
+ .../accounts/domain/RegisterGuardianRequest.java   |  30 +++
+ .../accounts/service/RegisterGuardianService.java  | 100 ++++++++++
+ .../web/GuardianRegistrationController.java        | 146 ++++++++++++++
+ .../atrilha/accounts/web/RegisterGuardianForm.java |  78 ++++++++
+ .../auth/web/PostLoginRedirectController.java      |  20 +-
+ .../web/GuardianRegistrationStubController.java    |  21 ---
+ .../resources/templates/cadastro/responsavel.html  |  91 +++++++++
+ ...el_em_breve.html => responsavel_bloqueado.html} |  21 ++-
+ .../AdolescentRegistrationControllerIT.java        |   8 -
+ .../accounts/GuardianRegistrationControllerIT.java | 209 +++++++++++++++++++++
+ .../service/RegisterGuardianServiceTest.java       | 149 +++++++++++++++
+ 12 files changed, 867 insertions(+), 63 deletions(-)
 ```
 
 ## O que foi feito
-
-Fundação da US-003: criados 5 artefatos para suportar o perfil do responsável (GUARDIAN):
-
-1. **`V5__guardian_profiles.sql`** — Migration Flyway que cria a tabela `guardian_profiles` com `account_id` (UUID PK + FK cascata para `accounts`) e `full_name` (VARCHAR(100) NOT NULL), atendendo RF-E1-11.
-2. **`GuardianProfile.java`** — Entidade JPA `@Entity` com relação 1:1 via `@MapsId`/`@OneToOne` com `Account`, seguindo o padrão de `AdolescentProfile`.
-3. **`GuardianProfileRepository.java`** — Interface Spring Data JPA com `findByAccountId(UUID)` retornando `Optional<GuardianProfile>`.
-4. **`GuardianProfileTest.java`** — 2 testes unitários (setter/getter funcional + limite de 100 chars).
-5. **`GuardianProfileRepositoryIT.java`** — 2 testes de integração com PostgreSQL 18 via Testcontainers + Flyway (persistência+busca e busca de ID inexistente).
-
-**Testes:** 170/170 passando (suíte completa), zero warnings. Flyway aplicou V5 com sucesso no Testcontainer.
-
-**Pontos de atenção:** Nenhum — implementação isolada, sem controllers/services/templates.
+<!-- AGENTE: preencha aqui em 3-6 linhas. O QUE mudou e POR QUÊ.
+     Decisões implícitas tomadas durante a execução.
+     Pontos de atenção / dúvidas para o Revisor.
+     Autoavaliação dos critérios de aceitação da issue. -->
 
 ## ⚠️ Checagem LGPD (atrilha)
-
-Parcial — estrutura de armazenamento de PII. A tabela `guardian_profiles` armazena `full_name` (nome completo), que é dado pessoal.
-
-- ✅ `full_name` é texto puro, sem criptografia (nome não é segredo)
-- ✅ Sem validação de idade, consentimento ou compartilhamento nesta issue
-- ✅ Sem log de PII (nenhum `@Slf4j` com fullName)
-- ⚠️ A coluna será acessada por controllers/services nas próximas issues — garantir que o acesso siga LGPD (retenção, direito ao esquecimento)
-- ✅ Testes usam e-mails fictícios ("carlos@example.com") e nomes fictícios ("Carlos Responsável", "Maria Silva")
-
-**Conclusão:** Estrutura de armazenamento aceitável. Processamento de PII será validado nas issues seguintes da US-003.
+<!-- AGENTE: se o diff TOCA consentimento, compartilhamento, ou dados de
+     menor (13-17), declare explicitamente quais ADRs (005/006/007) foram
+     respeitados e como. Se NÃO toca nada disso, escreva "N/A — sem
+     superfície de dados pessoais". -->
