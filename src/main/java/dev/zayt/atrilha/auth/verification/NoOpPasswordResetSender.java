@@ -14,8 +14,8 @@ class NoOpPasswordResetSender implements PasswordResetSender {
     private static final Logger log = LoggerFactory.getLogger(NoOpPasswordResetSender.class);
 
     @Override
-    public void send(UUID accountId, UUID tokenUuid) {
-        log.debug("PasswordResetSender (no-op): accountId={}, token sent", accountId);
+    public void sendReset(String toEmail, String nickname, UUID token) {
+        log.debug("PasswordResetSender (no-op): email={}, token sent", toEmail);
     }
 
     @Override
