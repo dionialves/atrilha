@@ -1,13 +1,12 @@
--- V6: tabela de token de recuperação de senha (US-008-a)
---
--- Cada linha armazena um UUID v4 de uso único com TTL de 1 hora.
--- O service invalida tokens pendentes ao emitir um novo (resend).
-
-create table password_reset_token (
-    id          uuid not null primary key,
-    account_id  uuid   not null references accounts(id),
-    token       uuid   not null unique,
-    expires_at  timestamp with time zone not null,
-    used_at     timestamp with time zone,
-    created_at  timestamp with time zone not null
+-- V6: password_reset_token (US-008-a)
+CREATE TABLE password_reset_token (
+    id          UUID PRIMARY KEY,
+    account_id  UUID NOT NULL REFERENCES accounts ON DELETE CASCADE,
+    token       UUID NOT NULL UNIQUE,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    used_at     TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX idx_prt_account_active ON password_reset_token (account_id) WHERE used_at IS NULL;
+CREATE INDEX idx_prt_account_created_at ON password_reset_token (account_id, created_at DESC);
