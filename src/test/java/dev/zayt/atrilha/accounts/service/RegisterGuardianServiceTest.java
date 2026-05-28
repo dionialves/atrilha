@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.accounts.service;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import dev.zayt.atrilha.accounts.repository.AccountRepository;
 import dev.zayt.atrilha.accounts.repository.GuardianProfileRepository;
 import dev.zayt.atrilha.accounts.domain.Account;
@@ -13,12 +15,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 
@@ -30,7 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Verifica: feliz, duplicidade case-insensitive, normalização de e-mail
  * e hash BCrypt da senha.</p>
  */
-@Testcontainers
 @SpringBootTest(properties = {
         "spring.jpa.hibernate.ddl-auto=validate",
         "spring.flyway.enabled=true",
@@ -40,22 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(RecordingEmailSenderTestConfig.class)
 @ActiveProfiles("test")
 @Transactional // rollback automático entre métodos de teste
-class RegisterGuardianServiceTest {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerPostgres(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class RegisterGuardianServiceTest extends AbstractSpringPostgresIT {
 
     @Autowired
     RegisterGuardianService service;

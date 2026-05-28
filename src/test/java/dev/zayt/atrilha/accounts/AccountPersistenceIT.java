@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.accounts;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import dev.zayt.atrilha.accounts.domain.Account;
 import dev.zayt.atrilha.accounts.domain.AdolescentProfile;
 import dev.zayt.atrilha.accounts.repository.AccountRepository;
@@ -7,13 +9,7 @@ import dev.zayt.atrilha.accounts.repository.AdolescentProfileRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
@@ -42,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * o Testcontainer Postgres — assim conseguimos contexto completo + JPA + Flyway
  * sem depender dos test slices opcionais do Spring Boot 4.x.</p>
  */
-@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
         properties = {
                 // IT roda em Postgres real com Flyway aplicado — sobrescreve o
@@ -53,24 +48,8 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "spring.flyway.baseline-on-migrate=false"
         })
 @ActiveProfiles("test")
-@DirtiesContext
 @Transactional
-class AccountPersistenceIT {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerPostgres(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class AccountPersistenceIT extends AbstractSpringPostgresIT {
 
     @Autowired
     AccountRepository accountRepository;

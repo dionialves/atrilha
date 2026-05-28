@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.auth.verification;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import dev.zayt.atrilha.AtrilhaApplication;
 import dev.zayt.atrilha.accounts.domain.AccountRegisteredEvent;
 import dev.zayt.atrilha.notifications.RecordedEmail;
@@ -7,7 +9,6 @@ import dev.zayt.atrilha.notifications.RecordingEmailSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -15,17 +16,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.junit.jupiter.TestcontainersExtension;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -39,7 +32,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Valida que o e-mail de verificação usa o full_name do GuardianProfile
  * para contas GUARDIAN, e mantém o nickname para ADOLESCENT (sem regressão).</p>
  */
-@Testcontainers
 @SpringBootTest(classes = { AtrilhaApplication.class, AccountRegisteredEventListenerTest.TestBeans.class },
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
         properties = {
@@ -49,24 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "atrilha.auth.seed.enabled=false"
         })
 @ActiveProfiles("test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@ExtendWith({ SpringExtension.class, TestcontainersExtension.class })
-class AccountRegisteredEventListenerTest {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class AccountRegisteredEventListenerTest extends AbstractSpringPostgresIT {
 
     @TestConfiguration
     static class TestBeans {

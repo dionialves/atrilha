@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.accounts;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import dev.zayt.atrilha.AtrilhaApplication;
 import dev.zayt.atrilha.accounts.domain.Account;
 import dev.zayt.atrilha.auth.verification.EmailVerificationToken;
@@ -7,14 +9,8 @@ import dev.zayt.atrilha.auth.verification.EmailVerificationTokenRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import jakarta.persistence.EntityManager;
 
@@ -41,7 +37,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * </ul>
  * </p>
  */
-@Testcontainers
 @SpringBootTest(classes = AtrilhaApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
         properties = {
@@ -51,24 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "spring.flyway.baseline-on-migrate=false"
         })
 @ActiveProfiles("test")
-@DirtiesContext
 @Transactional
-class EmailVerificationTokenRepositoryIT {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerPostgres(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class EmailVerificationTokenRepositoryIT extends AbstractSpringPostgresIT {
 
     @Autowired
     EmailVerificationTokenRepository tokenRepository;

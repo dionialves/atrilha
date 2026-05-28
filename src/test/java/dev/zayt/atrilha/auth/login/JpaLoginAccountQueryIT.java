@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.auth.login;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import dev.zayt.atrilha.AtrilhaApplication;
 import dev.zayt.atrilha.accounts.domain.AccountRole;
 import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
@@ -10,17 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -36,7 +32,6 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
  * l&ecirc; contas reais da tabela {@code accounts}, respeitando soft-delete,
  * case-insensitive e mapeamento correto de papel/displayName.</p>
  */
-@Testcontainers
 @SpringBootTest(classes = { AtrilhaApplication.class, JpaLoginAccountQueryIT.TestBeans.class },
         properties = {
                 "spring.jpa.hibernate.ddl-auto=validate",
@@ -45,23 +40,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
         })
 @ActiveProfiles("test")
 @TestPropertySource(properties = "atrilha.auth.seed.enabled=false")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class JpaLoginAccountQueryIT {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class JpaLoginAccountQueryIT extends AbstractSpringPostgresIT {
 
     @Autowired
     private LoginAccountQuery loginAccountQuery;

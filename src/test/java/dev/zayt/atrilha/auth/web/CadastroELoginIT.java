@@ -1,22 +1,18 @@
 package dev.zayt.atrilha.auth.web;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import dev.zayt.atrilha.AtrilhaApplication;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -30,7 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Valida que um usu&a;rio cadastrado via US-001 consegue logar com
  * e-mail/senha e que senha errada retorna erro gen&eacute;rico (privacidade).</p>
  */
-@Testcontainers
 @SpringBootTest(classes = { AtrilhaApplication.class, CadastroELoginIT.TestBeans.class },
         properties = {
                 "spring.jpa.hibernate.ddl-auto=validate",
@@ -39,23 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         })
 @ActiveProfiles("test")
 @TestPropertySource(properties = "atrilha.auth.seed.enabled=false")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class CadastroELoginIT {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class CadastroELoginIT extends AbstractSpringPostgresIT {
 
     @Autowired
     WebApplicationContext ctx;

@@ -1,7 +1,0 @@
-{
-  "enabledModels": [
-    "lmstudio/qwen3.6-35b-a3b-mlx@4bit",
-    "lmstudio/qwen3.6-27b-mlx"
-  ],
-  "defaultThinkingLevel": "off"
-}

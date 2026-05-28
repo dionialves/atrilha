@@ -1,18 +1,14 @@
 package dev.zayt.atrilha.auth.login;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -28,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * GuardianProfile quando a conta é GUARDIAN, e faz fallback para prefixo
  * do email quando não há perfil.</p>
  */
-@Testcontainers
 @SpringBootTest(classes = { JpaLoginAccountQueryTest.TestBeans.class },
         properties = {
                 "spring.jpa.hibernate.ddl-auto=validate",
@@ -37,23 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "atrilha.auth.seed.enabled=false"
         })
 @ActiveProfiles("test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class JpaLoginAccountQueryTest {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class JpaLoginAccountQueryTest extends AbstractSpringPostgresIT {
 
     @Autowired
     private LoginAccountQuery loginAccountQuery;

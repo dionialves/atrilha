@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.accounts;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,17 +13,11 @@ import dev.zayt.atrilha.notifications.RecordingEmailSenderTestConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -56,7 +52,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Inspeção do HTML usa Jsoup sobre o DOM (não regex em template cru).</p>
  */
-@Testcontainers
 @SpringBootTest(properties = {
         "spring.jpa.hibernate.ddl-auto=validate",
         "spring.flyway.enabled=true",
@@ -65,23 +60,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @Import(RecordingEmailSenderTestConfig.class)
 @ActiveProfiles("test")
-@DirtiesContext
-class RegistrationContractIT {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerPostgres(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class RegistrationContractIT extends AbstractSpringPostgresIT {
 
     @Autowired
     WebApplicationContext ctx;

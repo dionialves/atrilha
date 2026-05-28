@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.auth;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import dev.zayt.atrilha.AtrilhaApplication;
 import dev.zayt.atrilha.accounts.AccountTestFactory;
 import dev.zayt.atrilha.accounts.domain.Account;
@@ -17,15 +19,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
 
@@ -49,7 +45,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * evento manualmente — o efeito sobre o listener é o mesmo, e a integração
  * "register → publishEvent" é coberta pelo {@code AdolescentRegistrationControllerIT}.</p>
  */
-@Testcontainers
 @SpringBootTest(classes = { AtrilhaApplication.class, AccountRegisteredEventListenerIT.TestBeans.class },
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
         properties = {
@@ -59,23 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "spring.flyway.baseline-on-migrate=false"
         })
 @ActiveProfiles("test")
-@DirtiesContext
-class AccountRegisteredEventListenerIT {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerPostgres(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class AccountRegisteredEventListenerIT extends AbstractSpringPostgresIT {
 
     @TestConfiguration
     static class TestBeans {

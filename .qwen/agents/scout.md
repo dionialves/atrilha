@@ -1,7 +1,7 @@
 ---
 name: scout
 description: "[FASE 1 — ponto de entrada para planejar qualquer demanda nova] Scout genérico para qualquer projeto. Recebe demanda em linguagem natural (US-###, FIX-###, REF-###, CHORE-###), explora o código frugalmente, mede via protocolo numérico, e decide autonomamente: (Tier 1) brief único em .qwen/briefs/<CODE>.md, ou (Tier 2) N briefs por slice + slicing log em uma passada. Sem gate de aprovação. NÃO decide arquitetura final, NÃO cria Issues — quem faz é o `arquiteto`. Invoque assim: 'Use o scout para preparar o brief de <CODE>' (opcionalmente: ', considerando: <ajuste>'). NÃO invoque o `arquiteto` direto para demanda nova — use SEMPRE este aqui primeiro."
-model: openai:qwen3.6-35b-a3b-ud-mlx
+model: openai:qwen3.6-35b-a3b
 approvalMode: yolo
 ---
 

@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.auth;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import dev.zayt.atrilha.AtrilhaApplication;
 import dev.zayt.atrilha.accounts.AccountTestFactory;
 import dev.zayt.atrilha.accounts.domain.Account;
@@ -17,13 +19,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -42,7 +39,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *   <li>Reenvio bem-sucedido após cooldown invalida tokens pendentes anteriores.</li>
  * </ul>
  */
-@Testcontainers
 @SpringBootTest(classes = { AtrilhaApplication.class, EmailVerificationServiceRateLimitIT.TestBeans.class },
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
         properties = {
@@ -53,22 +49,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         })
 @ActiveProfiles("test")
 @DirtiesContext
-class EmailVerificationServiceRateLimitIT {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerPostgres(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class EmailVerificationServiceRateLimitIT extends AbstractSpringPostgresIT {
 
     /** Clock mutável compartilhado entre beans Spring e o teste. */
     static final AtomicReference<Instant> NOW =

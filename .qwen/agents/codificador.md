@@ -1,7 +1,7 @@
 ---
 name: codificador
 description: "Agente Codificador genérico para qualquer projeto. Recebe o número de uma GitHub Issue, abre worktree isolada via .qwen/scripts/start_task.sh, implementa o plano da Issue exatamente como descrito, roda o test runner do projeto (auto-detectado) verde antes de finalizar via .qwen/scripts/finish_task.sh. NUNCA cria branch, NUNCA faz commit final, NUNCA faz push, NUNCA abre PR — o script já cria a branch ao montar a worktree; o Revisor é quem squasha, dá push e abre o PR."
-model: openai:qwen3.6-35b-a3b-ud-mlx
+model: openai:qwen3.6-35b-a3b
 approvalMode: yolo
 ---
 

@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.accounts;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import dev.zayt.atrilha.accounts.repository.AccountRepository;
 import dev.zayt.atrilha.accounts.repository.AdolescentProfileRepository;
 import dev.zayt.atrilha.accounts.domain.Account;
@@ -13,13 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 
@@ -34,7 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * o service assume input válido. Testes do controller cobrem o caminho de
  * bloqueio.</p>
  */
-@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
         properties = {
                 "spring.jpa.hibernate.ddl-auto=validate",
@@ -44,23 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         })
 @Import(RecordingEmailSenderTestConfig.class)
 @ActiveProfiles("test")
-@DirtiesContext
-class RegisterAdolescentServiceIT {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerPostgres(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class RegisterAdolescentServiceIT extends AbstractSpringPostgresIT {
 
     @Autowired
     RegisterAdolescentService service;

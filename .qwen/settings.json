@@ -6,8 +6,8 @@
   "modelProviders": {
     "openai": [
       {
-        "id": "qwen3.6-35b-a3b-ud-mlx",
-        "name": "Qwen3.6 35B A3B UD MLX (Codificador)",
+        "id": "qwen3.6-35b-a3b",
+        "name": "Qwen3.6 35B A3B (Codificador)",
         "envKey": "LMSTUDIO_API_KEY",
         "baseUrl": "http://localhost:1234/v1",
         "generationConfig": {
@@ -21,8 +21,8 @@
         }
       },
       {
-        "id": "qwen3.6-35b-a3b-mlx",
-        "name": "Qwen3.6 35B A3B MLX (Arquiteto + Revisor)",
+        "id": "qwen3.6-35b-a3b-ud-mlx",
+        "name": "Qwen3.6 35B A3B UD MLX",
         "envKey": "LMSTUDIO_API_KEY",
         "baseUrl": "http://localhost:1234/v1",
         "generationConfig": {
@@ -30,7 +30,7 @@
           "maxRetries": 3,
           "contextWindowSize": 262144,
           "samplingParams": {
-            "temperature": 0.1,
+            "temperature": 0.2,
             "top_p": 0.9
           }
         }
@@ -58,7 +58,7 @@
     }
   },
   "model": {
-    "name": "qwen3.6-35b-a3b-ud-mlx"
+    "name": "qwen3.6-35b-a3b"
   },
   "tools": {
     "approvalMode": "yolo"

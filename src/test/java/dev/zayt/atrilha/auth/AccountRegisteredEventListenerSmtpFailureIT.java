@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.auth;
 
+import dev.zayt.atrilha.testsupport.AbstractSpringPostgresIT;
+
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -22,15 +24,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,7 +48,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * publica o evento via {@code ApplicationEventPublisher} em uma transação
  * que commita; checa estado pós-commit.</p>
  */
-@Testcontainers
 @SpringBootTest(classes = { AtrilhaApplication.class, AccountRegisteredEventListenerSmtpFailureIT.TestBeans.class },
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
         properties = {
@@ -62,23 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "spring.flyway.baseline-on-migrate=false"
         })
 @ActiveProfiles("test")
-@DirtiesContext
-class AccountRegisteredEventListenerSmtpFailureIT {
-
-    @Container
-    @SuppressWarnings("resource")
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:18-alpine")
-                    .withDatabaseName("atrilha")
-                    .withUsername("atrilha")
-                    .withPassword("atrilha");
-
-    @DynamicPropertySource
-    static void registerPostgres(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
+class AccountRegisteredEventListenerSmtpFailureIT extends AbstractSpringPostgresIT {
 
     /** Sender que sempre falha, capturando o token recebido para asserts de log. */
     static class ExplodingSender implements EmailVerificationSender {
