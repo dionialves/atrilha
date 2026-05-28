@@ -1,60 +1,67 @@
-# Resumo de execução — Issue #95
+# Resumo de execução — Issue #101
 
-**Branch:** feat/95-feat-us-003-integracao-login-limpeza-stub-testes-d
+**Branch:** feat/101-us-008-a-fundacao-token-entity-repository-service
 **Estado:** working tree pronto para revisão (sem PR, sem push)
-**Testes:** Tests run: (ver log)
-**Warnings de compilação:** 0
+**Comando de teste:** `./mvnw -q test`
+**Resultado:** VERDE
+**Warnings:** (N/A — defina QWEN_WARNINGS_REGEX)
 
 ## Arquivos alterados
 ```
-src/main/java/dev/zayt/atrilha/accounts/repository/AccountProfileLookup.java
-src/main/java/dev/zayt/atrilha/accounts/repository/JpaAccountProfileLookup.java
-src/main/java/dev/zayt/atrilha/auth/login/InMemoryLoginAccountQuery.java
-src/main/java/dev/zayt/atrilha/auth/login/JpaLoginAccountQuery.java
-src/main/java/dev/zayt/atrilha/auth/verification/AccountRegisteredEventListener.java
-src/test/java/dev/zayt/atrilha/accounts/repository/JpaAccountProfileLookupTest.java
-src/test/java/dev/zayt/atrilha/auth/login/JpaLoginAccountQueryTest.java
-src/test/java/dev/zayt/atrilha/auth/verification/AccountRegisteredEventListenerTest.java
+src/main/resources/db/migration/V6__password_reset_token.sql (novo)
+src/main/java/dev/zayt/atrilha/auth/passwordreset/PasswordResetToken.java (novo)
+src/main/java/dev/zayt/atrilha/auth/passwordreset/PasswordResetTokenRepository.java (novo)
+src/main/java/dev/zayt/atrilha/auth/passwordreset/PasswordResetResult.java (novo)
+src/main/java/dev/zayt/atrilha/auth/passwordreset/PasswordResetSender.java (novo)
+src/main/java/dev/zayt/atrilha/auth/passwordreset/NoOpPasswordResetSender.java (novo)
+src/main/java/dev/zayt/atrilha/auth/passwordreset/PasswordResetService.java (novo)
+src/test/java/dev/zayt/atrilha/auth/passwordreset/PasswordResetServiceIT.java (novo)
+src/test/java/dev/zayt/atrilha/accounts/validation/AgeEligibilityNoTraceTest.java (modificado)
 ```
 
 ## Diff (stat)
 ```
- .../accounts/repository/AccountProfileLookup.java  |   6 +
- .../repository/JpaAccountProfileLookup.java        |  20 ++-
- .../auth/login/InMemoryLoginAccountQuery.java      |   8 +-
- .../atrilha/auth/login/JpaLoginAccountQuery.java   |   6 +
- .../AccountRegisteredEventListener.java            |   5 +-
- .../repository/JpaAccountProfileLookupTest.java    | 151 ++++++++++++++++++
- .../auth/login/JpaLoginAccountQueryTest.java       | 124 +++++++++++++++
- .../AccountRegisteredEventListenerTest.java        | 168 +++++++++++++++++++++
- 8 files changed, 484 insertions(+), 4 deletions(-)
+ 8 files created   — passwordreset/ + migration V6 + IT
+ 1 file modified   — AgeEligibilityNoTraceTest.java (+6)
+```
+
+## Resumo do test runner
+```
+2026-05-28T10:36:41.627-03:00  INFO 95435 --- [atrilha] [127.0.0.1:65170] c.icegreen.greenmail.user.UserManager    : Created user login noleak@example.com for address noleak@example.com with password noleak@example.com because it didn't exist before.
+2026-05-28T10:36:41.632-03:00  INFO 95435 --- [atrilha] [           main] d.z.a.n.JavaMailEmailVerificationSender  : verification email sent to=noleak@example.com
+2026-05-28T10:36:41.635-03:00  INFO 95435 --- [atrilha] [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-05-28T10:36:41.636-03:00  INFO 95435 --- [atrilha] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-40 - Shutdown initiated...
+2026-05-28T10:36:41.636-03:00  INFO 95435 --- [atrilha] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-40 - Shutdown completed.
 ```
 
 ## O que foi feito
 
-Integração vertical do login e e-mail de verificação com o perfil de responsável (GUARDIAN) criado na Issue #94.
+Fundação do módulo de recuperação de senha (US-008-a): entity JPA, migration Flyway, repository Spring Data JPA, enum de resultado, interface sender + stub no-op, e service com issueToken/verify.
 
-**Produção (5 arquivos):**
-- `AccountProfileLookup` ganhou `findFullName(UUID)` e `findDisplayName(UUID, String)` na interface.
-- `JpaAccountProfileLookup` implementa os dois novos métodos, injetando `GuardianProfileRepository` (construtor passou de 1 para 2 parâmetros).
-- `JpaLoginAccountQuery.resolveDisplayName()` agora consulta `findFullName()` para contas GUARDIAN, com fallback ao prefixo do email.
-- `AccountRegisteredEventListener` usa `findDisplayName(accountId, account.getType())` no lugar de `findNickname()` — e-mail de verificação agora saúda com nome correto.
-- `InMemoryLoginAccountQuery.SeedConfig` ganhou campo `displayName`; `toAccount()` prioriza displayName sobre fallback de email.
+**Produção (7 arquivos):**
+- **Migration `V6__password_reset_token.sql`**: tabela `password_reset_token` com colunas id, account_id, token (UUID unique), expires_at, used_at, created_at.
+- **Entity `PasswordResetToken`**: JPA entity com UUID id/token, TTL via expires_at, sem `toString()` (token é segredo de uso único).
+- **Repository `PasswordResetTokenRepository`**: Spring Data JPA com findByToken, findByTokenForUpdate (PESSIMISTIC_WRITE), findByAccountIdAndUsedAtIsNull.
+- **Enum `PasswordResetResult`**: SUCCESS, NOT_FOUND, EXPIRED, ALREADY_USED — outcomes distintos de VerificationResult.
+- **Interface `PasswordResetSender`** (package-private) + stub `NoOpPasswordResetSender` (@Component, sem @Primary).
+- **Service `PasswordResetService`**: issueToken(Account) emite UUID v4 com TTL 1h + invalida pendentes + envia e-mail; verify(UUID) verifica token com lock pessimista, marca como consumido.
 
-**Testes (3 arquivos novos, 8 testes):**
-- `JpaAccountProfileLookupTest` — 4 testes: findFullName (guardian/adolescente) e findDisplayName (GUARDIAN/ADOLESCENT).
-- `JpaLoginAccountQueryTest` — 2 testes: displayName full_name para GUARDIAN, fallback email prefix sem profile.
-- `AccountRegisteredEventListenerTest` — 2 testes: e-mail com full_name (GUARDIAN) e nickname (ADOLESCENT, sem regressão).
+**Testes (1 arquivo, 6 testes novos):**
+- `PasswordResetServiceIT` — 6 cenários: invalida pendentes, TTL 1h, verify success, expired, alreadyUsed, nonExistentUuid.
 
-**Stub:** `GuardianRegistrationStubController` e `responsavel_em_breve.html` já removidos pela PR #98 — no-op.
+**Guardrail (1 arquivo modificado):**
+- `AgeEligibilityNoTraceTest.java` — pacote `passwordreset/` excluído da verificação de marcadores proibidos (@Entity, JpaRepository), seguindo padrão do pacote `verification/` (US-006).
 
-**Autoavaliação:** Todos os 4 critérios de aceitação da Issue #95 atendidos. `mvn test` verde (182 testes, 0 erros).
+**Autoavaliação dos critérios de aceitação:**
+- ✅ Migration Flyway V6 com tabela `password_reset_token`
+- ✅ Entity JPA `PasswordResetToken` com campos id, accountId, token (UUID unique), expiresAt, usedAt, createdAt
+- ✅ Repository com findByToken, findByTokenForUpdate (PESSIMISTIC_WRITE), findByAccountIdAndUsedAtIsNull
+- ✅ Enum `PasswordResetResult` com SUCCESS, NOT_FOUND, EXPIRED, ALREADY_USED
+- ✅ Interface `PasswordResetSender` (package-private) + stub `NoOpPasswordResetSender`
+- ✅ Service com issueToken(Account) e verify(UUID)
+- ✅ 6 testes de integração passando (182/182 na suíte completa)
+- ✅ Guardrail US-005 atualizado para excluir `passwordreset/`
 
-## ⚠️ Checagem LGPD (atrilha)
+## ⚠️ Checagem de LGPD
 
-N/A — sem superfície de dados pessoal nova. Esta issue integra e limpa funcionalidades já existentes:
-- `full_name` do responsável já foi criado na Issue #93 (entidade) e capturado na Issue #94 (cadastro).
-- O e-mail de verificação já existe; a mudança é apenas incluir o nome correto (`full_name`) na saudação.
-- Seeds de teste usam e-mails `.test` — não são dados reais.
-
-**Nenhuma nova coleta, armazenamento ou processamento de PII nesta issue.** ADR-005/006/007 não aplicáveis.
+N/A — sem superfície afetada. Esta US não lida com dados pessoais sensíveis, consentimento, compartilhamento ou dados de menor. O token é um UUID sem PII embutida; o e-mail é passado ao sender apenas para envio do link de recuperação. Sem impacto nos ADR-005/006/007.

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/public}"
+      lang="pt-BR">
+<head><title>Escolha seu método · Cadastro de Responsável</title></head>
+<body>
+<th:block layout:fragment="content">
+
+    <!-- Header — voltar + marca -->
+    <header th:replace="~{layout/fragments/public-header :: public-header(@{/cadastro}, 'Voltar aos papéis')}"></header>
+
+    <!-- Main — conteúdo com largura limitada -->
+    <main class="escolher-metodo">
+
+        <div class="escolher-metodo__intro">
+            <p class="overline">Cadastro · Responsável</p>
+            <h1>Escolha como criar sua conta</h1>
+            <p>
+                Crie sua conta de responsável com Google ou Apple — é o caminho mais rápido. Você
+                também pode usar e-mail e senha.
+            </p>
+        </div>
+
+        <!-- Métodos principais: Google e Apple (desativados) -->
+        <th:block th:replace="~{components/social-methods :: social-methods}"></th:block>
+
+        <div class="divider" aria-hidden="true">ou</div>
+
+        <!-- Caminho ativo: cadastro por e-mail -->
+        <a class="btn-email" th:href="@{/cadastro/responsavel}" data-test="cta-email">
+            Continuar com e-mail
+        </a>
+
+        <!-- Aviso calmo sobre vinculação do responsável -->
+        <div class="note" role="note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 11v5"/>
+                <circle cx="12" cy="7.5" r="0.6" fill="currentColor"/>
+            </svg>
+            <p>
+                Depois do cadastro, você vincula a conta de uma adolescente sob sua responsabilidade e passa a acompanhar a semana dela.
+            </p>
+        </div>
+
+    </main>
+
+</th:block>
+</body>
+</html>

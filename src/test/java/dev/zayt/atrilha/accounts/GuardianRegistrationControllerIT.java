@@ -206,4 +206,12 @@ class GuardianRegistrationControllerIT {
                 .andExpect(model().attributeHasFieldErrors("form", "email"));
     }
 
+    // ---------- US-004: GET /cadastro/responsavel/escolher-metodo ----------
+
+    @Test
+    void shouldRenderEscolherMetodoPage() throws Exception {
+        mvc.perform(get("/cadastro/responsavel/escolher-metodo"))
+                .andExpect(status().isOk());
+    }
+
 }
