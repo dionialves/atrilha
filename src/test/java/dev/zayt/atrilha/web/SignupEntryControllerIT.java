@@ -17,6 +17,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -82,5 +87,18 @@ class SignupEntryControllerIT {
         mvc.perform(get("/cadastro/concluido"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("cadastro/concluido"));
+    }
+
+    @Test
+    void shouldLinkResponsavelCardToEscolherMetodo() throws Exception {
+        String body = mvc.perform(get("/cadastro"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Document doc = Jsoup.parse(body);
+        Element responsavelCard = doc.selectFirst("a[href=/cadastro/responsavel/escolher-metodo]");
+        assertThat(responsavelCard).as("card Sou responsável deve apontar para /cadastro/responsavel/escolher-metodo").isNotNull();
     }
 }

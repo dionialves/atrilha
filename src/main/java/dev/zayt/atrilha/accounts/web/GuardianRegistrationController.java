@@ -46,6 +46,7 @@ class GuardianRegistrationController {
     private static final String FORM_VIEW = "cadastro/responsavel";
     private static final String BLOCKED_VIEW = "cadastro/responsavel_bloqueado";
     private static final String VINCULAR_REDIRECT = "redirect:/vincular";
+    private static final String ESCOLHER_METODO_VIEW = "cadastro/responsavel_escolher_metodo";
 
     private final RegisterGuardianService service;
     private final SessionAuthenticator sessionAuthenticator;
@@ -57,6 +58,11 @@ class GuardianRegistrationController {
         this.service = service;
         this.sessionAuthenticator = sessionAuthenticator;
         this.clock = clock;
+    }
+
+    @GetMapping("/escolher-metodo")
+    String renderEscolherMetodo() {
+        return ESCOLHER_METODO_VIEW;
     }
 
     @GetMapping
