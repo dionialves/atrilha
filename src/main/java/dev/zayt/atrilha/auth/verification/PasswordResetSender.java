@@ -10,11 +10,12 @@ import java.util.UUID;
 interface PasswordResetSender {
 
     /**
-     * Envia e-mail de recuperação de senha para o account identificado.
-     * @param accountId  UUID da conta destino
-     * @param tokenUuid  UUID do token de uso único (1h TTL)
+     * Envia e-mail de recuperação de senha com dados prontos para renderização.
+     * @param toEmail    endereço de destino
+     * @param nickname   apelido (nickname) do usuário — pode ser vazio
+     * @param token      UUID do token de uso único (1h TTL)
      */
-    void send(UUID accountId, UUID tokenUuid);
+    void sendReset(String toEmail, String nickname, UUID token);
 
     /**
      * @return {@code true} se o sender está habilitado para envio real
