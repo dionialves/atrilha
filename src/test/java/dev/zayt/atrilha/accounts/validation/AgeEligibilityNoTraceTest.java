@@ -65,14 +65,8 @@ class AgeEligibilityNoTraceTest {
                 // auth/verification contém EmailVerificationToken (@Entity) e
                 // EmailVerificationTokenRepository (JpaRepository) — US-006,
                 // fora do escopo deste guardrail US-005. Excluir da verificação.
-                // auth/passwordreset contém PasswordResetToken (@Entity) e
-                // PasswordResetTokenRepository (JpaRepository) — US-008-a,
-                // fora do escopo deste guardrail US-005. Excluir da verificação.
                 String rel = AUTH_SOURCE_DIR.relativize(file).toString();
                 if (rel.startsWith("verification/") || rel.startsWith("verification\\")) {
-                    continue;
-                }
-                if (rel.startsWith("passwordreset/") || rel.startsWith("passwordreset\\")) {
                     continue;
                 }
 
