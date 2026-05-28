@@ -3,11 +3,11 @@ package dev.zayt.atrilha.auth.verification;
 import java.util.UUID;
 
 /**
- * Interface package-private para envio de e-mail de password reset.
+ * Interface para envio de e-mail de password reset.
  * Implementação no-op nesta slice (US-008-a); implementação real com JavaMail
  * vem em US-008-b no pacote {@code dev.zayt.atrilha.notifications}.
  */
-interface PasswordResetSender {
+public interface PasswordResetSender {
 
     /**
      * Envia e-mail de recuperação de senha com dados prontos para renderização.

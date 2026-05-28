@@ -15,7 +15,7 @@ class NoOpPasswordResetSender implements PasswordResetSender {
 
     @Override
     public void sendReset(String toEmail, String nickname, UUID token) {
-        log.debug("PasswordResetSender (no-op): email={}, token={}", toEmail, token);
+        log.debug("PasswordResetSender (no-op): email={}, token sent", toEmail);
     }
 
     @Override
