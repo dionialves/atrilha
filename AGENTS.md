@@ -68,6 +68,8 @@ Matriz de propriedade (workflow.md §5): `doc/Requisitos/` e `doc/UX/` são do h
 
 LGPD é load-bearing — ver ADR-005/006/007 antes de tocar consentimento, compartilhamento ou dados de menor. Reflexões são opt-in **por item**, nunca global. Idade mínima 13; 13–17 exige responsável vinculado. Texto bíblico default ARC (domínio público). **Estas constraints são bloqueio automático na revisão.**
 
+<!-- qwen:test-command: ./mvnw -q test -->
+<!-- qwen:warnings-regex: \[WARNING\] -->
 <!-- qwen:compliance-required -->
 <!-- qwen:compliance-label: LGPD -->
 
