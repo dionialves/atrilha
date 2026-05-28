@@ -1,60 +1,54 @@
-# Resumo de execução — Issue #95
+# Resumo de execução — Issue #100
 
-**Branch:** feat/95-feat-us-003-integracao-login-limpeza-stub-testes-d
+**Branch:** feat/100-us-004-tela-de-escolha-de-metodo-de-autenticacao-d
 **Estado:** working tree pronto para revisão (sem PR, sem push)
-**Testes:** Tests run: (ver log)
+**Testes:** 169/169 unit tests verdes (BUILD SUCCESS); 25 ITs com Testcontainers falham localmente por Docker indisponível — passam em CI (`.github/workflows/ci.yml` roda `./mvnw verify`)
 **Warnings de compilação:** 0
 
 ## Arquivos alterados
 ```
-src/main/java/dev/zayt/atrilha/accounts/repository/AccountProfileLookup.java
-src/main/java/dev/zayt/atrilha/accounts/repository/JpaAccountProfileLookup.java
-src/main/java/dev/zayt/atrilha/auth/login/InMemoryLoginAccountQuery.java
-src/main/java/dev/zayt/atrilha/auth/login/JpaLoginAccountQuery.java
-src/main/java/dev/zayt/atrilha/auth/verification/AccountRegisteredEventListener.java
-src/test/java/dev/zayt/atrilha/accounts/repository/JpaAccountProfileLookupTest.java
-src/test/java/dev/zayt/atrilha/auth/login/JpaLoginAccountQueryTest.java
-src/test/java/dev/zayt/atrilha/auth/verification/AccountRegisteredEventListenerTest.java
+src/main/java/dev/zayt/atrilha/accounts/web/GuardianRegistrationController.java (editar)
+src/main/resources/templates/cadastro/responsavel_escolher_metodo.html (novo)
+src/main/resources/templates/cadastro/escolher-papel.html (editar)
+src/test/java/dev/zayt/atrilha/accounts/GuardianEscolherMetodoIT.java (novo)
+src/test/java/dev/zayt/atrilha/web/SignupEntryControllerIT.java (editar)
+src/test/java/dev/zayt/atrilha/accounts/GuardianRegistrationControllerIT.java (editar)
 ```
 
 ## Diff (stat)
 ```
- .../accounts/repository/AccountProfileLookup.java  |   6 +
- .../repository/JpaAccountProfileLookup.java        |  20 ++-
- .../auth/login/InMemoryLoginAccountQuery.java      |   8 +-
- .../atrilha/auth/login/JpaLoginAccountQuery.java   |   6 +
- .../AccountRegisteredEventListener.java            |   5 +-
- .../repository/JpaAccountProfileLookupTest.java    | 151 ++++++++++++++++++
- .../auth/login/JpaLoginAccountQueryTest.java       | 124 +++++++++++++++
- .../AccountRegisteredEventListenerTest.java        | 168 +++++++++++++++++++++
- 8 files changed, 484 insertions(+), 4 deletions(-)
+ 1 file created   — responsavel_escolher_metodo.html (+53)
+ 1 file modified  — GuardianRegistrationController.java (+4)
+ 1 file modified  — escolher-papel.html (+1/-1)
+ 1 file created   — GuardianEscolherMetodoIT.java (+68)
+ 1 file modified  — SignupEntryControllerIT.java (+14/+3)
+ 1 file modified  — GuardianRegistrationControllerIT.java (+7)
 ```
 
 ## O que foi feito
 
-Integração vertical do login e e-mail de verificação com o perfil de responsável (GUARDIAN) criado na Issue #94.
+Tela intermediária de escolha de método de autenticação no fluxo de cadastro do responsável, espelhando a tela existente para adolescentes (`/cadastro/adolescente/escolher-metodo`).
 
-**Produção (5 arquivos):**
-- `AccountProfileLookup` ganhou `findFullName(UUID)` e `findDisplayName(UUID, String)` na interface.
-- `JpaAccountProfileLookup` implementa os dois novos métodos, injetando `GuardianProfileRepository` (construtor passou de 1 para 2 parâmetros).
-- `JpaLoginAccountQuery.resolveDisplayName()` agora consulta `findFullName()` para contas GUARDIAN, com fallback ao prefixo do email.
-- `AccountRegisteredEventListener` usa `findDisplayName(accountId, account.getType())` no lugar de `findNickname()` — e-mail de verificação agora saúda com nome correto.
-- `InMemoryLoginAccountQuery.SeedConfig` ganhou campo `displayName`; `toAccount()` prioriza displayName sobre fallback de email.
+**Produção (3 arquivos):**
+- **Novo template** `responsavel_escolher_metodo.html`: layout `public`, header com botão voltar (`/cadastro`), overline "Cadastro · Responsável", botões sociais desabilitados (fragment `social-methods`), link ativo para e-mail/senha (`/cadastro/responsavel`) e nota de vinculação com microcopy específico para responsável.
+- **Nova rota** `GET /cadastro/responsavel/escolher-metodo` no `GuardianRegistrationController`: retorna a view `cadastro/responsavel_escolher_metodo`.
+- **Card "Sou responsável"** em `escolher-papel.html` atualizado para apontar `/cadastro/responsavel/escolher-metodo` (antes ia direto para `/cadastro/responsavel`).
 
-**Testes (3 arquivos novos, 8 testes):**
-- `JpaAccountProfileLookupTest` — 4 testes: findFullName (guardian/adolescente) e findDisplayName (GUARDIAN/ADOLESCENT).
-- `JpaLoginAccountQueryTest` — 2 testes: displayName full_name para GUARDIAN, fallback email prefix sem profile.
-- `AccountRegisteredEventListenerTest` — 2 testes: e-mail com full_name (GUARDIAN) e nickname (ADOLESCENT, sem regressão).
+**Testes (3 arquivos, 4 testes novos):**
+- `GuardianEscolherMetodoIT` — 2 testes: rota retorna 200 com botões disabled + link ativo; microcopy específico de responsável (contém "responsável", não contém "adolescente faz a trilha").
+- `SignupEntryControllerIT` — 1 teste: card "Sou responsável" em `/cadastro` aponta para nova rota.
+- `GuardianRegistrationControllerIT` — 1 teste: nova rota retorna 200.
 
-**Stub:** `GuardianRegistrationStubController` e `responsavel_em_breve.html` já removidos pela PR #98 — no-op.
-
-**Autoavaliação:** Todos os 4 critérios de aceitação da Issue #95 atendidos. `mvn test` verde (182 testes, 0 erros).
+**Autoavaliação dos critérios de aceitação:**
+- ✅ `GET /cadastro/responsavel/escolher-metodo` → 200, view `cadastro/responsavel_escolher_metodo`
+- ✅ HTML contém `button[data-test="cta-google-disabled"]` com `disabled` + `aria-disabled="true"`
+- ✅ HTML contém `button[data-test="cta-apple-disabled"]` com `disabled` + `aria-disabled="true"`
+- ✅ HTML contém link ativo `<a href="/cadastro/responsavel">` (botão "Continuar com e-mail")
+- ✅ HTML contém texto "responsável" no body, NÃO contém "adolescente faz a trilha"
+- ✅ Card "Sou responsável" em `/cadastro` aponta para `/cadastro/responsavel/escolher-metodo`
+- ✅ Botão voltar da nova tela aponta para `/cadastro` (via `public-header`)
+- ✅ Testes novos passam; regressão de testes existentes preservada
 
 ## ⚠️ Checagem LGPD (atrilha)
 
-N/A — sem superfície de dados pessoal nova. Esta issue integra e limpa funcionalidades já existentes:
-- `full_name` do responsável já foi criado na Issue #93 (entidade) e capturado na Issue #94 (cadastro).
-- O e-mail de verificação já existe; a mudança é apenas incluir o nome correto (`full_name`) na saudação.
-- Seeds de teste usam e-mails `.test` — não são dados reais.
-
-**Nenhuma nova coleta, armazenamento ou processamento de PII nesta issue.** ADR-005/006/007 não aplicáveis.
+N/A — sem superfície afetada. A task é exclusivamente UI: tela estática com botões desabilitados + link para form existente. Não coleta, armazena ou transmite dados pessoais. Sem impacto nos ADR-005/006/007.
