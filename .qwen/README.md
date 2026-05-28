@@ -1,4 +1,8 @@
-# Agentes locais do atrilha — Scout + Arquiteto + Codificador + Revisor (Qwen Code)
+# Agentes locais — Scout + Arquiteto + Codificador + Revisor (Qwen Code)
+
+> **Project-agnostic.** Esta pasta `.qwen/` é template portável entre projetos. Convenções de stack, comandos de teste, restrições de compliance e áreas off-limits do projeto **devem** estar declaradas no `AGENTS.md` (raiz do repo) — os agentes consultam ele em runtime e não embutem nada project-specific.
+
+> **⚠️ Boilerplate obrigatório no `AGENTS.md` raiz.** Sem isso, a sessão raiz do qwen tenta executar trabalho de subagent diretamente (rodar `create_issue.sh`, escrever body files, "ler o template do arquiteto e fazer igual") e o pipeline quebra. Ao portar `.qwen/` para outro projeto, **copie a seção "Subagent Routing" do `AGENTS.md` deste repo** para o `AGENTS.md` do novo repo. Sem essa seção, o pipeline não tem como instruir a raiz a delegar.
 
 Fluxo de desenvolvimento assistido por LLM rodando 100% local via **Qwen Code CLI** (`https://github.com/QwenLM/qwen-code`) + **LM Studio**.
 
@@ -7,28 +11,28 @@ Filosofia: o LLM decide *o quê* fazer e *se aprova*; o *como* do Git é mecâni
 ## Filosofia
 
 ```
-Dioni descreve a demanda em linguagem natural
+humano descreve a demanda em linguagem natural
    │
    ▼
-[subagent arquiteto-scout]   investiga código (frugal) → coleta dados → escreve .qwen/briefs/<CODE>.md
+[subagent scout]   investiga código (frugal) → coleta dados → escreve .qwen/briefs/<CODE>.md
    │                                                                       │
    ▼                                                                       ▼
 [subagent arquiteto]          lê APENAS o brief → decide arquitetura → gh issue create
    │
    ▼
-[subagent codificador]        start_task → implementa → finish_task   (mvn test verde + SUMMARY.md)
+[subagent codificador]        start_task → implementa → finish_task   (test runner verde + SUMMARY.md)
    │
    ▼
 [subagent revisor]            load_review → audita 3 camadas → approve | reject
    │                                          │         │
    │                                     PR DRAFT   REVIEW.md (volta ao Codificador,
    ▼                                                   MESMA worktree)
-Dioni revisa PR draft → ready → merge → Issue fecha via Closes #N
+humano revisa PR draft → ready → merge → Issue fecha via Closes #N
 ```
 
-> O **planejamento em duas fases** (Scout → Arquiteto) existe porque o modelo do Arquiteto (`qwen3.6-27b-mlx`) é mais inteligente em decisão fina mas tem janela ~68k tokens — não cabe explorar repo grande. O Scout (`qwen3.6-35b-a3b-mlx`, MoE, janela maior) faz a coleta exaustiva; o Arquiteto recebe um brief compacto e gasta sua inteligência só em decisão + redação da Issue extremamente detalhada.
+> O **planejamento em duas fases** (Scout → Arquiteto) existe porque o modelo do Arquiteto (`qwen3.6-27b-mlx`) é mais inteligente em decisão fina mas tem janela ~68k tokens — não cabe explorar repo grande. O Scout (`qwen3.6-35b-a3b-ud-mlx`, MoE, janela maior) faz a coleta exaustiva; o Arquiteto recebe um brief compacto e gasta sua inteligência só em decisão + redação da Issue extremamente detalhada.
 >
-> Ambas as fases são opcionais: Dioni pode criar Issues à mão e pular direto para o Codificador.
+> Ambas as fases são opcionais: humano pode criar Issues à mão e pular direto para o Codificador.
 
 **Uma task = uma worktree isolada = uma branch (`<tipo>/<N>-<slug>`) = um PR = um commit squash.** A worktree e a branch são criadas juntas por `start_task.sh`; o Revisor faz o squash + push + abertura do PR via `approve.sh`. As worktrees vivem em `.qwen/worktrees/` (gitignorada).
 
@@ -58,14 +62,16 @@ Precedência de descoberta dos agentes:
 ├── scripts/                    # scripts determinísticos (self-contained)
 │   ├── qwen.sh                 #  [wrapper] roda `qwen` com bodyTimeout do undici zerado
 │   ├── no-undici-timeout.cjs   #  [preload] usado pelo qwen.sh
+│   ├── validate_brief.sh       #  [Scout]      lint determinístico de brief pós-Write
+│   ├── create_issue.sh         #  [Arquiteto]  brief + body file → gh issue create (sem heredoc)
 │   ├── start_task.sh           #  [Codificador] issue → worktree + branch
-│   ├── finish_task.sh          #  [Codificador] mvn test + SUMMARY.md
+│   ├── finish_task.sh          #  [Codificador] test runner + SUMMARY.md
 │   ├── load_review.sh          #  [Revisor]    dossiê read-only
 │   ├── approve.sh              #  [Revisor]    squash → push → PR DRAFT
 │   └── reject.sh               #  [Revisor]    REVIEW.md, preserva worktree
 ├── agents/
-│   ├── arquiteto-scout.md      # subagent Scout       (model: openai:qwen3.6-35b-a3b-mlx) — coleta dados
-│   ├── arquiteto.md            # subagent Arquiteto   (model: openai:qwen3.6-27b-mlx)     — decide + redige
+│   ├── scout.md                # subagent Scout       (model: openai:qwen3.6-35b-a3b-ud-mlx) — coleta dados
+│   ├── arquiteto.md            # subagent Arquiteto   (model: openai:qwen3.6-27b-mlx)        — decide + redige
 │   ├── codificador.md          # subagent Codificador (model: openai:qwen3.6-35b-a3b-ud-mlx)
 │   └── revisor.md              # subagent Revisor     (model: openai:qwen3.6-35b-a3b-mlx)
 ├── briefs/                     # handoff Scout → Arquiteto (gitignored, exceto README)
@@ -87,14 +93,14 @@ qwen --version
 - Aba **Developer** → **Start Server** (porta `1234`).
 - Habilite **JIT loading** e **deixe "Keep models loaded" DESLIGADO** (ou no máximo 1 modelo): nesta máquina só cabe **um** modelo grande por vez na RAM, então o LM Studio precisa descarregar o anterior para subir o próximo. JIT cuida desse swap automaticamente quando o `qwen` faz uma requisição para um `id` diferente do carregado.
 - **Atenção ao `n_ctx` ao carregar o modelo no LM Studio.** O campo `contextWindowSize` em `.qwen/settings.json` é só o budget que o **cliente** declara — a janela real é a que o LM Studio carregou. Se o servidor subir o modelo com `n_ctx: 32768` e o cliente mandar prompt esperando 262144, o servidor **estoura o budget e dropa a conexão** (sintoma típico: desconexão no meio de geração, mesmo com `timeout` alto). Carregue cada modelo com `n_ctx` igual (ou maior) ao `contextWindowSize` declarado:
-  - `qwen3.6-35b-a3b-mlx` → **n_ctx ≥ 262144** (Scout + Revisor — mesmo modelo).
-  - `qwen3.6-35b-a3b-ud-mlx` → **n_ctx ≥ 262144** (Codificador).
+  - `qwen3.6-35b-a3b-ud-mlx` → **n_ctx ≥ 262144** (Scout + Codificador — mesmo modelo).
+  - `qwen3.6-35b-a3b-mlx` → **n_ctx ≥ 262144** (Revisor — e default da sessão raiz).
   - `qwen3.6-27b-mlx` → **n_ctx ≥ 68000** (Arquiteto — janela apertada por design, brief compacto cabe).
-- Como **Scout e Revisor usam o mesmo modelo** (`qwen3.6-35b-a3b-mlx`), o ciclo completo (scout → arquiteto → codificador → revisor) tem **três swaps**: `35b-a3b-mlx → 27b-mlx → 35b-a3b-ud-mlx → 35b-a3b-mlx`. Cada swap custa 30–90s (já coberto pelos `timeout: 1800000` ms / 30 min).
+- Como **Scout e Codificador usam o mesmo modelo** (`qwen3.6-35b-a3b-ud-mlx`), o ciclo completo (scout → arquiteto → codificador → revisor) tem **três swaps**: `35b-a3b-ud-mlx → 27b-mlx → 35b-a3b-ud-mlx → 35b-a3b-mlx`. O swap scout→codificador é zero-cost (mesmo modelo, sessão diferente). Cada swap real custa 30–90s (já coberto pelos `timeout: 1800000` ms / 30 min).
 - Modelos esperados:
-  - `qwen3.6-35b-a3b-mlx` — Scout + Revisor (e default da sessão raiz).
+  - `qwen3.6-35b-a3b-ud-mlx` — Scout + Codificador (mesmo modelo).
+  - `qwen3.6-35b-a3b-mlx` — Revisor (e default da sessão raiz).
   - `qwen3.6-27b-mlx` — Arquiteto (decisão fina; janela apertada exige brief do Scout).
-  - `qwen3.6-35b-a3b-ud-mlx` — Codificador.
   - `qwen3-14b-mlx` — fallback leve (opcional).
 
 Validar:
@@ -161,76 +167,80 @@ QWEN_DEBUG_PRELOAD=1 bash .qwen/scripts/qwen.sh   # confirma que o patch foi apl
 Sugestão de alias em `~/.zshrc` / `~/.bashrc`:
 
 ```bash
-alias qwen='bash $HOME/sources/atrilha/.qwen/scripts/qwen.sh'
+alias qwen='bash $PWD/.qwen/scripts/qwen.sh'   # ou caminho absoluto do seu repo
 ```
 
 ## Uso
 
 > **Como invocar subagents no Qwen Code**: o `qwen` não tem comando "mudar de persona"; você delega na própria mensagem inicial nomeando o agente. Frases canônicas abaixo. Sempre comece a sessão dentro do diretório do projeto e use o wrapper `qwen.sh` (ou alias `qwen`) para evitar `Body Timeout Error`.
 
-### ⚠️ Armadilha de roteamento: NÃO use "planejar" sem citar o `arquiteto-scout`
+### ⚠️ Armadilha de roteamento: NÃO use "planejar" sem citar o `scout`
 
-O agente raiz do qwen-code faz match semântico entre a sua mensagem e a `description` dos subagents. Frases ambíguas como **"crie o planejamento da US-XXX"** ou **"planeje a US-XXX"** podem ser roteadas para o `arquiteto` (que cria a Issue) em vez do `arquiteto-scout` (que faz a investigação). O `arquiteto` é gatilho da **fase 2** e tem protocolo de recusa formal quando o brief não existe — mas o ideal é não chegar até essa recusa.
+O agente raiz do qwen-code faz match semântico entre a sua mensagem e a `description` dos subagents. Frases ambíguas como **"crie o planejamento da US-XXX"** ou **"planeje a US-XXX"** podem ser roteadas para o `arquiteto` (que cria a Issue) em vez do `scout` (que faz a investigação). O `arquiteto` é gatilho da **fase 2** e tem protocolo de recusa formal quando o brief não existe — mas o ideal é não chegar até essa recusa.
 
 **Sempre nomeie o agente explicitamente na primeira mensagem da sessão**:
 
-- ✅ `Use o arquiteto-scout para preparar o brief de US-004. Escopo: ...`
+- ✅ `Use o scout para preparar o brief de US-004. Escopo: ...`
 - ✅ `Use o arquiteto para gerar a Issue de US-004` (somente depois do scout ter escrito o brief)
 - ❌ `Planeje a US-004` (ambíguo — pode ir para o `arquiteto`)
 - ❌ `Crie o planejamento da US-004` (idem)
 - ❌ `Investigue e crie a Issue da US-004` (idem; mistura as duas fases)
 
-Se mesmo nomeando `arquiteto-scout` o qwen-code rotear para o `arquiteto`, o `arquiteto` deve recusar formalmente e devolver com instrução clara para invocar o scout. Se isso acontecer com frequência, abra Issue no qwen-code reportando o picker.
+Se mesmo nomeando `scout` o qwen-code rotear para o `arquiteto`, o `arquiteto` deve recusar formalmente e devolver com instrução clara para invocar o scout. Se isso acontecer com frequência, abra Issue no qwen-code reportando o picker.
 
 ### Sessão 1a — delegando ao Scout (fase 1 do planejamento — opcional)
 
 ```bash
-cd /Users/dionia.oliveira/sources/atrilha
+cd <raiz-do-repo>
 qwen
-# >  Use o arquiteto-scout para preparar o brief da US-042 (cadastro com responsável).
-#   → o subagent arquiteto-scout roda com modelo openai:qwen3.6-35b-a3b-mlx
+# >  Use o scout para preparar o brief de US-042 (descrição opcional).
+#   → o subagent scout roda com modelo openai:qwen3.6-35b-a3b-ud-mlx
 #   → lê código com política frugal (Grep + Read offset/limit), consulta gh issue list
-#   → escreve .qwen/briefs/US-042.md (dados factuais: arquivos, snippets literais, migrations, testes, issues relacionadas, LGPD, stack)
+#   → escreve .qwen/briefs/US-042.md (dados factuais: arquivos, snippets literais, migrations, testes, issues relacionadas, compliance, stack)
 #   → devolve: caminho do brief + "Use o arquiteto para gerar a Issue de US-042"
 ```
 
-### Sessão 1a-bis — quando o Scout detecta demanda grande (slicing)
+### Sessão 1a-bis — quando o Scout detecta demanda grande (slicing autônomo, single-pass)
 
-Se a demanda investigada estoura os limites de "brief único" (> 2 camadas, > 5 arquivos, > 1 migration, > 1 fluxo de UI, > 5 testes novos), o Scout NÃO escreve um brief gigante. Em vez disso, escreve uma **slicing proposal** em `.qwen/briefs/<CODE>-slicing.md` propondo 2-6 slices independentemente entregáveis com ordem topológica.
+Se a demanda estoura **qualquer** cap duro do protocolo numérico §4 do scout (> 4 camadas, > 8 arquivos novos, > 10 total, > 1 migration, > 2 templates HTML, > 1 template email, > 3 endpoints, > 8 chaves i18n, > 6 testes, output_estimado > 18000 chars), o Scout NÃO escreve brief único e NÃO pede aprovação. Ele **decide autonomamente** a quebra e escreve **tudo em uma única passada**:
 
-Fluxo completo nesse caso:
+- `.qwen/briefs/<CODE>-slicing.md` — log de auditoria da decisão (raciocínio, números, alternativas descartadas — referência para o humano auditar)
+- `.qwen/briefs/<CODE>-a.md`, `<CODE>-b.md`, ... — briefs por slice, com `Depende de: <CODE>-<letra>` (códigos, não `#N`)
+
+Fluxo completo:
 
 ```bash
-# 1ª passada — Scout detecta tamanho e propõe quebra:
-> Use o arquiteto-scout para preparar o brief de US-042
-#   → Scout descobre que é grande, escreve .qwen/briefs/US-042-slicing.md
-#   → Devolve: "Revise .qwen/briefs/US-042-slicing.md e responda com 'gerar os briefs das slices aprovadas de US-042'"
+# Single-pass: scout investiga, mede, decide quebra, escreve tudo:
+> Use o scout para preparar o brief de US-042
+#   → Scout: investiga, detecta caps duros estourados, planeja N slices,
+#     escreve <CODE>-slicing.md + <CODE>-a.md + <CODE>-b.md + ... numa só passada
+#   → Devolve lista ordenada topologicamente com os comandos para invocar arquiteto
 
-# Humano abre US-042-slicing.md, lê a proposta, decide:
-#   - Aprovar: comando abaixo
-#   - Refinar: "Refaça a slicing proposal de US-042 considerando <ajuste>"
+# (Opcional) humano audita .qwen/briefs/US-042-slicing.md
+# Se discordar da quebra, apaga tudo e re-invoca com diretriz:
+> rm .qwen/briefs/US-042*
+> Use o scout para preparar o brief de US-042, considerando: <ajuste>
+#   ex.: "considere juntar -c e -d numa única slice"
+#   ex.: "quebre por fluxo de usuário, não por camada"
+#   ex.: "force brief único — vou implementar tudo num único PR, ciente do esforço"
 
-# 2ª passada — Scout escreve os briefs das slices aprovadas:
-> Use o arquiteto-scout para gerar os briefs das slices aprovadas de US-042
-#   → Scout produz .qwen/briefs/US-042-a.md, US-042-b.md, US-042-c.md, ...
-#   → Cada brief com "Depende de: <CODE>-<letra>" (códigos, não #N)
-#   → Devolve a lista em ordem topológica
-
-# Para cada slice, em ordem topológica (Arquiteto resolve dependências via gh):
+# Para criar as Issues, uma por vez, em ordem topológica (Arquiteto resolve dependências via gh):
 > Use o arquiteto para gerar a Issue de US-042-a   # cria #142
 > Use o arquiteto para gerar a Issue de US-042-b   # resolve "Depende de US-042-a" → #142
 > Use o arquiteto para gerar a Issue de US-042-c   # resolve dependências
 # (Arquiteto recusa se você invocar fora de ordem; não cria Issue cuja dependência ainda não virou Issue)
 ```
 
-Convenção e detalhes em [`.qwen/briefs/README.md`](briefs/README.md).
+**Sem gate de aprovação**: o humano delegou a decisão ao scout. A revisão é assíncrona (auditar o slicing log, refazer se preciso), não bloqueante.
+
+Convenção, caps duros e detalhes em [`.qwen/briefs/README.md`](briefs/README.md).
 
 ### Sessão 1b — delegando ao Arquiteto (fase 2 do planejamento — opcional)
 
 > Pode rodar na MESMA sessão depois do Scout (não dispara swap se você ficar no mesmo modelo) OU em sessão nova. Como Scout usa 35b-a3b-mlx e Arquiteto usa 27b-mlx, **há um swap** entre as duas fases.
 
 ```bash
-cd /Users/dionia.oliveira/sources/atrilha
+cd <raiz-do-repo>
 qwen
 # >  Use o arquiteto para gerar a Issue de US-042.
 #   → o subagent arquiteto roda com modelo openai:qwen3.6-27b-mlx
@@ -240,25 +250,25 @@ qwen
 #   → devolve: #142 — https://github.com/.../issues/142 → próximo agente: codificador
 ```
 
-**Se o brief não existir** (`.qwen/briefs/US-042.md` ausente), o Arquiteto para e pede ao Dioni rodar o Scout antes.
+**Se o brief não existir** (`.qwen/briefs/US-042.md` ausente), o Arquiteto para e pede ao humano rodar o Scout antes.
 
 ### Sessão 2 — delegando ao Codificador
 
 ```bash
-cd /Users/dionia.oliveira/sources/atrilha
+cd <raiz-do-repo>
 qwen
 # >  Use o codificador para iniciar a implementação da issue #61.
 #   → o subagent roda automaticamente com modelo openai:qwen3.6-35b-a3b-ud-mlx
 #   → executa: bash .qwen/scripts/start_task.sh 61
 #   → trabalha DENTRO da worktree .qwen/worktrees/feat-61-...
 #   → "finalize" → bash .qwen/scripts/finish_task.sh 61
-#   → edita SUMMARY.md (narrativa + LGPD)
+#   → edita SUMMARY.md (narrativa + checagem de compliance se o AGENTS.md exigir)
 ```
 
 ### Sessão 3 — delegando ao Revisor (sequencial: feche a sessão do Codificador antes)
 
 ```bash
-cd /Users/dionia.oliveira/sources/atrilha
+cd <raiz-do-repo>
 qwen
 # >  Use o revisor para auditar a issue #61.
 #   → o subagent roda com modelo openai:qwen3.6-35b-a3b-mlx
@@ -270,11 +280,11 @@ qwen
 
 ### Após PR criado
 
-1. Dioni abre o PR no GitHub.
+1. humano abre o PR no GitHub.
 2. Confere o diff, converte para **Ready for review**.
 3. Mergeia (estratégia merge commit — padrão do repo).
 4. Issue fecha automaticamente via `Closes #<N>` no body.
-5. **Atualizar `doc/changelog.md` e `doc/release_notes/unreleased.md` (humano, pós-merge).** O Revisor está proibido de tocar `doc/**` em qualquer momento do ciclo — essa entrada é exclusiva do Dioni e acontece **depois** do merge, não no PR draft.
+5. **Atualizar quaisquer docs off-limits para os agentes** (changelog, release notes, etc. — listados no `AGENTS.md`). Isso é responsabilidade do humano pós-merge — o Revisor está proibido de tocá-los em qualquer momento do ciclo.
 6. Limpar:
    ```bash
    git worktree remove .qwen/worktrees/<dir>
@@ -284,11 +294,11 @@ qwen
 ## Notas
 
 - **PR sempre draft.** Rede contra Revisor local aprovar algo com teste verde mas lógica errada. Quando confiar nos pareceres, troque `--draft` em `approve.sh`.
-- **Sessões serializadas (1 modelo por vez).** A máquina não comporta dois modelos grandes simultâneos na RAM. Rode **uma persona de cada vez**: feche a sessão do Scout antes de abrir a do Arquiteto, do Arquiteto antes da do Codificador, e do Codificador antes da do Revisor. O LM Studio descarrega o anterior e sobe o próximo automaticamente via JIT no primeiro request. **Scout → Revisor (ou Revisor → Scout) não dispara swap**, pois compartilham `qwen3.6-35b-a3b-mlx`. **Não rode #61 e #58 em paralelo** — worktrees são isoladas, mas o modelo no LM Studio não é.
+- **Sessões serializadas (1 modelo por vez).** A máquina não comporta dois modelos grandes simultâneos na RAM. Rode **uma persona de cada vez**: feche a sessão do Scout antes de abrir a do Arquiteto, do Arquiteto antes da do Codificador, e do Codificador antes da do Revisor. O LM Studio descarrega o anterior e sobe o próximo automaticamente via JIT no primeiro request. **Scout → Codificador (ou Codificador → Scout) não dispara swap**, pois compartilham `qwen3.6-35b-a3b-ud-mlx`. **Não rode #61 e #58 em paralelo** — worktrees são isoladas, mas o modelo no LM Studio não é.
 - **Primeiro request após swap é lento.** Carga de um modelo MLX leva 30–90s. Os `timeout: 1800000` (30 min) no `settings.json` cobrem isso com folga; só fique atento à primeira resposta de cada role-switch.
 - **`reject` preserva a worktree** e escreve `REVIEW.md` — o Codificador retoma de onde parou.
-- **QA** está embutido no `mvn test` obrigatório de `finish_task`/`load_review` (verde é trava). Não há subagent QA dedicado no atrilha.
-- **Documentação canônica do ciclo**: `doc/workflow.md` (conceitual completo) e `AGENTS.md` (operacional).
+- **QA** está embutido no test runner obrigatório de `finish_task`/`load_review` (verde é trava). Não há subagent QA dedicado.
+- **Documentação canônica do ciclo**: o `AGENTS.md` (raiz do projeto) carrega as convenções do projeto que os agentes precisam conhecer em runtime.
 
 ## Troubleshooting
 

@@ -29,25 +29,7 @@ Dioni  →  revisa PR draft → converte para ready → merge
 
 ### Isolamento por git worktree
 
-Cada task vive em uma worktree física isolada em `../<repo>-worktrees/<tipo>-<numero>-<slug>`, permitindo tasks em paralelo (o Codificador trabalha a #42 enquanto você revisa o PR da #38). As tools de Git são **scripts determinísticos** em `.pi/scripts/` — o LLM nunca compõe `git worktree`, `push` ou `gh pr create` cru.
-
-### Configuração do PI Agent
-
-Modelo/provider em `~/.pi/agent/models.json` (copiar de `pi-global/models.json` — registra o LM Studio); papéis Codificador/Revisor descritos em `.pi/SYSTEM.md` (auto-carregado); modelos habilitados em `.pi/settings.json`. O agente assume um papel por sessão e troca de modelo com `/model`. Setup completo em `.pi/README.md`.
-
-### Configuração do OpenCode
-
-Mesmo fluxo, runner alternativo: `.opencode/agents/codificador.md` e `.opencode/agents/revisor.md` espelham os papéis (formato YAML frontmatter + prompt). **Os scripts foram copiados para `.opencode/scripts/`** (cópia idêntica de `.pi/scripts/`) — cada runner é autocontido; se evoluir um lado, sincronize o outro. Troca de papel via `/agent codificador|revisor`; troca de modelo via `/model`. Setup completo em `.opencode/README.md`.
-
-### Tools dos agentes (`.pi/scripts/`)
-
-| Tool | Agente | Faz |
-|------|--------|-----|
-| `start_task <N>` | Codificador | valida issue, deriva branch/slug das labels, cria worktree, devolve plano |
-| `finish_task <N>` | Codificador | roda `mvn test`, checa warnings, gera SUMMARY.md |
-| `load_review <N>` | Revisor | dossiê read-only: issue + SUMMARY + re-teste + diff |
-| `approve <N>` | Revisor | squash → docs → push → **PR draft** com `Closes #N` |
-| `reject <N> "<motivo>"` | Revisor | escreve REVIEW.md, preserva worktree, devolve ao Codificador |
+Cada task vive em uma worktree física isolada em `<repo>/<runner>/worktrees/<tipo>-<numero>-<slug>`. As tools de Git são **scripts determinísticos** no diretório do runner ativo (`.pi/scripts/`, `.opencode/scripts/`, `.qwen/scripts/`) — o LLM nunca compõe `git worktree`, `push` ou `gh pr create` cru. Setup específico de cada runner está no `README.md` da sua pasta.
 
 ## Project Structure & Module Organization
 
@@ -84,4 +66,54 @@ Matriz de propriedade (workflow.md §5): `doc/Requisitos/` e `doc/UX/` são do h
 
 ## Non-Negotiable Product Constraints
 
-LGPD é load-bearing — ver ADR-005/006/007 antes de tocar consentimento, compartilhamento ou dados de menor. Reflexões são opt-in **por item**, nunca global. Idade mínima 13; 13–17 exige responsável vinculado. Texto bíblico default ARC (domínio público). **Estas constraints são bloqueio automático na revisão** (ver `.pi/SYSTEM.md`).
+LGPD é load-bearing — ver ADR-005/006/007 antes de tocar consentimento, compartilhamento ou dados de menor. Reflexões são opt-in **por item**, nunca global. Idade mínima 13; 13–17 exige responsável vinculado. Texto bíblico default ARC (domínio público). **Estas constraints são bloqueio automático na revisão.**
+
+<!-- qwen:compliance-required -->
+<!-- qwen:compliance-label: LGPD -->
+
+## Subagent Routing (qwen-code) — sessão raiz é roteador, NÃO executor
+
+> Esta seção é **boilerplate obrigatório** do template `.qwen/`. Sem ela, a sessão raiz tenta executar trabalho de subagent diretamente e o pipeline quebra. Quando portar `.qwen/` para outro projeto, copie esta seção inteira para o `AGENTS.md` do novo repo.
+
+A sessão raiz do qwen é um **roteador**. Quando você (LLM da raiz) receber um pedido que se encaixa em qualquer dos papéis abaixo, **invoque o subagent correspondente via a tool `Agent`** — nunca tente executar o papel você mesmo, mesmo que tenha as tools necessárias.
+
+### Tabela de roteamento por intenção
+
+| O usuário pede algo como... | Delegue para | Frase canônica para invocar |
+|---|---|---|
+| "planejar US-XXX", "preparar brief de", "investigar para X" | `scout` | `Use o scout para preparar o brief de <CODE>` |
+| "criar / gerar a Issue de", "sintetizar o brief de" | `arquiteto` | `Use o arquiteto para gerar a Issue de <CODE>` |
+| "implementar / codificar / iniciar a issue #N" | `codificador` | `Use o codificador para iniciar a implementação da issue #N` |
+| "revisar / auditar / aprovar a issue #N" | `revisor` | `Use o revisor para auditar a issue #N` |
+
+### Decisão por estado (quando o pedido é ambíguo, ex.: "vamos para US-008-b")
+
+Inspecione o disco/GitHub do **estado mais avançado para o mais atrasado** — a primeira regra que bate ganha. Estados anteriores podem ter artefatos ausentes (ex.: brief apagado após Issue criada — comportamento normal, ver `briefs/README.md`).
+
+1. **Worktree tem `SUMMARY.md` e ainda não há PR** (`gh pr list --head <branch>` vazio) → delegue ao **`revisor`**
+2. **Issue OPEN existe mas worktree não** (`ls .qwen/worktrees/*-<N>-*` vazio) → delegue ao **`codificador`** (o brief é INPUT do arquiteto que já passou; **não é pré-requisito do codificador**)
+3. **Brief existe mas Issue não foi criada** (`gh issue list --state all --search "<CODE> in:title"` vazio) → delegue ao **`arquiteto`**
+4. **Nada existe** (sem brief, sem Issue, sem worktree) → delegue ao **`scout`**
+
+⚠️ **Anti-padrão comum**: brief ausente NÃO é sinal automático de "rode scout". Se a Issue para o `<CODE>` já existe no GitHub, o brief virou descartável (foi consumido pelo arquiteto). Cheque GH **antes** de assumir que precisa do scout.
+
+### Proibições absolutas da sessão raiz
+
+A sessão raiz **NUNCA**:
+
+- Roda `.qwen/scripts/create_issue.sh`, `start_task.sh`, `finish_task.sh`, `load_review.sh`, `approve.sh`, `reject.sh` diretamente
+- Escreve em `.qwen/briefs/`, `.qwen/tmp/`, `.qwen/worktrees/`
+- Lê `.qwen/agents/scout.md`, `arquiteto.md`, `codificador.md`, `revisor.md` para "imitar" o subagent (esses prompts pertencem aos próprios subagents — você lê AGENTS.md, não os deles)
+- Improvisa o body de uma Issue, executa o plano de uma Issue, audita um diff
+- Responde com "ok, vou escrever o body eu mesmo" quando um script de subagent falha — em vez disso, delegue ao subagent correto
+
+Se a sessão raiz se vir tentada a fazer qualquer dessas coisas, **pare e delegue** ao subagent apropriado. Errar por excesso de delegação é OK; errar por excesso de execução quebra o pipeline.
+
+### Exceção: perguntas conceituais e investigação leve
+
+A sessão raiz **pode**:
+
+- Responder perguntas sobre o projeto / convenções / arquitetura (consultando esta AGENTS.md ou rodando Grep/Read pontuais)
+- Listar briefs/Issues/worktrees existentes para diagnóstico
+- Apontar o estado do pipeline para o usuário ("o brief X existe, próximo passo: invoque o arquiteto")
+- Editar este `AGENTS.md` e arquivos em `.qwen/` quando o usuário pedir explicitamente para configurar/ajustar o pipeline

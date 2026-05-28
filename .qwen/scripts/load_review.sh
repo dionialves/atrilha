@@ -4,12 +4,11 @@
 # Tool do REVISOR. Monta o dossiê completo de auditoria:
 #   1. Localiza a worktree da issue
 #   2. Puxa a issue original (plano + critérios de aceitação)
-#   3. Re-roda mvn test (Revisor NUNCA aprova sem testar)
+#   3. Re-roda o test runner do projeto (Revisor NUNCA aprova sem testar)
 #   4. Mostra o SUMMARY do Codificador
 #   5. Mostra o diff completo contra main
 #
-# O Revisor lê tudo isto, audita em 3 camadas (plano / qualidade /
-# critérios) e então chama approve OU reject. Esta tool é READ-ONLY.
+# READ-ONLY. Revisor audita e chama approve OU reject em seguida.
 set -euo pipefail
 
 ISSUE="${1:?uso: load_review <numero-da-issue>}"
@@ -26,7 +25,9 @@ fi
 
 cd "$WT_PATH"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-MVN="./mvnw"; [ -x "./mvnw" ] || MVN="mvn"
+
+# shellcheck disable=SC1091
+source "$(dirname "$0")/_project.sh"
 
 echo "=== DOSSIÊ DE REVISÃO — Issue #${ISSUE} (${BRANCH}) ==="
 echo ""
@@ -41,11 +42,11 @@ else
   echo "AVISO: SUMMARY.md ausente — Codificador não finalizou corretamente."
 fi
 echo ""
-echo "--- 3. RE-EXECUÇÃO DOS TESTES (mvn test) ---"
+echo "--- 3. RE-EXECUÇÃO DO TEST RUNNER (${QWEN_TEST_CMD}) ---"
 TEST_LOG="$(mktemp)"
-if $MVN -q test >"$TEST_LOG" 2>&1; then
+if bash -c "$QWEN_TEST_CMD" >"$TEST_LOG" 2>&1; then
   echo "RESULTADO: VERDE"
-  grep -E 'Tests run:' "$TEST_LOG" | tail -n1 || true
+  tail -n 5 "$TEST_LOG" | tr -d '\r' || true
 else
   echo "RESULTADO: VERMELHO — NÃO APROVE. Devolva ao Codificador."
   tail -n 30 "$TEST_LOG"
@@ -56,6 +57,11 @@ echo "--- 4. DIFF COMPLETO vs origin/main ---"
 git diff origin/main
 echo ""
 echo "=== FIM DO DOSSIÊ ==="
-echo ">>> Audite em 3 camadas: (A) aderência ao plano, (B) qualidade técnica, (C) critérios de aceitação."
-echo ">>> ATENÇÃO LGPD: se o diff toca consentimento/compartilhamento/dados de menor, verifique ADR-005/006/007."
+echo ">>> Audite em 4 camadas:"
+echo ">>>   (A) aderência ao plano da Issue"
+echo ">>>   (B) qualidade técnica conforme AGENTS.md"
+echo ">>>   (C) critérios de aceitação observáveis"
+echo ">>>   (D) coerência com padrões IMPLÍCITOS do projeto — explore 2-3 análogos por arquivo novo"
+echo ">>>       (Grep/Glob/Read em ~5-15 chamadas; veja revisor.md §2 D)"
+echo ">>> Cheque restrições de compliance declaradas em AGENTS.md (raiz)."
 echo ">>> Decisão: approve ${ISSUE}  |  reject ${ISSUE} \"<motivo>\""

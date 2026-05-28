@@ -3,5 +3,5 @@ package.json
 package-lock.json
 bun.lock
 worktrees/
-briefs/*.md
 !briefs/README.md
+tmp/

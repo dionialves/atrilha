@@ -2,14 +2,14 @@
 # approve.sh <issue_number>
 #
 # Tool do REVISOR — só deve ser chamada APÓS o veredito APROVADO.
-# Executa a parte mecânica do fechamento (workflow.md §3.4 passo 6):
-#   1. Re-valida testes verdes (trava de segurança)
+# Executa o fechamento mecânico:
+#   1. Re-valida testes verdes via test runner do projeto (trava de segurança)
 #   2. Squash dos commits da branch em um único commit limpo
 #   3. Push da branch
 #   4. Cria PR como DRAFT via gh, com "Closes #<N>" no body
 #
-# O PR sai como DRAFT de propósito: o humano (Dioni) revisa, converte
-# para ready e faz o merge. Modelo local aprova leniente demais.
+# O PR sai como DRAFT de propósito: o humano revisa, converte para ready
+# e faz o merge. Modelo local aprova leniente demais.
 set -euo pipefail
 
 ISSUE="${1:?uso: approve <numero-da-issue>}"
@@ -23,11 +23,13 @@ WT_PATH="$(find -L "$WT_BASE" -maxdepth 1 -type d -name "*-${ISSUE}-*" | head -n
 
 cd "$WT_PATH"
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-MVN="./mvnw"; [ -x "./mvnw" ] || MVN="mvn"
+
+# shellcheck disable=SC1091
+source "$(dirname "$0")/_project.sh"
 
 # --- trava de segurança: testes têm que estar verdes ---
-echo "=== Validação final de testes antes de abrir PR ===" >&2
-if ! $MVN -q test >/dev/null 2>&1; then
+echo "=== Validação final de testes antes de abrir PR (${QWEN_TEST_CMD}) ===" >&2
+if ! bash -c "$QWEN_TEST_CMD" >/dev/null 2>&1; then
   echo "ERRO: suíte VERMELHA. PR não será criado. Devolva ao Codificador." >&2
   exit 1
 fi
@@ -82,6 +84,6 @@ Branch: ${BRANCH}
 Commit: ${COMMIT_MSG}
 PR:     ${PR_URL}  (DRAFT)
 
->>> Dioni: revise o PR, converta para "Ready for review" e faça o merge.
+>>> Humano: revise o PR, converta para "Ready for review" e faça o merge.
 >>> A Issue #${ISSUE} fecha automaticamente no merge (Closes #${ISSUE}).
 EOF
