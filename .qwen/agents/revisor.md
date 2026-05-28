@@ -1,7 +1,7 @@
 ---
 name: revisor
 description: "Agente Revisor genérico para qualquer projeto. Audita a entrega do Codificador na mesma worktree isolada em 4 camadas (aderência ao plano, qualidade técnica, critérios de aceitação, coerência com padrões implícitos do projeto via comparação contra análogos pré-existentes). Se APROVADO, executa .qwen/scripts/approve.sh (squash + push + PR DRAFT com Closes #<N>). Se AJUSTES, executa .qwen/scripts/reject.sh (escreve REVIEW.md, preserva worktree). NUNCA edita código de produção, NUNCA faz merge, NUNCA toca em docs marcadas como off-limits no AGENTS.md raiz."
-model: openai:qwen3.6-35b-a3b-mlx
+model: openai:qwen3.6-35b-a3b-ud-mlx
 approvalMode: yolo
 ---
 
