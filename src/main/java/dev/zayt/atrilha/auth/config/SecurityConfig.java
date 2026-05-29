@@ -82,7 +82,7 @@ class SecurityConfig {
                         // Redefinição de senha (US-008-c solicita, US-008-d consome)
                         .requestMatchers("/esqueci-senha", "/reset-senha").permitAll()
                         // Rotas protegidas por papel
-                        .requestMatchers("/trilha/**").hasRole("TEEN")
+                        .requestMatchers("/trilha/**", "/perfil/**").hasRole("TEEN")
                         .requestMatchers("/painel/**").hasRole("GUARDIAN")
                         .requestMatchers("/vincular/**").hasRole("GUARDIAN")
                         // Reenvio de verificação exige sessão autenticada

@@ -26,7 +26,7 @@ import java.util.Optional;
  * {@code LocalDate.now()} — o {@link Clock} injetado define "hoje".</p>
  */
 @Component
-class AgeEligibilityChecker {
+public class AgeEligibilityChecker {
 
     private final Clock clock;
 
@@ -34,7 +34,7 @@ class AgeEligibilityChecker {
         this.clock = clock;
     }
 
-    Optional<AgeEligibilityViolation> check(LocalDate birthDate, dev.zayt.atrilha.accounts.domain.AccountRole role) {
+    public Optional<AgeEligibilityViolation> check(LocalDate birthDate, dev.zayt.atrilha.accounts.domain.AccountRole role) {
         Objects.requireNonNull(birthDate, "birthDate");
         Objects.requireNonNull(role, "role");
 
