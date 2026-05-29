@@ -17,68 +17,80 @@
             ></header>
 
             <main class="login">
+
                 <!-- Mensagem de sucesso (após redirect com flash) -->
-                <div th:if="${sent}" class="max-w-md mx-auto mt-16 p-6 bg-white rounded-xl shadow-lg">
-                    <h1 class="text-2xl font-bold text-gray-900 mb-4"
-                        th:text="#{password-reset.success.heading}">
-                        Verifique seu e-mail
-                    </h1>
-                    <p class="text-gray-600 mb-6"
-                       th:text="#{password-reset.success.message}">
-                        Se este e-mail estiver cadastrado, enviamos um link para redefinir sua senha.
-                    </p>
-                    <a th:href="@{/login}"
-                       class="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
-                        <span th:text="#{password-reset.success.backLink}">Voltar ao login</span>
-                    </a>
+                <div th:if="${sent}" role="status" class="alert alert--success login__alert">
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M9 12l2 2 4-4" />
+                        <circle cx="12" cy="12" r="9" />
+                    </svg>
+                    <div>
+                        <p class="login__intro" style="margin-bottom: var(--space-6)">
+                            <span class="overline">E-mail enviado</span>
+                            <h1 th:text="#{password-reset.success.heading}">Verifique seu e-mail</h1>
+                        </p>
+                        <p class="login__lead"
+                           th:text="#{password-reset.success.message}"
+                           style="margin-bottom: var(--space-6)">
+                            Se este e-mail estiver cadastrado, enviamos um link para redefinir sua senha.
+                        </p>
+                        <a th:href="@{/login}"
+                           class="btn btn-primary btn-lg btn--block"
+                           th:text="#{password-reset.success.backLink}">
+                            Voltar ao login
+                        </a>
+                    </div>
                 </div>
 
                 <!-- Formulário (primeira visita ou erro de validação) -->
-                <div th:unless="${sent}" class="max-w-md mx-auto mt-16 p-6 bg-white rounded-xl shadow-lg">
-                    <h1 class="text-2xl font-bold text-gray-900 mb-2"
-                        th:text="#{password-reset.form.heading}">
-                        Esqueci minha senha
-                    </h1>
-                    <p class="text-gray-500 text-sm mb-6"
-                       th:text="#{password-reset.form.instructions}">
-                        Informe seu e-mail para receber um link de redefinição.
-                    </p>
+                <div th:unless="${sent}">
+                    <header class="login__intro">
+                        <p class="overline">Recuperar acesso</p>
+                        <h1 th:text="#{password-reset.form.heading}">Esqueci minha senha</h1>
+                        <p class="login__lead"
+                           th:text="#{password-reset.form.instructions}">
+                            Informe seu e-mail para receber um link de redefinição.
+                        </p>
+                    </header>
 
-                    <form th:action="@{/esqueci-senha}" method="post" th:object="${request}">
+                    <form th:action="@{/esqueci-senha}" method="post" th:object="${request}" class="login__form">
 
-                        <!-- Erros de validação do campo -->
-                        <div th:if="${#fields.hasErrors('email')}"
-                             class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"
-                             role="alert">
-                            <span th:errors="*{email}">Erro de validação</span>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="email"
-                                   class="block text-sm font-medium text-gray-700 mb-1"
-                                   th:text="#{password-reset.form.emailLabel}">
-                                E-mail
-                            </label>
-                            <input type="email" id="email" name="email" th:field="*{email}"
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        <!-- E-mail -->
+                        <div class="input-group" th:classappend="${#fields.hasErrors('email')} ? 'input-group--error' : ''">
+                            <label for="email" class="input-label" th:text="#{password-reset.form.emailLabel}">E-mail</label>
+                            <input id="email" type="email" name="email" th:field="*{email}"
+                                   th:attr="aria-invalid=${#fields.hasErrors('email')}, aria-describedby=${#fields.hasErrors('email')} ? 'email-error' : null"
+                                   class="input-field" maxlength="255"
                                    placeholder="seu@email.com"
-                                   autocomplete="email">
+                                   autocomplete="email"/>
+                            <span th:if="${#fields.hasErrors('email')}" id="email-error" class="input-error" role="alert"
+                                  th:errors="*{email}">Erro de validação</span>
                         </div>
 
                         <button type="submit"
-                                class="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                                class="btn btn-primary btn-lg btn--block"
                                 th:text="#{password-reset.form.submit}">
                             Enviar link de redefinição
                         </button>
                     </form>
 
-                    <p class="text-center text-sm text-gray-500 mt-4">
-                        <a th:href="@{/login}" class="text-indigo-600 hover:underline"
+                    <!-- Links de apoio. -->
+                    <nav class="login__links" aria-label="Mais opções">
+                        <a class="login__link login__link--muted" th:href="@{/login}"
                            th:text="#{password-reset.form.backLink}">
                             Voltar ao login
                         </a>
-                    </p>
+                    </nav>
                 </div>
+
             </main>
 
         </th:block>
