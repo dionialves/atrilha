@@ -9,8 +9,8 @@ description: >-
   (fase 1) ou sem Issue (fase 2), recusa formalmente. Não investiga código do
   projeto — o material factual já está no brief. Para 'planejar/investigar/preparar
   brief' use o `scout`.
-mode: subagent
-model: lmstudio/qwen3.6-27b-mlx
+mode: all
+model: lmstudio/qwen3.6-27b
 temperature: 0.1
 tools:
   write: true

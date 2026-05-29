@@ -36,7 +36,13 @@ shopt -s nullglob
 FILES=("$OC_TASKS/$CODE"-[a-z].md "$OC_TASKS/$CODE.md")
 shopt -u nullglob
 
-if (( ${#FILES[@]} == 0 )); then
+# Filter to only existing files (literal "$CODE.md" may not exist for Tier 2)
+EXISTING_FILES=()
+for candidate in "${FILES[@]}"; do
+  [[ -f "$candidate" ]] && EXISTING_FILES+=("$candidate")
+done
+
+if (( ${#EXISTING_FILES[@]} == 0 )); then
   cat >&2 <<EOF
 ERRO: nenhum spec de subtask encontrado para $CODE em $OC_TASKS/
 O arquiteto (fase 2) precisa escrever: $OC_TASKS/${CODE}-a.md, ${CODE}-b.md, ...
@@ -53,7 +59,7 @@ declare -a REQUIRED_H2=(
 )
 
 TOTAL_VIOLATIONS=0
-for f in "${FILES[@]}"; do
+for f in "${EXISTING_FILES[@]}"; do
   base="$(basename "$f")"
   V=()
 
@@ -89,4 +95,4 @@ if (( TOTAL_VIOLATIONS > 0 )); then
 fi
 
 echo ""
-echo ">>> ${#FILES[@]} spec(s) de subtask válidos para $CODE."
+echo ">>> ${#EXISTING_FILES[@]} spec(s) de subtask válidos para $CODE."

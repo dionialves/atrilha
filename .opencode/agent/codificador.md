@@ -8,7 +8,7 @@ description: >-
   obrigatório). NUNCA cria branch, NUNCA faz commit final, NUNCA faz push, NUNCA
   abre PR — a branch já é criada pelo start_us; o Revisor aprova/squasha cada
   subtask e abre o PR no fim. Invoque: 'Use o codificador para implementar <CODE>'.
-mode: subagent
+mode: all
 model: lmstudio/qwen3.6-35b-a3b
 temperature: 0.2
 tools:

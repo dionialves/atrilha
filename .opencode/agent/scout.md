@@ -11,8 +11,8 @@ description: >-
   fatia é só o PLANEJAMENTO. NÃO decide arquitetura, NÃO cria Issues — quem faz
   é o `arquiteto`. Invoque assim: 'Use o scout para preparar o brief de <CODE>'
   (opcionalmente: ', considerando: <ajuste>').
-mode: subagent
-model: lmstudio/qwen3.6-35b-a3b
+mode: all
+model: lmstudio/qwen3.6-35b-a3b@q5_k_xl
 temperature: 0.2
 tools:
   write: true

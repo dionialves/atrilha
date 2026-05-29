@@ -8,7 +8,7 @@ description: >-
   Quando TODAS as subtasks aprovadas → .opencode/scripts/open_pr.sh <CODE>
   (push + 1 PR DRAFT com Closes #<N>). NUNCA edita código de produção, NUNCA faz
   merge, NUNCA toca áreas off-limits do AGENTS.md.
-mode: subagent
+mode: all
 model: lmstudio/qwen3.6-35b-a3b
 temperature: 0.2
 tools:
