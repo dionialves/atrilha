@@ -70,6 +70,8 @@ LGPD é load-bearing — ver ADR-005/006/007 antes de tocar consentimento, compa
 
 <!-- qwen:compliance-required -->
 <!-- qwen:compliance-label: LGPD -->
+<!-- opencode:compliance-required -->
+<!-- opencode:compliance-label: LGPD -->
 
 ## Subagent Routing (qwen-code) — sessão raiz é roteador, NÃO executor
 
@@ -117,3 +119,47 @@ A sessão raiz **pode**:
 - Listar briefs/Issues/worktrees existentes para diagnóstico
 - Apontar o estado do pipeline para o usuário ("o brief X existe, próximo passo: invoque o arquiteto")
 - Editar este `AGENTS.md` e arquivos em `.qwen/` quando o usuário pedir explicitamente para configurar/ajustar o pipeline
+
+## Subagent Routing (opencode) — sessão principal é roteador, NÃO executor
+
+> Esta seção é **boilerplate obrigatório** do template `.opencode/` (runner opencode). Sem ela, a sessão principal tenta executar trabalho de subagent diretamente e o pipeline quebra. Ao portar `.opencode/` para outro projeto, copie esta seção inteira. Ela coexiste com a seção do qwen acima — os dois runners compartilham o mesmo repo, mas têm **workflows diferentes** (ver abaixo).
+
+### ⚠️ Diferença de workflow: opencode usa `1 US = 1 worktree = 1 PR`
+
+Diferente do `.qwen` (1 brief → 1 Issue → 1 worktree → 1 PR por *slice*), o `.opencode` trata **uma demanda inteira como uma única worktree/branch/PR**, com N **subtasks** revisadas uma a uma:
+
+- O **scout** mede o tamanho (§4) e escreve: **Tier 1** (pequena) = 1 brief `.opencode/briefs/<CODE>.md`; **Tier 2** (grande) = N **briefs de subtask** `<CODE>-a.md`, `<CODE>-b.md`, … + `<CODE>-slicing.md`, numa única passada. Em ambos, o downstream converge para 1 Issue / 1 PR — só o *planejamento* é fatiado.
+- O **arquiteto fase 1** consolida o(s) brief(s) em **1 Issue-resumo** (visão geral + lista de subtasks a/b/c).
+- O **arquiteto fase 2** escreve **1 spec por subtask** em `.opencode/tasks/<CODE>-<letra>.md`.
+- O **codificador** abre **1 worktree** (`.opencode/worktrees/<CODE>/`, nomeada pelo código) e implementa subtask a subtask.
+- O **revisor** aprova **por subtask** (cada uma vira 1 commit local, sem push) e, só quando todas aprovadas, abre **1 PR** via `open_pr`.
+
+### Tabela de roteamento por intenção (opencode)
+
+| O usuário pede algo como... | Delegue para | Frase canônica |
+|---|---|---|
+| "planejar US-XXX", "preparar brief de", "investigar para X" | `scout` | `Use o scout para preparar o brief de <CODE>` |
+| "criar / gerar a Issue de" | `arquiteto` (fase 1) | `Use o arquiteto para gerar a Issue de <CODE>` |
+| "detalhar / especificar as subtasks de" | `arquiteto` (fase 2) | `Use o arquiteto para detalhar as subtasks de <CODE>` |
+| "implementar / codificar a demanda <CODE>" | `codificador` | `Use o codificador para implementar <CODE>` |
+| "revisar / auditar a subtask <CODE>-a" | `revisor` | `Use o revisor para auditar a subtask <CODE>-<letra>` |
+| "abrir o PR de <CODE>" (todas subtasks aprovadas) | `revisor` | `Use o revisor para abrir o PR de <CODE>` |
+
+### Decisão por estado (opencode — do mais avançado ao mais atrasado)
+
+1. **Todas as subtasks têm commit aprovado e não há PR** → delegue ao **`revisor`** (`open_pr <CODE>`).
+2. **Worktree existe** (`ls .opencode/worktrees/<CODE>`) **com subtask finalizada** (SUMMARY em `.opencode/tmp/<CODE>-<letra>-SUMMARY.md`) → delegue ao **`revisor`** (auditar a subtask).
+3. **Specs existem** (`.opencode/tasks/<CODE>-*.md`) **mas worktree não** → delegue ao **`codificador`**.
+4. **Issue-resumo existe mas sem specs** → delegue ao **`arquiteto` fase 2**.
+5. **Brief existe** (`<CODE>.md` Tier 1, ou `<CODE>-slicing.md`/`<CODE>-a.md` Tier 2) **mas Issue não** → delegue ao **`arquiteto` fase 1**.
+6. **Nada existe** → delegue ao **`scout`**.
+
+### Proibições absolutas da sessão principal (opencode)
+
+A sessão principal **NUNCA**:
+- Roda `.opencode/scripts/*.sh` (`create_issue`, `start_us`, `finish_task`, `load_review`, `approve`, `reject`, `open_pr`) diretamente.
+- Escreve em `.opencode/briefs/`, `.opencode/tasks/`, `.opencode/tmp/`, `.opencode/worktrees/`.
+- Lê `.opencode/agent/*.md` para "imitar" o subagent.
+- Improvisa body de Issue, escreve spec de subtask, executa o plano, audita um diff.
+
+Pode (exceção): responder perguntas conceituais; listar briefs/Issues/specs/worktrees para diagnóstico; apontar o próximo passo; editar `AGENTS.md` e `.opencode/` quando o usuário pedir explicitamente para configurar o pipeline. Atalho de diagnóstico: comando `/orquestrar-pipeline-us <CODE>`.

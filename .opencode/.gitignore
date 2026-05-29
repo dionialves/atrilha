@@ -1,0 +1,15 @@
+# Worktrees criadas dinamicamente por start_us.sh (uma por demanda)
+worktrees/
+
+# Artefatos efêmeros do ciclo: bodies de Issue, SUMMARY e REVIEW por subtask
+tmp/
+
+# Dependências locais de scripts (se houver)
+node_modules
+package.json
+package-lock.json
+bun.lock
+
+# Mantém os READMEs de handoff versionados
+!briefs/README.md
+!tasks/README.md
