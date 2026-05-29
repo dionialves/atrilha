@@ -6,6 +6,8 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -41,8 +43,30 @@ import dev.zayt.atrilha.auth.login.RoleBasedAuthenticationSuccessHandler;
 @EnableWebSecurity
 class SecurityConfig {
 
+    /**
+     * Registry de sessões usado para invalidar todas as sessões ativas de um
+     * usuário após redefinição de senha (US-008-d CA-4). É lido por
+     * {@code PasswordResetController.invalidatePreviousSessions} e populado
+     * pelo {@code HttpSessionEventPublisher} (registrado abaixo).
+     */
+    @Bean
+    SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    /**
+     * Publisher de eventos de sessão HTTP — sem ele o {@link SessionRegistryImpl}
+     * não recebe notificações de criação/expiração e fica vazio. Necessário
+     * para que a invalidação de sessões (US-008-d) funcione fim-a-fim.
+     */
+    @Bean
+    org.springframework.security.web.session.HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new org.springframework.security.web.session.HttpSessionEventPublisher();
+    }
+
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http,
+                                    SessionRegistry sessionRegistry,
                                     RoleBasedAuthenticationSuccessHandler roleBasedSuccessHandler,
                                     RateLimitedAuthenticationFailureHandler rateLimitedFailureHandler) throws Exception {
         return http
@@ -55,8 +79,8 @@ class SecurityConfig {
                         .requestMatchers("/cadastro/**", "/comecar").permitAll()
                         // Verificação de e-mail
                         .requestMatchers("/verificar-email", "/verify-email").permitAll()
-                        // Redefinição de senha (US-008-c)
-                        .requestMatchers("/esqueci-senha").permitAll()
+                        // Redefinição de senha (US-008-c solicita, US-008-d consome)
+                        .requestMatchers("/esqueci-senha", "/reset-senha").permitAll()
                         // Rotas protegidas por papel
                         .requestMatchers("/trilha/**").hasRole("TEEN")
                         .requestMatchers("/painel/**").hasRole("GUARDIAN")
@@ -80,7 +104,14 @@ class SecurityConfig {
                 // SessionManagementConfigurer.enableSessionUrlRewriting,
                 // Spring Security 7.0.5, Javadoc cita ResourceUrlEncodingFilter
                 // pelo nome como o caso de uso desta opcao.
-                .sessionManagement(s -> s.enableSessionUrlRewriting(true))
+                // US-008-d: registra cada sessão autenticada no SessionRegistry para
+                // que o reset de senha possa invalidar todas as sessões pré-existentes
+                // do usuário (CA-4). maximumSessions(-1) = ilimitado (apenas rastreia,
+                // não bloqueia múltiplos dispositivos).
+                .sessionManagement(s -> s
+                        .enableSessionUrlRewriting(true)
+                        .maximumSessions(-1)
+                        .sessionRegistry(sessionRegistry))
                 // US-007: Form login com handlers customizados
                 .formLogin(form -> form
                         .loginPage("/login")

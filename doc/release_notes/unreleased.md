@@ -4,6 +4,72 @@
 
 ### Features
 
+## US-008-d · Fluxo "consumir token e nova senha" (GET/POST /reset-senha) (#105)
+
+**Tipo:** User Story (US-008-d) — última slice de US-008 (recuperação de senha)
+**Issue:** [#105](https://github.com/dionialves/atrilha/issues/105)
+**Branch:** `feat/105-us-008-d-fluxo-consumir-token-e-nova-senha-get-pos`
+**Data de conclusão:** 2026-05-28
+
+### O que foi feito
+
+- Novo `PasswordResetController` (package-private) com `@RequestMapping("/reset-senha")`:
+  - `GET /reset-senha?token=<UUID>` — usa um helper read-only `peekOutcome` (via `PasswordResetTokenRepository.findByToken`) para classificar o estado do token sem consumi-lo, e renderiza `auth/reset-senha` com `outcome ∈ {SUCCESS, EXPIRED_OR_INVALID, ALREADY_USED}`.
+  - `POST /reset-senha` — fluxo defensivo em 7 passos: (1) peek do token; (2) validação Bean Validation `@Size(min=8)` em `newPassword`; (3) `passwordResetService.verify(token)` consome atomicamente (lock `PESSIMISTIC_WRITE`); (4) deriva `accountId` server-side do `PasswordResetToken.getAccountId()` — **não** do form (defesa contra tampering); (5) persiste novo hash via `passwordEncoder.encode` (BCrypt 12 rounds); (6) invalida sessões pré-existentes via `sessionRegistry.getAllSessions(principal, false).expireNow()` (CA-4); (7) auto-login via `SessionAuthenticator.authenticate` + `redirect:/`.
+- Novo template `templates/auth/reset-senha.html` (decorator `layout/public`, padrão visual de `login.html`/`esqueci-senha.html`):
+  - Três estados mutuamente exclusivos (`SUCCESS` / `EXPIRED_OR_INVALID` / `ALREADY_USED`) controlados por `${outcome}`.
+  - Formulário com token em hidden field (preservado entre GET e POST), toggle de visibilidade de senha via Alpine.js, exibição de erros de validação via `th:errors`.
+  - CTAs de erro apontam para `/esqueci-senha` (link expirado) e `/login` (link já usado).
+- `SecurityConfig`: bean novo `SessionRegistry` (`SessionRegistryImpl`); bean novo `HttpSessionEventPublisher` (necessário para o registry receber eventos de criação/expiração de sessão — sem ele a invalidação seria silenciosamente no-op em produção); `.sessionManagement` estendido com `.maximumSessions(-1).sessionRegistry(...)` (ilimitado — apenas rastreia, não bloqueia múltiplos dispositivos); `/reset-senha` adicionado a `permitAll`.
+- `messages.properties`: 15 chaves novas `password.reset.*` em pt-BR (títulos, bodies, CTAs, labels, placeholder, hint, mensagem de validação).
+- Novo `PasswordResetControllerIT` (10 testes, executado pelo failsafe — sufixo `IT`): GET com token válido / expirado / já usado / malformado / ausente; POST feliz (persiste hash + consome token + auto-login + redirect); POST com senha curta (validação `password.reset.form.password.min`, sem persistência); POST com token expirado (sem persistência); POST sem CSRF (403); POST sucesso invalida sessão pré-existente registrada manualmente via `sessionRegistry.registerNewSession`.
+
+### Decisões tomadas (divergências do plano original, todas justificadas)
+
+- **`PasswordResetService.verify` é destrutivo (não read-only)** — o método marca `usedAt = clock.instant()` na mesma transação. O controller usa `peekOutcome` via `findByToken` no GET e antes da validação no POST, e chama `verify` **uma única vez** antes da persistência. `consume(token)` não é mais necessário. Elimina a race condition que existiria se `verify` fosse chamado duas vezes.
+- **`accountId` derivado server-side, não do form** — o link de e-mail só carrega o token. Após `verify` retornar SUCCESS, o `accountId` é obtido de `PasswordResetToken.getAccountId()`. Mitiga ataque em que um atacante envia POST com `accountId` arbitrário para resetar a senha de outra conta.
+- **`HttpSessionEventPublisher` adicionado junto com `SessionRegistry`** — sem o publisher o `SessionRegistryImpl` não recebe eventos do servlet container e a invalidação seria no-op em produção. Pegadinha clássica do Spring Security.
+- **Teste de invalidação de sessão (teste 10) sem Testcontainers** — usa `sessionRegistry.registerNewSession(oldSessionId, principal)` para simular sessão pré-existente e verifica que `getAllSessions(principal, false)` deixa de listá-la após o POST. Determinístico, sem Docker.
+
+### Impacto
+
+- Arquivos novos:
+  - `src/main/java/dev/zayt/atrilha/auth/web/PasswordResetController.java`
+  - `src/main/resources/templates/auth/reset-senha.html`
+  - `src/test/java/dev/zayt/atrilha/auth/web/PasswordResetControllerIT.java`
+- Arquivos editados:
+  - `src/main/java/dev/zayt/atrilha/auth/config/SecurityConfig.java` (`SessionRegistry` + `HttpSessionEventPublisher` + `.maximumSessions(-1).sessionRegistry(...)` + `/reset-senha` no `permitAll`)
+  - `src/main/resources/messages.properties` (+15 chaves `password.reset.*`)
+- Sem nova migration Flyway (esta slice não altera schema). Sem nova dependência no `pom.xml`. `doc/Requisitos/**`, `doc/UX/**`, `AGENTS.md` intactos.
+- `mvn test` (surefire) verde: 190 testes (zero falhas). `mvn verify` (surefire + failsafe) verde: 190 + 168 (incluindo `PasswordResetControllerIT` com 10 testes + `PasswordResetServiceIT` 8 testes + `LoginRateLimitIT` + `CadastroELoginIT` + `JpaLoginAccountQueryIT` + `SecurityConfigSessionRewritingIT` — sem regressão).
+
+### Como testar
+
+1. Subir o app em dev (`./mvnw spring-boot:run`).
+2. Acessar `/esqueci-senha`, informar um e-mail cadastrado, enviar.
+3. Em dev, o e-mail cai no Mailpit (configurado em `application-dev.properties`). Abrir o link `/reset-senha?token=<UUID>` do corpo do e-mail.
+4. Verificar que o formulário aparece. Submeter senha curta → validação. Submeter senha ≥ 8 chars → redireciona para `/` autenticado.
+5. Tentar usar o mesmo link novamente → tela "Link já utilizado". Aguardar > 1h e tentar → tela "Link expirado".
+6. Em outra aba/navegador, fazer login com a conta. Solicitar novo reset e completar. Confirmar que a sessão da outra aba foi invalidada (próxima request volta para `/login`).
+
+### Encerramento do épico US-008
+
+Esta entrega fecha o épico de recuperação de senha — fluxo end-to-end:
+
+- US-008-a (#101) — domain (`PasswordResetToken`, `PasswordResetTokenRepository`, `PasswordResetService.issueToken/verify/consume`, `PasswordResetResult`, migration V6).
+- US-008-b (#103) — sender + templates (`JavaMailPasswordResetSender`, `email/password-reset.html`, `email/password-reset-plain.txt`).
+- US-008-c (#104) — formulário de solicitação (`GET/POST /esqueci-senha`, anti-enumeration).
+- US-008-d (#105) — esta entrega: consumo do token + nova senha + invalidação de sessões + auto-login.
+
+### Gaps visuais / manuais (não-bloqueantes)
+
+- Nenhum gap declarado para esta slice. Sem UX spec formal — segue padrão visual de `login.html` e `esqueci-senha.html`.
+
+### Follow-ups (recomendações não-bloqueantes)
+
+- Encapsular `peekOutcome` no `PasswordResetService` como método read-only (`inspect(UUID)`) para reduzir a dependência do `PasswordResetTokenRepository` na camada web. Candidato a REF futura.
+- Harmonizar namespace de chaves i18n: US-008-c usa `password-reset.*`, US-008-d usa `password.reset.*`. Unificar para um único padrão. Candidato a chore.
+
 ## US-008-c · Fluxo "solicitar reset" (GET/POST /esqueci-senha) (#104)
 
 **Tipo:** User Story (US-008-c)
