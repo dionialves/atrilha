@@ -30,7 +30,8 @@ MERGE_BASE="$(git merge-base origin/main HEAD)"
 
 # --- exige que cada spec tenha commit aprovado ---
 shopt -s nullglob
-SPECS=("$OC_TASKS/$CODE"-[a-z].md "$OC_TASKS/$CODE.md")
+SPECS=("$OC_TASKS/$CODE"-[a-z].md)
+[[ -f "$OC_TASKS/$CODE.md" ]] && SPECS+=("$OC_TASKS/$CODE.md")
 shopt -u nullglob
 (( ${#SPECS[@]} > 0 )) || { echo "ERRO: nenhum spec de subtask em $OC_TASKS/ para $CODE." >&2; exit 1; }
 
