@@ -1,5 +1,7 @@
 package dev.zayt.atrilha.accounts.web;
 
+import dev.zayt.atrilha.accounts.avatar.AvatarTooLargeException;
+import dev.zayt.atrilha.accounts.avatar.AvatarUnsupportedTypeException;
 import dev.zayt.atrilha.accounts.domain.Account;
 import dev.zayt.atrilha.accounts.domain.AdolescentProfile;
 import dev.zayt.atrilha.accounts.form.UpdateProfileForm;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -75,6 +79,8 @@ class ProfileController {
     @PostMapping
     String submit(@Valid @ModelAttribute("form") UpdateProfileForm form,
                   BindingResult bindingResult,
+                  @RequestParam(value = "photo", required = false) MultipartFile photo,
+                  @RequestParam(value = "removeAvatar", required = false, defaultValue = "false") boolean removeAvatar,
                   Authentication authentication,
                   Model model) {
 
@@ -86,7 +92,14 @@ class ProfileController {
 
         UUID accountId = resolveAccountId(authentication);
 
-        UpdateProfileService.Outcome outcome = updateProfileService.update(accountId, form);
+        UpdateProfileService.Outcome outcome;
+        try {
+            outcome = updateProfileService.update(accountId, form, photo, removeAvatar);
+        } catch (AvatarTooLargeException | AvatarUnsupportedTypeException e) {
+            model.addAttribute("uploadError", "Não consegui salvar agora. Tenta de novo em alguns segundos.");
+            populateModelForReRender(authentication, model);
+            return EDIT_VIEW;
+        }
 
         return switch (outcome) {
             case UpdateProfileService.Outcome.Updated ignored -> "redirect:/perfil?saved";

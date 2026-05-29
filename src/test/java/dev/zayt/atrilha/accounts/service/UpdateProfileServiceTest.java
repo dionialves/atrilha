@@ -1,5 +1,6 @@
 package dev.zayt.atrilha.accounts.service;
 
+import dev.zayt.atrilha.accounts.avatar.AvatarStorage;
 import dev.zayt.atrilha.accounts.domain.AccountRole;
 import dev.zayt.atrilha.accounts.domain.AdolescentProfile;
 import dev.zayt.atrilha.accounts.repository.AdolescentProfileRepository;
@@ -28,13 +29,15 @@ class UpdateProfileServiceTest {
 
     private AdolescentProfileRepository profileRepo;
     private AgeEligibilityChecker ageChecker;
+    private AvatarStorage avatarStorage;
     private UpdateProfileService service;
 
     @BeforeEach
     void setUp() {
         profileRepo = mock(AdolescentProfileRepository.class);
         ageChecker = mock(AgeEligibilityChecker.class);
-        service = new UpdateProfileService(profileRepo, ageChecker);
+        avatarStorage = mock(AvatarStorage.class);
+        service = new UpdateProfileService(profileRepo, ageChecker, avatarStorage);
     }
 
     // ---------- Teste 1: happy path — nickname válido ----------
@@ -50,7 +53,7 @@ class UpdateProfileServiceTest {
         form.setNickname("Novo");
         form.setBirthDate(LocalDate.of(2010, 6, 15));
 
-        var outcome = service.update(accountId, form);
+        var outcome = service.update(accountId, form, null, false);
 
         assertThat(outcome).isInstanceOf(UpdateProfileService.Outcome.Updated.class);
         assertThat(profile.getNickname()).isEqualTo("Novo");
@@ -69,7 +72,7 @@ class UpdateProfileServiceTest {
         form.setNickname("Jo");
         form.setBirthDate(LocalDate.of(2010, 6, 15));
 
-        var outcome = service.update(accountId, form);
+        var outcome = service.update(accountId, form, null, false);
 
         assertThat(outcome).isInstanceOf(UpdateProfileService.Outcome.NicknameInvalid.class);
         verify(profileRepo, never()).saveAndFlush(any());
@@ -87,7 +90,7 @@ class UpdateProfileServiceTest {
         form.setNickname("abcdefghijklmnopqrstu"); // 21 chars
         form.setBirthDate(LocalDate.of(2010, 6, 15));
 
-        var outcome = service.update(accountId, form);
+        var outcome = service.update(accountId, form, null, false);
 
         assertThat(outcome).isInstanceOf(UpdateProfileService.Outcome.NicknameInvalid.class);
         verify(profileRepo, never()).saveAndFlush(any());
@@ -107,7 +110,7 @@ class UpdateProfileServiceTest {
         form.setNickname("Jovem");
         form.setBirthDate(LocalDate.of(2015, 1, 1)); // ~10 anos
 
-        var outcome = service.update(accountId, form);
+        var outcome = service.update(accountId, form, null, false);
 
         assertThat(outcome).isInstanceOfSatisfying(
                 UpdateProfileService.Outcome.AgeViolation.class,
@@ -129,7 +132,7 @@ class UpdateProfileServiceTest {
         form.setNickname("Velho");
         form.setBirthDate(LocalDate.of(2000, 1, 1)); // ~25 anos
 
-        var outcome = service.update(accountId, form);
+        var outcome = service.update(accountId, form, null, false);
 
         assertThat(outcome).isInstanceOfSatisfying(
                 UpdateProfileService.Outcome.AgeViolation.class,
@@ -152,7 +155,7 @@ class UpdateProfileServiceTest {
         form.setNickname("Novo");
         form.setBirthDate(LocalDate.of(2010, 6, 15));
 
-        service.update(accountId, form);
+        service.update(accountId, form, null, false);
 
         assertThat(profile.getAvatarUrl()).isEqualTo("/media/avatars/" + accountId + ".jpg");
         assertThat(profile.getTimezone()).isEqualTo("America/Sao_Paulo");
@@ -170,7 +173,7 @@ class UpdateProfileServiceTest {
         form.setNickname("Novo");
         form.setBirthDate(LocalDate.of(2010, 6, 15));
 
-        assertThatThrownBy(() -> service.update(accountId, form))
+        assertThatThrownBy(() -> service.update(accountId, form, null, false))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Perfil não encontrado");
     }
@@ -187,7 +190,7 @@ class UpdateProfileServiceTest {
         form.setNickname("   ");
         form.setBirthDate(LocalDate.of(2010, 6, 15));
 
-        var outcome = service.update(accountId, form);
+        var outcome = service.update(accountId, form, null, false);
 
         assertThat(outcome).isInstanceOf(UpdateProfileService.Outcome.NicknameInvalid.class);
         verify(profileRepo, never()).saveAndFlush(any());
