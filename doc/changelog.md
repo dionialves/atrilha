@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Features
+
+- **us-008-c · fluxo-solicitar-reset-esqueci-senha** ([#104](https://github.com/dionialves/atrilha/issues/104)) — Metade frontal de US-008: `GET /esqueci-senha` renderiza o formulário e `POST /esqueci-senha` faz lookup da conta, emite token (`PasswordResetService.issueToken`) e dispara o e-mail (`PasswordResetSender.sendReset`) quando o e-mail existe. Resposta idêntica para e-mail existente e inexistente (anti-enumeration / LGPD). Os dois beans `PasswordResetSender` passam a ser desambiguados por `@Profile`: `JavaMailPasswordResetSender` ativo em dev/prod e `NoOpPasswordResetSender` apenas em `test` — antes ambos eram `@Component` sem distinção, o que quebrava o contexto Spring ao injetar o sender no controller. Rota liberada no `SecurityConfig`; textos públicos em `messages.properties` (sem informação sensível).
+
 ### Refactors
 
 - **ref-004 · remover-testes-cosmeticos-e-de-build-front** ([#84](https://github.com/dionialves/atrilha/issues/84)) — Remoção de 7 arquivos de teste que validam aspectos cosméticos, de build ou frontend (não funcionalidade de backend): `NotFoundPageTest`, `StaticAssetsCssIT`, `StaticAssetsCssCoverageIT`, `StaticAssetsFingerprintCoverageIT`, `StaticAssetsFingerprintProdIT`, `HomeControllerTest`, `Error403PageTest`. Comentários órfãos em `pom.xml` e `application-test.properties` atualizados para refletir os ITs removidos. Suíte de testes continua verde: 53 arquivos `.java` em `src/test/`, 159 testes, zero falhas.

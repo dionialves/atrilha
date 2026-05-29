@@ -1,7 +1,6 @@
 package dev.zayt.atrilha.auth.verification;
 
 import dev.zayt.atrilha.accounts.domain.Account;
-import dev.zayt.atrilha.accounts.repository.AccountProfileLookup;
 import dev.zayt.atrilha.auth.domain.PasswordResetResult;
 
 import org.springframework.stereotype.Service;
@@ -11,7 +10,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -20,25 +18,20 @@ public class PasswordResetService {
     static final Duration TOKEN_TTL = Duration.ofHours(1);
 
     private final PasswordResetTokenRepository repository;
-    private final PasswordResetSender sender;
-    private final AccountProfileLookup profileLookup;
     private final Clock clock;
 
     public PasswordResetService(
             PasswordResetTokenRepository repository,
-            PasswordResetSender sender,
-            AccountProfileLookup profileLookup,
             Clock clock) {
         this.repository = repository;
-        this.sender = sender;
-        this.profileLookup = profileLookup;
         this.clock = clock;
     }
 
     /**
      * Emite um novo token de password reset para a account.
      * Invalida todos os tokens pendentes anteriores (marca {@code used_at}).
-     * Envia e-mail de recuperação se o sender estiver habilitado.
+     * <p>Não envia e-mail — essa responsabilidade é do controller que orquestra
+     * o fluxo.</p>
      *
      * @param account  conta alvo (não null)
      * @return UUID do token emitido
@@ -65,12 +58,6 @@ public class PasswordResetService {
         entity.setUsedAt(null);
         entity.setCreatedAt(now);
         repository.save(entity);
-
-        // Envia e-mail (no-op nesta slice; real em US-008-b)
-        if (sender.isEnabled()) {
-            String nickname = profileLookup.findNickname(account.getId()).orElse("");
-            sender.sendReset(account.getEmail(), nickname, tokenUuid);
-        }
 
         return tokenUuid;
     }
