@@ -55,6 +55,8 @@ class SecurityConfig {
                         .requestMatchers("/cadastro/**", "/comecar").permitAll()
                         // Verificação de e-mail
                         .requestMatchers("/verificar-email", "/verify-email").permitAll()
+                        // Redefinição de senha (US-008-c)
+                        .requestMatchers("/esqueci-senha").permitAll()
                         // Rotas protegidas por papel
                         .requestMatchers("/trilha/**").hasRole("TEEN")
                         .requestMatchers("/painel/**").hasRole("GUARDIAN")

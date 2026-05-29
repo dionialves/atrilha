@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+### Features
+
+## US-008-c · Fluxo "solicitar reset" (GET/POST /esqueci-senha) (#104)
+
+**Tipo:** User Story (US-008-c)
+**Issue:** [#104](https://github.com/dionialves/atrilha/issues/104)
+**Branch:** feat/104-us-008-c-fluxo-solicitar-reset-get-post-esqueci-se
+**Data de conclusão:** 2026-05-28
+
+### O que foi feito
+
+- Novo `PasswordResetRequestController` (package-private, padrão de `EmailVerificationController`): `GET /esqueci-senha` renderiza o formulário; `POST /esqueci-senha` valida o e-mail (Bean Validation `@Valid`/`@NotBlank`/`@Email`), faz lookup via `AccountReader.findByEmailIgnoreCase`, e — só quando a conta existe — emite o token (`PasswordResetService.issueToken`) e dispara o e-mail (`PasswordResetSender.sendReset`). Em qualquer caso redireciona para a mesma mensagem genérica (`?enviado=1`).
+- **Anti-enumeration / LGPD:** resposta idêntica para e-mail cadastrado e não cadastrado — o usuário nunca descobre se o e-mail existe.
+- Novo template `templates/auth/esqueci-senha.html` (padrão visual de `login.html`, `layout/public`), com `th:object`/`th:errors` para erros de validação.
+- `SecurityConfig`: rota `/esqueci-senha` liberada (`permitAll`).
+- `messages.properties`: textos i18n da tela (sem informação sensível).
+- Erro de validação retorna a view com `200 OK`, consistente com os demais controllers de formulário do projeto (sem `response.setStatus(...)`).
+
+### Decisões tomadas
+
+- **Senders separados por `@Profile`** — existiam dois beans `PasswordResetSender` (`NoOpPasswordResetSender` e `JavaMailPasswordResetSender`), ambos `@Component` puros. Ao injetar o sender no novo controller, o contexto Spring quebrava com `NoUniqueBeanDefinitionException`. Resolvido com `@Profile`: `JavaMailPasswordResetSender` (`@Profile("!test")`) é o sender real em dev/prod; `NoOpPasswordResetSender` (`@Profile("test")`) fica restrito a testes. Garante exatamente um bean por contexto.
+- **Envio fica no controller, não no service** — `PasswordResetService.issueToken` deixou de enviar e-mail internamente (evita envio duplicado); a orquestração (lookup → token → e-mail) é responsabilidade do controller.
+
+### Impacto
+
+- Arquivos novos: `PasswordResetRequestController.java`, `templates/auth/esqueci-senha.html`, `PasswordResetRequestControllerTest.java`.
+- Arquivos editados: `SecurityConfig.java`, `messages.properties`, `NoOpPasswordResetSender.java`, `JavaMailPasswordResetSender.java`, `PasswordResetService.java`.
+- `./mvnw test` verde para toda a suíte funcional (5 testes novos do controller). Os ITs que dependem de Postgres/testcontainers só rodam com Docker disponível.
+
 ### Refactors
 
 - **ref-004 · remover-testes-cosmeticos-e-de-build-front** ([#84](https://github.com/dionialves/atrilha/issues/84)) — Remoção de 7 arquivos de teste cosméticos/build/frontend da suíte. `./mvnw test` verde: 159 testes, 0 falhas.
