@@ -103,6 +103,7 @@ nunca recomenda padrões. Todo o "como" é do arquiteto.
 Capture **apenas o que existe hoje**, literal:
 - **Padrões de referência** (services/controllers/config/handlers) — caminho + papel + snippet literal (10-40 linhas).
 - **Entidades de domínio/value objects/enums tocados** — API pública literal (getters, setters, enums, construtores). Sem isso o arquiteto adivinha a API.
+- **Exceções / tipos de erro que a demanda precisa capturar** — lançados por colaboradores referenciados (storages, services, handlers). Declaração literal: construtor(es) + getters públicos + checked/unchecked. Sem isso o arquiteto abre o `src` só pra ver a assinatura.
 - **Contratos de subtasks predecessoras (Tier 2 — quando esta subtask tem `Depende de: <CODE>-<letra>`)** — se a predecessora ainda não virou código no repo (briefs vivem juntos antes da implementação), re-quote literalmente a API declarada no brief dela, marcando: `[declarado em .opencode/briefs/<CODE>-<letra>.md — ainda não existe no repo]`. Detalhe em §1.4 + cross-check obrigatório.
 - **Schema/migrations existentes** — nomes + DDL literal da última relevante + próxima numeração livre.
 - **Testes existentes** — caminho + framework + 1-2 nomes literais de métodos (ancorar convenção de naming).
@@ -273,7 +274,7 @@ Seções obrigatórias (não pule; `N/A` quando não aplica):
 ### 1. Contexto: estado atual do sistema
 - **1.1.** Resumo da área (2-4 linhas factuais).
 - **1.2.** Padrões de referência (services/controllers/config) — código literal atual (10-40 linhas).
-- **1.3.** Entidades de domínio/value objects/enums tocados — API pública literal.
+- **1.3.** Entidades de domínio/value objects/enums **e exceções/tipos de erro** tocados — API pública literal (incl. construtores das exceções que a demanda captura + getters de mensagem; checked/unchecked). N/A se nenhum.
 - **1.4.** Contratos de subtasks predecessoras (só Tier 2 com `Depende de:`) — re-quote da API declarada no brief predecessor, marcada `[declarado em .opencode/briefs/<CODE>-<letra>.md — ainda não existe no repo]`. **Cross-check obrigatório:** cada item de §2.2 e §3 desta subtask tem método correspondente na API do predecessor? Se faltar, estenda o brief predecessor em-passe (single-pass) e anote aqui; se o predecessor já estava no disco de antes, PARE e devolva ao humano. N/A se Tier 1 ou sem dependência.
 - **1.5.** Schema/migrations atuais + próxima numeração livre + DDL literal.
 - **1.6.** Templates/views + fragments referenciados (declaração literal). N/A se sem view.
@@ -304,7 +305,7 @@ Fatos sobre o código existente. PROIBIDO aqui "deve seguir"/"recomenda-se"/"pad
 - [x] Stack travada do `AGENTS.md` checada
 - [x] Compliance do `AGENTS.md` checada
 - [x] Padrões de referência capturados literalmente (§1.2)
-- [x] Entidades de domínio com API pública capturada (§1.3)
+- [x] Entidades de domínio **+ exceções/tipos de erro que a demanda captura** com API pública capturada (§1.3)
 - [x] Contratos de subtasks predecessoras re-quoted (§1.4) ou N/A se Tier 1
 - [x] Cross-check §1.4 ↔ §2.2/§3 executado ou N/A
 - [x] Schema/migrations atuais listados; próxima numeração calculada
