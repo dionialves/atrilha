@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}">
+
+<th:block layout:fragment="title">Editar perfil — atrilha</th:block>
+
+<th:block layout:fragment="content">
+
+<!-- Header público com botão voltar -->
+<header th:replace="~{layout/fragments/public-header :: public-header('/trilha', 'Voltar à trilha')}"></header>
+
+<main class="app-main profile-edit-page" x-data="{
+  originalNickname: '${form.nickname}',
+  originalBirthDate: '${form.birthDate}',
+  dirty: false,
+  actionSheetOpen: false,
+  ageModalOpen: false,
+
+  markDirty() {
+    this.dirty = (this.$refs.nickname.value !== this.originalNickname) ||
+                 (this.$refs.birthDate.value !== this.originalBirthDate);
+  },
+
+  discard() {
+    this.$refs.nickname.value = this.originalNickname;
+    this.$refs.birthDate.value = this.originalBirthDate;
+    this.dirty = false;
+    this.ageModalOpen = false;
+  }
+}">
+
+  <!-- Banner de sucesso (flash message) -->
+  <div class="success-banner" x-data="{ show: false }"
+       x-show="show" x-init="if (window.location.search.includes('saved')) { show = true; setTimeout(() => show = false, 4000); }">
+    <p>Alterações salvas! Teu progresso continua igual.</p>
+  </div>
+
+  <!-- Banner de erro de upload -->
+  <div class="error-banner" th:if="${uploadError != null}" role="alert">
+    <p th:text="${uploadError}"></p>
+  </div>
+
+  <!-- Avatar block -->
+  <div class="avatar-block">
+    <div class="avatar-circle" th:classappend="${avatarUrl != null && !avatarUrl.isBlank()} ? 'has-photo' : ''">
+      <img th:if="${avatarUrl != null && !avatarUrl.isBlank()}"
+           th:src="${avatarUrl}"
+           alt="Foto de perfil"
+           class="avatar-img"/>
+      <span th:unless="${avatarUrl != null && !avatarUrl.isBlank()}"
+            th:text="${#strings.substring(form.nickname, 0, 1)}"
+            class="avatar-initial"></span>
+      <!-- Badge de câmera (abre action sheet) -->
+      <button class="camera-badge"
+              @click="actionSheetOpen = true"
+              aria-label="Alterar foto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+             width="16" height="16" aria-hidden="true">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </button>
+    </div>
+    <h1 class="profile-nickname" th:text="${form.nickname}"></h1>
+    <p class="profile-email">
+      <span th:text="${email}"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" width="14" height="14" aria-hidden="true" class="lock-icon">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </p>
+  </div>
+
+  <!-- Form de edição -->
+  <form id="profile-form" th:action="@{/perfil}" method="post" th:object="${form}"
+        enctype="multipart/form-data"
+        @submit.window="if ($event.target === $el) { markDirty(); }">
+
+    <!-- Nickname -->
+    <div class="form-group">
+      <label for="nickname" class="form-label">Apelido</label>
+      <input type="text" id="nickname" name="nickname"
+             th:field="*{nickname}"
+             x-ref="nickname"
+             @input="markDirty()"
+             minlength="3" maxlength="20"
+             class="form-input"
+             :class="{ 'has-error': $refs.nickname.errors?.length > 0 }"/>
+      <p class="form-helper">Entre 3 e 20 caracteres.</p>
+      <p class="form-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></p>
+    </div>
+
+    <!-- BirthDate -->
+    <div class="form-group">
+      <label for="birthDate" class="form-label">Data de nascimento</label>
+      <input type="date" id="birthDate" name="birthDate"
+             th:field="*{birthDate}"
+             x-ref="birthDate"
+             @input="markDirty()"
+             class="form-input"
+             :class="{ 'has-error': $refs.birthDate.errors?.length > 0 }"/>
+      <p class="form-helper">Só é possível editar se a idade continuar entre 13 e 17 anos.</p>
+      <p class="form-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></p>
+    </div>
+
+    <!-- Email (readonly) -->
+    <div class="form-group">
+      <label for="email" class="form-label">E-mail</label>
+      <input type="email" id="email" name="email"
+             th:value="${email}"
+             readonly
+             class="form-input form-input--readonly"/>
+      <p class="form-helper">É o que você usa pra entrar na atrilha. Mudar exige nova verificação.</p>
+    </div>
+
+  </form>
+
+</main>
+
+<!-- Save bar sticky (aparece só quando dirty) -->
+<div class="save-bar" x-show="dirty" x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full"
+     style="display: none;">
+
+  <div class="save-bar__inner">
+    <button type="button" class="btn btn--ghost" @click="discard()">
+      Descartar
+    </button>
+    <button type="submit" form="profile-form" class="btn btn--primary">
+      Salvar alterações
+    </button>
+  </div>
+</div>
+
+<!-- Modal de bloqueio por idade -->
+<div class="age-modal-overlay"
+     x-show="ageModalOpen"
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     @keydown.escape.window="discard()"
+     style="display: none;">
+
+  <div class="age-modal" role="alertdialog" aria-labelledby="age-modal-title">
+    <h2 id="age-modal-title">Ops, essa data não funciona</h2>
+    <p id="age-modal-message">
+      A atrilha é para adolescentes de 13 a 17 anos. Se você tentar salvar com uma data fora dessa faixa, a gente não deixa — é pra te proteger!
+    </p>
+    <button type="button" class="btn btn--primary btn--full"
+            @click="discard()">
+      Entendi, manter como estava
+    </button>
+  </div>
+
+</div>
+
+<!-- Action sheet — trocar foto -->
+<div class="action-sheet-overlay"
+     x-show="actionSheetOpen"
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     @click.self="actionSheetOpen = false"
+     @keydown.escape.window="actionSheetOpen = false"
+     style="display: none;">
+
+  <div class="action-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <h2 id="sheet-title" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">Trocar foto</h2>
+    <div class="action-sheet__handle"></div>
+
+    <!-- Tirar foto agora (câmera frontal) -->
+    <button type="button"
+            class="sheet-item"
+            @click="$refs.cameraInput.click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           width="20" height="20" aria-hidden="true">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Tirar foto agora
+    </button>
+
+    <!-- Escolher da galeria -->
+    <button type="button"
+            class="sheet-item"
+            @click="$refs.galleryInput.click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           width="20" height="20" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      Escolher da galeria
+    </button>
+
+    <!-- Tirar foto (ficar com a inicial) — só aparece quando há foto -->
+    <button type="button"
+            class="sheet-item sheet-item--danger"
+            x-show="${avatarUrl != null && !avatarUrl.isBlank()}"
+            @click="$refs.removeAvatarInput.click(); $refs.profileForm.submit()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           width="20" height="20" aria-hidden="true">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      </svg>
+      Tirar foto (ficar com a inicial)
+    </button>
+
+    <!-- Cancelar -->
+    <button type="button"
+            class="sheet-item sheet-item--cancel"
+            @click="actionSheetOpen = false">
+      Cancelar
+    </button>
+  </div>
+
+  <!-- Inputs ocultos de arquivo -->
+  <input type="file"
+         id="cameraInput"
+         name="photo"
+         accept="image/*"
+         capture="user"
+         style="display:none"
+         x-ref="cameraInput"
+         @change="$refs.profileForm.submit()"/>
+
+  <input type="file"
+         id="galleryInput"
+         name="photo"
+         accept="image/*"
+         style="display:none"
+         x-ref="galleryInput"
+         @change="$refs.profileForm.submit()"/>
+
+  <!-- Input oculto para remoção de avatar -->
+  <input type="hidden"
+         id="removeAvatarInput"
+         name="removeAvatar"
+         value="true"
+         x-ref="removeAvatarInput"/>
+</div>
+
+</th:block>
+
+</html>
